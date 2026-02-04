@@ -1,0 +1,9 @@
+bin/
+obj/
+.vs/
+
+*.mdf
+*.ldf
+
+appsettings.Development.json
+.env
