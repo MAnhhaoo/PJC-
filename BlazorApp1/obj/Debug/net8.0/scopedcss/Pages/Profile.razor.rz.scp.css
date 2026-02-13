@@ -1,0 +1,59 @@
+.profile-container[b-xczzvakdfu] {
+    display: flex;
+    justify-content: center;
+    margin-top: 60px;
+}
+
+.profile-card[b-xczzvakdfu] {
+    width: 360px;
+    padding: 24px;
+    border-radius: 12px;
+    background: white;
+    box-shadow: 0 10px 25px rgba(0,0,0,.15);
+    text-align: center;
+}
+
+.avatar[b-xczzvakdfu] {
+    width: 100px;
+    border-radius: 50%;
+    margin-bottom: 12px;
+}
+
+.role[b-xczzvakdfu] {
+    color: gray;
+    font-size: 14px;
+}
+
+.form-group[b-xczzvakdfu] {
+    text-align: left;
+    margin-top: 12px;
+}
+
+    .form-group input[b-xczzvakdfu],
+    .form-group select[b-xczzvakdfu] {
+        width: 100%;
+        padding: 8px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+    }
+
+button[b-xczzvakdfu] {
+    width: 100%;
+    margin-top: 16px;
+    padding: 10px;
+    border-radius: 8px;
+    background: #2563eb;
+    color: white;
+    border: none;
+}
+
+.admin[b-xczzvakdfu] {
+    background: #fef3c7;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.msg[b-xczzvakdfu] {
+    margin-top: 10px;
+    color: green;
+}

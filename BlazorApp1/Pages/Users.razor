@@ -1,0 +1,202 @@
+﻿@page "/users"
+@using MudBlazor
+@using System.Net.Http.Headers
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+
+<MudPaper Class="pa-6" Style="margin-top:70px;">
+
+    <MudText Typo="Typo.h4" Class="mb-4">
+        User Management
+    </MudText>
+
+    <MudTextField T="string"
+                  Value="_search"
+                  ValueChanged="OnSearchChanged"
+                  Immediate="true"
+                  Placeholder="Search by name or email"
+                  Class="mb-4" />
+
+
+    <MudTable T="User"
+              @ref="table"
+              ServerData="LoadServerData"
+              RowsPerPage="10"
+              Hover="true"
+              Bordered="true"
+              Striped="true"    
+              Elevation="0">
+
+        <HeaderContent>
+            <MudTh>ID</MudTh>
+            <MudTh>Full Name</MudTh>
+            <MudTh>Email</MudTh>
+            <MudTh>Role</MudTh>
+            <MudTh>Level</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh>Created</MudTh>
+            <MudTh>Actions</MudTh>
+        </HeaderContent>
+
+        <RowTemplate>
+            <MudTd>@context.UserId</MudTd>
+            <MudTd>@context.FullName</MudTd>
+            <MudTd>@context.Email</MudTd>
+
+            <MudTd>
+                <MudChip T="string"
+                         Color="@(context.Role?.ToLower() == "admin" ? Color.Error : Color.Primary)">
+                    @context.Role
+                </MudChip>
+            </MudTd>
+
+            <MudTd>
+                @if (context.UserLevel == 1)
+                {
+                    <MudChip T="string" Color="Color.Warning">VIP</MudChip>
+                }
+                else
+                {
+                    <MudChip T="string">Normal</MudChip>
+                }
+            </MudTd>
+
+            <MudTd>
+                <MudChip T="string"
+                         Color="@(context.Status == "Active" ? Color.Success : Color.Error)">
+                    @context.Status
+                </MudChip>
+            </MudTd>
+
+            <MudTd>
+                @context.CreatedAt.ToString("dd/MM/yyyy")
+            </MudTd>
+
+            <MudTd>
+                @if (context.Role?.ToLower() != "admin")
+                {
+                    <MudButton Size="Size.Small"
+                               Variant="Variant.Outlined"
+                               OnClick="@(() => ToggleUser(context))">
+                        @(context.Status == "Active" ? "Lock" : "Unlock")
+                    </MudButton>
+                }
+                else
+                {
+                    <MudChip T="string" Color="Color.Default">Protected</MudChip>
+                }
+            </MudTd>
+        </RowTemplate>
+
+    </MudTable>
+
+</MudPaper>
+
+@code {
+
+    private MudTable<User>? table;
+    private string _search = "";
+
+    private async Task<TableData<User>> LoadServerData(
+        TableState state,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var token = await localStorage.GetItemAsync<string>("token");
+
+            if (string.IsNullOrEmpty(token))
+            {
+                Snackbar.Add("Token not found. Please login again.", Severity.Error);
+                return new TableData<User>();
+            }
+
+            var page = state.Page + 1;
+            var pageSize = state.PageSize;
+
+            var request = new HttpRequestMessage(
+                HttpMethod.Get,
+                $"api/users?search={_search}&page={page}&pageSize={pageSize}");
+
+            request.Headers.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.SendAsync(request, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Snackbar.Add($"Error: {response.StatusCode}", Severity.Error);
+                return new TableData<User>();
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<ApiResult>(cancellationToken: cancellationToken);
+
+            return new TableData<User>
+            {
+                TotalItems = result?.Total ?? 0,
+                Items = result?.Users ?? new List<User>()
+            };
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+            return new TableData<User>();
+        }
+    }
+
+    private async Task OnSearchChanged(string value)
+    {
+        _search = value;
+        if (table != null)
+            await table.ReloadServerData();
+    }
+
+    private async Task ToggleUser(User user)
+    {
+        try
+        {
+            var token = await localStorage.GetItemAsync<string>("token");
+
+            var request = new HttpRequestMessage(
+                HttpMethod.Put,
+                $"api/users/{user.UserId}/toggle-status");
+
+            request.Headers.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.SendAsync(request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                user.Status = user.Status == "Active" ? "Banned" : "Active";
+                Snackbar.Add("User updated!", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add("Permission denied!", Severity.Error);
+            }
+        }
+        catch
+        {
+            Snackbar.Add("Error updating user!", Severity.Error);
+        }
+    }
+
+    private class ApiResult
+    {
+        public int Total { get; set; }
+        public List<User> Users { get; set; } = new();
+    }
+
+    private class User
+    {
+        public int UserId { get; set; }
+        public string Email { get; set; } = "";
+        public string FullName { get; set; } = "";
+        public string Role { get; set; } = "";
+        public int UserLevel { get; set; }
+        public string Status { get; set; } = "";
+        public DateTime CreatedAt { get; set; }
+    }
+}
