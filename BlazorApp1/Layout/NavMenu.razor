@@ -1,0 +1,74 @@
+﻿@inject Blazored.LocalStorage.ILocalStorageService localStorage
+@inject NavigationManager nav
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">BlazorApp1</a>
+        <button class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<div class="@NavMenuCssClass nav-scrollable sidebar-container">
+    <nav class="flex-column nav-content">
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                Home
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="counter">
+                Counter
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="weather">
+                Weather
+            </NavLink>
+        </div>
+
+        @if (role == "Admin")
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/admin">
+                    Admin
+                </NavLink>
+            </div>
+        }
+
+        <div class=" nav-item px-3 ">
+            <button class="logout-btn" @onclick="Logout">
+                Logout
+            </button>
+        </div>
+
+    </nav>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+    private string? role;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        role = await localStorage.GetItemAsync<string>("role");
+    }
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+
+    async Task Logout()
+    {
+        await localStorage.RemoveItemAsync("token");
+        await localStorage.RemoveItemAsync("role");
+        nav.NavigateTo("/login", true);
+    }
+}

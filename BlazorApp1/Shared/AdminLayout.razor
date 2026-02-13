@@ -1,0 +1,98 @@
+﻿@inherits LayoutComponentBase
+@using MudBlazor
+@inject NavigationManager Nav
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+
+    <!-- TOP BAR -->
+    <MudAppBar Elevation="1" Color="Color.Primary">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                       Color="Color.Inherit"
+                       Edge="Edge.Start"
+                       OnClick="@ToggleDrawer" />
+
+        <MudText Typo="Typo.h6" Class="ml-2 mb-2">
+            Admin Dashboard
+        </MudText>
+
+        <MudSpacer />
+
+        <MudText Typo="Typo.subtitle1">
+            @_fullName
+        </MudText>
+
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Error"
+                   OnClick="Logout">
+            Logout
+        </MudButton>
+    </MudAppBar>
+
+    <!-- SIDEBAR -->
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="1">
+        <MudNavMenu>
+
+            <MudNavLink Href="/" Icon="@Icons.Material.Filled.Dashboard">
+                Dashboard
+            </MudNavLink>
+
+            <MudNavLink Href="/profile" Icon="@Icons.Material.Filled.Person">
+                Profile
+            </MudNavLink>
+
+            @if (_role == "Admin")
+            {
+                <MudNavLink Href="/users" Icon="@Icons.Material.Filled.Group">
+                    Manage Users
+                </MudNavLink>
+
+                <MudNavLink Href="/restaurant " Icon="@Icons.Material.Filled.Group">
+                    Manage Users
+                </MudNavLink>
+
+                <MudNavLink Href="/admin-settings" Icon="@Icons.Material.Filled.Settings">
+                    Admin Settings
+                </MudNavLink>
+            }
+
+        </MudNavMenu>
+    </MudDrawer>
+
+    <!-- CONTENT -->
+    <MudMainContent Class="pa-4">
+        @Body
+    </MudMainContent>
+
+</MudLayout>
+
+@code {
+    private bool _drawerOpen = true;
+    private string? _role;
+    private string? _fullName;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _role = await localStorage.GetItemAsync<string>("role");
+        _fullName = await localStorage.GetItemAsync<string>("fullName");
+    }
+
+    void ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
+    async Task Logout()
+    {
+        await localStorage.RemoveItemAsync("token");
+        await localStorage.RemoveItemAsync("role");
+        // fullname don't need remove also ok 
+        await localStorage.RemoveItemAsync("fullName");
+
+        Nav.NavigateTo("/login", true);
+    }
+}

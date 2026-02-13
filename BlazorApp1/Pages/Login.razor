@@ -1,0 +1,90 @@
+﻿@layout LoginLayout
+@page "/login"
+@using BlazorApp1.Shared
+@inject ApiService api
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+@inject NavigationManager nav
+
+<div class="login-card">
+    <h2>Đăng nhập</h2>
+
+    <input placeholder="Email" @bind="email" />
+    <input type="password" placeholder="Password" @bind="password" />
+
+    <button @onclick="login">Login</button>
+
+    <p class="error">@error</p>
+</div>
+
+<style>
+    .login-card {
+        height: 318px;
+        background: white;
+        padding: 25px;
+        border-radius: 14px;
+        width: 500px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+        .login-card input {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+
+        .login-card button {
+            padding: 12px;
+            border: none;
+            background: #2563eb;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+    .error {
+        color: red;
+        text-align: center;
+    }
+</style>
+
+@code {
+    string email;
+    string password;
+    string error;
+
+    async Task login()
+    {
+        error = "";
+
+        var res = await api.PostAsync("api/users/login", new
+        {
+            Email = email,
+            PasswordHash = password
+        });
+
+        var text = await res.Content.ReadAsStringAsync();
+
+        if (!res.IsSuccessStatusCode)
+        {
+            error = text;
+            return;
+        }
+
+        var data = await res.Content.ReadFromJsonAsync<LoginResponse>();
+
+        await localStorage.SetItemAsync("token", data.Token);
+        await localStorage.SetItemAsync("role", data.Role);
+
+        nav.NavigateTo("/profile");
+    }
+
+    class LoginResponse
+    {
+        public string Token { get; set; }
+        public string Role { get; set; }
+    }
+
+}

@@ -18,6 +18,19 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
+// ===== CORS =====
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowBlazor",
+        policy =>
+        {
+            policy
+                .AllowAnyOrigin()
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
+});
+
 // ===== SWAGGER + JWT =====
 builder.Services.AddSwaggerGen(c =>
 {
@@ -79,12 +92,18 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
 app.UseHttpsRedirection();
 
-// 🔥 THỨ TỰ BẮT BUỘC
+app.UseCors("AllowBlazor");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
+// 🔥 API PHẢI MAP TRƯỚC
 app.MapControllers();
+
+// 🔥 BLazor fallback PHẢI SAU CÙNG
+app.MapFallbackToFile("index.html");
+
 app.Run();
+

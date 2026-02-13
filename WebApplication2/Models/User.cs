@@ -15,6 +15,9 @@ namespace WebApplication2.Models
 
         public string FullName { get; set; }
 
+        public string? Phone { get; set; }     // thêm
+        public string? Address { get; set; }
+
         public string Role { get; set; }      // Admin / Restaurant / User
         public int UserLevel { get; set; }    // 0 = Thường, 1 = VIP
 

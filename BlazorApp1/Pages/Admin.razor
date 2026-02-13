@@ -1,0 +1,17 @@
+﻿@page "/admin"
+@inject HttpClient http
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+
+<h3>Admin page</h3>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await localStorage.GetItemAsync<string>("token");
+
+        http.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        await http.GetAsync("https://localhost:xxxx/api/users/admin-only");
+    }
+}
