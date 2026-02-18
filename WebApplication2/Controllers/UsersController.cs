@@ -264,7 +264,34 @@ public class UsersController : ControllerBase
 
 
 
+
     // GET: api/users/me
+    [Authorize]
+    [HttpGet("me")]
+    public IActionResult GetMe()
+    {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdClaim))
+            return Unauthorized();
+
+        var userId = int.Parse(userIdClaim);
+
+        var user = _context.Users.Find(userId);
+        if (user == null)
+            return NotFound();
+
+        return Ok(new
+        {
+            user.Email,
+            user.FullName,
+            user.Phone,
+            user.Address,
+            user.Role,
+            user.UserLevel
+        });
+    }
+
+    // GET: api/users/update 
     [Authorize]
     [HttpPut("me")]
     public IActionResult UpdateMe([FromBody] UpdateProfileDto dto)

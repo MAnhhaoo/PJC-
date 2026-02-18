@@ -15,7 +15,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 );
 
 // ===== CONTROLLERS =====
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler =
+            System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
+
 builder.Services.AddEndpointsApiExplorer();
 
 // ===== CORS =====
@@ -103,7 +109,7 @@ app.UseAuthorization();
 app.MapControllers();
 
 // 🔥 BLazor fallback PHẢI SAU CÙNG
-app.MapFallbackToFile("index.html");
+//app.MapFallbackToFile("index.html");
 
 app.Run();
 

@@ -1,0 +1,252 @@
+﻿@page "/admin/payments"
+@using MudBlazor
+@inject ApiService Api
+@inject IDialogService DialogService
+
+<MudContainer MaxWidth="MaxWidth.False">
+
+    <!-- TITLE -->
+    <MudText Typo="Typo.h4" Class="mb-4">
+        📊 Payment Management
+    </MudText>
+
+    <!-- STATS CARDS -->
+    <MudGrid Class="mb-4">
+        <MudItem xs="12" md="4">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.subtitle2">Total Revenue</MudText>
+                <MudText Typo="Typo.h5" Color="Color.Success">
+                    @totalRevenue.ToString("N0") đ
+                </MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="4">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.subtitle2">User Revenue</MudText>
+                <MudText Typo="Typo.h5">@userRevenue.ToString("N0") đ</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="4">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.subtitle2">Restaurant Revenue</MudText>
+                <MudText Typo="Typo.h5">@restaurantRevenue.ToString("N0") đ</MudText>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <!-- FILTER -->
+    <MudPaper Class="pa-4 mb-4">
+
+        <MudGrid>
+            <MudItem xs="12" md="3">
+                <MudDatePicker Label="From"
+                               @bind-Date="fromDate"
+                               Editable="true"
+                               DateFormat="dd/MM/yyyy" />
+            </MudItem>
+
+            <MudItem xs="12" md="3">
+                <MudDatePicker Label="To"
+                               @bind-Date="toDate"
+                               Editable="true"
+                               DateFormat="dd/MM/yyyy" />
+            </MudItem>
+
+            <MudItem xs="12" md="3">
+                <MudTextField T="string"
+                              Placeholder="Search name/email"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              @bind-Value="searchText"
+                              Immediate="true" />
+            </MudItem>
+
+            <MudItem xs="12" md="3" Class="d-flex align-center">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="ReloadTable">
+                    Apply
+                </MudButton>
+
+                <MudButton Variant="Variant.Text"
+                           Class="ml-2"
+                           OnClick="ClearFilter">
+                    Clear
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    <!-- TABLE -->
+    <MudTable T="PaymentViewModel"
+              ServerData="LoadServerData"
+              Hover="true"
+              Dense="true"
+              Elevation="2"
+              @ref="table">
+
+        <HeaderContent>
+            <MudTh>ID</MudTh>
+            <MudTh>User</MudTh>
+            <MudTh>Type</MudTh>
+            <MudTh>Amount</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh>Date</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+
+        <RowTemplate>
+            <MudTd>@context.PaymentId</MudTd>
+            <MudTd>@context.UserName</MudTd>
+            <MudTd>@context.PaymentType</MudTd>
+            <MudTd>@context.Amount.ToString("N0") đ</MudTd>
+            <MudTd>
+                <MudChip T="string" Color="@GetStatusColor(context.Status)"
+                         Variant="Variant.Filled"
+                         Size="Size.Small">
+                    @context.Status
+                </MudChip>
+            </MudTd>
+            <MudTd>@context.PaymentDate.ToString("dd/MM/yyyy")</MudTd>
+            <MudTd>
+                <MudButton Variant="Variant.Outlined"
+                           Size="Size.Small"
+                           OnClick="() => OpenDetail(context.PaymentId)">
+                    View
+                </MudButton>
+            </MudTd>
+        </RowTemplate>
+
+    </MudTable>
+
+</MudContainer>
+
+@code {
+
+    private MudTable<PaymentViewModel> table = default!;
+    private string searchText = "";
+    private DateTime? fromDate;
+    private DateTime? toDate;
+
+    private decimal totalRevenue;
+    private decimal userRevenue;
+    private decimal restaurantRevenue;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStats();
+    }
+
+    private async Task LoadStats()
+    {
+        string url = $"api/payments/admin/stats?from={fromDate:yyyy-MM-dd}&to={toDate:yyyy-MM-dd}";
+        var stats = await Api.GetFromJsonAsync<StatsResult>(url);
+
+        if (stats != null)
+        {
+            totalRevenue = stats.TotalRevenue;
+            userRevenue = stats.UserRevenue;
+            restaurantRevenue = stats.RestaurantRevenue;
+        }
+    }
+
+    private async Task ReloadTable()
+    {
+        await LoadStats();
+        await table.ReloadServerData();
+    }
+
+    private async Task ClearFilter()
+    {
+        fromDate = null;
+        toDate = null;
+        searchText = "";
+        await ReloadTable();
+    }
+
+    private async Task<TableData<PaymentViewModel>> LoadServerData(
+    TableState state,
+    CancellationToken token)
+    {
+        int page = state.Page + 1;
+        int pageSize = state.PageSize;
+
+        string url = $"api/payments/admin?page={page}&pageSize={pageSize}";
+
+        if (!string.IsNullOrWhiteSpace(searchText))
+            url += $"&search={searchText}";
+
+        if (fromDate.HasValue)
+            url += $"&from={fromDate.Value:yyyy-MM-dd}";
+
+        if (toDate.HasValue)
+            url += $"&to={toDate.Value:yyyy-MM-dd}";
+
+        var result = await Api.GetFromJsonAsync<PagedResult>(url);
+
+        return new TableData<PaymentViewModel>
+        {
+            TotalItems = result?.TotalRecords ?? 0,
+            Items = result?.Data ?? new List<PaymentViewModel>()
+        };
+    }
+
+
+
+    private async Task OpenDetail(int id)
+    {
+        var payment = await Api.GetFromJsonAsync<PaymentViewModel>(
+            $"api/payments/admin/{id}");
+
+        var parameters = new DialogParameters
+        {
+            { "Payment", payment }
+        };
+
+        await DialogService.ShowAsync<PaymentDetailDialog>(
+            "Payment Detail",
+            parameters);
+    }
+
+    private Color GetStatusColor(string status)
+    {
+        return status switch
+        {
+            "Success" => Color.Success,
+            "Pending" => Color.Warning,
+            "Failed" => Color.Error,
+            _ => Color.Default
+        };
+    }
+
+    public class PaymentViewModel
+    {
+        public int PaymentId { get; set; }
+        public string UserName { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string PaymentType { get; set; } = "";
+        public decimal Amount { get; set; }
+        public string Status { get; set; } = "";
+        public DateTime PaymentDate { get; set; }
+        public string? PaymentMethod { get; set; }
+        public string? TransactionId { get; set; }
+        public DateTime? ExpireDate { get; set; }
+    
+    }
+
+    public class PagedResult
+    {
+        public int TotalRecords { get; set; }
+        public List<PaymentViewModel> Data { get; set; } = new();
+    }
+
+    public class StatsResult
+    {
+        public int TotalSuccess { get; set; }
+        public decimal UserRevenue { get; set; }
+        public decimal RestaurantRevenue { get; set; }
+        public decimal TotalRevenue { get; set; }
+    }
+}

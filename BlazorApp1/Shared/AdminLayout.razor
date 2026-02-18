@@ -37,9 +37,11 @@
     <MudDrawer @bind-Open="_drawerOpen" Elevation="1">
         <MudNavMenu>
 
-            <MudNavLink Href="/" Icon="@Icons.Material.Filled.Dashboard">
+            <MudNavLink Href="/admin/dashboard"
+                        Icon="@Icons.Material.Filled.Dashboard">
                 Dashboard
             </MudNavLink>
+
 
             <MudNavLink Href="/profile" Icon="@Icons.Material.Filled.Person">
                 Profile
@@ -53,6 +55,10 @@
 
                 <MudNavLink Href="/restaurant " Icon="@Icons.Material.Filled.Group">
                     Manage Users
+                </MudNavLink>
+
+                <MudNavLink Href="/admin/payments " Icon="@Icons.Material.Filled.Group">
+                    Manage transaction 
                 </MudNavLink>
 
                 <MudNavLink Href="/admin-settings" Icon="@Icons.Material.Filled.Settings">

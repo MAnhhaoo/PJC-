@@ -1,0 +1,39 @@
+﻿.dashboard-bg {
+    background: #f4f6fb;
+    min-height: 100vh;
+    padding: 30px;
+}
+
+.stat-card {
+    border-radius: 20px;
+    padding: 25px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    transition: 0.3s ease-in-out;
+}
+
+    .stat-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    }
+
+.gradient-green {
+    background: linear-gradient(135deg, #00c6ff, #0072ff);
+}
+
+.gradient-purple {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.gradient-orange {
+    background: linear-gradient(135deg, #f7971e, #ffd200);
+}
+
+.stat-icon {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 50px;
+    opacity: 0.2;
+}

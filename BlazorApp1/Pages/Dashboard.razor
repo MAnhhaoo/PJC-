@@ -1,0 +1,198 @@
+﻿@page "/admin/dashboard"
+@inject ApiService api
+@using MudBlazor
+@using System.Globalization
+@using System.Net.Http.Json
+
+<MudContainer MaxWidth="MaxWidth.False"
+              Class="pa-6"
+              Style="margin-top:30px; background:#f4f6fb; min-height:100vh;">
+
+    <!-- HEADER -->
+    <MudText Typo="Typo.h4" Class="mb-6 fw-bold">
+        📊 Admin Revenue Dashboard
+    </MudText>
+
+    <!-- ================= SUMMARY CARDS ================= -->
+
+    <MudGrid Class="mb-6">
+
+        <MudItem xs="12" md="4">
+            <MudPaper Class="pa-6" Elevation="4" Style="border-radius:20px;">
+                <MudStack>
+                    <MudText Typo="Typo.subtitle2">Total Revenue</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Success">
+                        @_totalRevenue.ToString("N0") đ
+                    </MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="4">
+            <MudPaper Class="pa-6" Elevation="4" Style="border-radius:20px;">
+                <MudStack>
+                    <MudText Typo="Typo.subtitle2">User Revenue</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Primary">
+                        @_userRevenue.ToString("N0") đ
+                    </MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="4">
+            <MudPaper Class="pa-6" Elevation="4" Style="border-radius:20px;">
+                <MudStack>
+                    <MudText Typo="Typo.subtitle2">Restaurant Revenue</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Warning">
+                        @_restaurantRevenue.ToString("N0") đ
+                    </MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+    </MudGrid>
+
+    <!-- ================= REVENUE RATIO ================= -->
+
+    <MudPaper Class="pa-6 mb-6" Elevation="4" Style="border-radius:20px;">
+        <MudText Typo="Typo.h6" Class="mb-4">
+            📊 Revenue Distribution
+        </MudText>
+
+        <MudText>User (@_userPercent %)</MudText>
+        <MudProgressLinear Value="@(Convert.ToDouble(_userPercent))"
+                           Color="Color.Primary"
+                           Rounded="true"
+                           Class="mb-4" />
+
+        <MudText>Restaurant (@_restaurantPercent %)</MudText>
+        <MudProgressLinear Value="@(Convert.ToDouble(_restaurantPercent))"
+                           Color="Color.Warning"
+                           Rounded="true" />
+    </MudPaper>
+
+    <!-- ================= LAST 6 MONTHS TIMELINE ================= -->
+
+    <MudPaper Class="pa-6 mb-6" Elevation="4" Style="border-radius:20px;">
+        <MudText Typo="Typo.h6" Class="mb-4">
+            📅 Revenue - Last 6 Months
+        </MudText>
+
+        @if (_monthlyData.Any())
+        {
+            <MudStack Spacing="3">
+                @foreach (var item in _monthlyData)
+                {
+                    <MudPaper Class="pa-4 d-flex justify-space-between align-center"
+                              Style="border-radius:14px; background:white;">
+
+                        <MudText>
+                            @CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(item.Month) @item.Year
+                        </MudText>
+
+                        <MudChip T="string" Color="Color.Success" Variant="Variant.Filled">
+
+                            @item.Total.ToString("N0") đ
+                        </MudChip>
+                    </MudPaper>
+                }
+            </MudStack>
+        }
+        else
+        {
+            <MudText>Không có dữ liệu</MudText>
+        }
+    </MudPaper>
+
+    <!-- ================= DETAIL TABLE ================= -->
+
+    <MudPaper Class="pa-6" Elevation="4" Style="border-radius:20px;">
+        <MudText Typo="Typo.h6" Class="mb-4">
+            📋 Revenue Details
+        </MudText>
+
+        <MudTable Items="@_monthlyData"
+                  Dense="true"
+                  Hover="true"
+                  Bordered="true">
+
+            <HeaderContent>
+                <MudTh>Month</MudTh>
+                <MudTh>Total Revenue</MudTh>
+            </HeaderContent>
+
+            <RowTemplate Context="item">
+                <MudTd>
+                    @CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(item.Month) @item.Year
+                </MudTd>
+
+                <MudTd>
+                    <b>@item.Total.ToString("N0") đ</b>
+                </MudTd>
+            </RowTemplate>
+
+        </MudTable>
+    </MudPaper>
+
+</MudContainer>
+
+@code {
+
+    decimal _totalRevenue;
+    decimal _userRevenue;
+    decimal _restaurantRevenue;
+
+    decimal _userPercent;
+    decimal _restaurantPercent;
+
+    List<MonthlyRevenueModel> _monthlyData = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStats();
+        await LoadMonthlyRevenue();
+    }
+
+    async Task LoadStats()
+    {
+        var stats = await api.GetFromJsonAsync<StatsModel>(
+    "api/payments/admin/stats");
+
+
+        if (stats == null) return;
+
+        _totalRevenue = stats.TotalRevenue;
+        _userRevenue = stats.UserRevenue;
+        _restaurantRevenue = stats.RestaurantRevenue;
+
+        if (_totalRevenue > 0)
+        {
+            _userPercent = Math.Round((_userRevenue / _totalRevenue) * 100, 1);
+            _restaurantPercent = Math.Round((_restaurantRevenue / _totalRevenue) * 100, 1);
+        }
+    }
+
+    async Task LoadMonthlyRevenue()
+    {
+        var data = await api.GetFromJsonAsync<List<MonthlyRevenueModel>>(
+    "api/payments/admin/monthly-revenue");
+
+
+        if (data != null)
+            _monthlyData = data;
+    }
+
+    public class StatsModel
+    {
+        public decimal UserRevenue { get; set; }
+        public decimal RestaurantRevenue { get; set; }
+        public decimal TotalRevenue { get; set; }
+    }
+
+    public class MonthlyRevenueModel
+    {
+        public int Year { get; set; }
+        public int Month { get; set; }
+        public decimal Total { get; set; }
+    }
+}
