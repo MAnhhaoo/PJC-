@@ -37,8 +37,16 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW4ucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/vscode/WebApplication2/BlazorApp1/Pages/AdminPayments.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5QYXltZW50cy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/vscode/WebApplication2/BlazorApp1/Pages/Counter.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQ291bnRlci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/vscode/WebApplication2/BlazorApp1/Pages/Dashboard.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRGFzaGJvYXJkLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
 [D:/vscode/WebApplication2/BlazorApp1/Pages/Home.razor]
@@ -51,6 +59,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [D:/vscode/WebApplication2/BlazorApp1/Pages/Login.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcTG9naW4ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/vscode/WebApplication2/BlazorApp1/Pages/PaymentDetailDialog.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUGF5bWVudERldGFpbERpYWxvZy5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
 [D:/vscode/WebApplication2/BlazorApp1/Pages/Users.razor]

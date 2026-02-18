@@ -1056,6 +1056,6 @@ D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\BlazorApp1.dll
 D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\refint\BlazorApp1.dll
 D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\BlazorApp1.pdb
 D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\ref\BlazorApp1.dll
-D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\mpnezo3ggr-{0}-l3dzaccyo8-l3dzaccyo8.gz
-D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\kyjy2iuvp1-{0}-txd8zn74un-txd8zn74un.gz
-D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\5jzqasczcu-{0}-eg8uk4700q-eg8uk4700q.gz
+D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\mpnezo3ggr-{0}-oth3808sd9-oth3808sd9.gz
+D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\kyjy2iuvp1-{0}-omt3ks7051-omt3ks7051.gz
+D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\5jzqasczcu-{0}-oiuvkzeswq-oiuvkzeswq.gz

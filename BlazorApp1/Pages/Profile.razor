@@ -1,53 +1,60 @@
 ﻿@page "/profile"
 @inject ApiService api
 
-<div class="profile-container">
-    <div class="profile-card">
-        <img src="images/avatar-default.png" class="avatar" />
+@if (model == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="profile-container">
+        <div class="profile-card">
+            <img src="images/avatar-default.png" class="avatar" />
 
-        <h3>@model.FullName</h3>
-        <p class="role">@model.Role</p>
+            <h3>@model.FullName</h3>
+            <p class="role">@model.Role</p>
 
-        <div class="form-group">
-            <label>Email</label>
-            <input disabled value="@model.Email" />
-        </div>
-
-        <div class="form-group">
-            <label>Họ tên</label>
-            <input @bind="model.FullName" />
-        </div>
-
-        <div class="form-group">
-            <label>Số điện thoại</label>
-            <input @bind="model.Phone" />
-        </div>
-
-        <div class="form-group">
-            <label>Địa chỉ</label>
-            <input @bind="model.Address" />
-        </div>
-
-        @if (model.Role == "Admin")
-        {
-            <div class="form-group admin">
-                <label>User Level</label>
-                <select @bind="model.UserLevel">
-                    <option value="0">Thường</option>
-                    <option value="1">VIP</option>
-                </select>
+            <div class="form-group">
+                <label>Email</label>
+                <input disabled value="@model.Email" />
             </div>
-        }
 
-        <button @onclick="UpdateProfile">Cập nhật</button>
+            <div class="form-group">
+                <label>Họ tên</label>
+                <input @bind="model.FullName" />
+            </div>
 
-        <p class="msg">@message</p>
+            <div class="form-group">
+                <label>Số điện thoại</label>
+                <input @bind="model.Phone" />
+            </div>
+
+            <div class="form-group">
+                <label>Địa chỉ</label>
+                <input @bind="model.Address" />
+            </div>
+
+            @if (model.Role == "Admin")
+            {
+                <div class="form-group admin">
+                    <label>User Level</label>
+                    <select @bind="model.UserLevel">
+                        <option value="0">Thường</option>
+                        <option value="1">VIP</option>
+                    </select>
+                </div>
+            }
+
+            <button @onclick="UpdateProfile">Cập nhật</button>
+
+            <p class="msg">@message</p>
+        </div>
     </div>
-</div>
+}
 
 @code {
-    ProfileModel model = new();
-    string message;
+    ProfileModel? model;
+    string message = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -56,17 +63,19 @@
 
     async Task UpdateProfile()
     {
+        if (model == null) return;
+
         var res = await api.PutAsync("api/users/me", model);
         message = res.IsSuccessStatusCode ? "Đã cập nhật" : "Lỗi cập nhật";
     }
 
     class ProfileModel
     {
-        public string Email { get; set; }
-        public string FullName { get; set; }
-        public string Phone { get; set; }
-        public string Address { get; set; }
-        public string Role { get; set; }
+        public string Email { get; set; } = "";
+        public string FullName { get; set; } = "";
+        public string Phone { get; set; } = "";
+        public string Address { get; set; } = "";
+        public string Role { get; set; } = "";
         public int UserLevel { get; set; }
     }
 }
