@@ -287,7 +287,8 @@ public class UsersController : ControllerBase
             user.Phone,
             user.Address,
             user.Role,
-            user.UserLevel
+            user.UserLevel,
+            user.Avatar   // 🔥 thêm dòng này
         });
     }
 
@@ -311,6 +312,7 @@ public class UsersController : ControllerBase
         user.FullName = dto.FullName;
         user.Phone = dto.Phone;
         user.Address = dto.Address;
+        user.Avatar = dto.Avatar;
 
         // 🔐 chỉ admin mới sửa được UserLevel
         if (role == "Admin" && dto.UserLevel.HasValue)
@@ -326,6 +328,7 @@ public class UsersController : ControllerBase
             user.FullName,
             user.Phone,
             user.Address,
+            user.Avatar,
             user.UserLevel
         });
     }
@@ -408,6 +411,57 @@ public class UsersController : ControllerBase
     }
 
 
+    // APP
+
+    // POST: api/users/app-login
+    [HttpPost("app-login")]
+    public IActionResult AppLogin([FromBody] LoginRequest request)
+    {
+        var user = _context.Users.FirstOrDefault(u =>
+            u.Email == request.Email &&
+            u.PasswordHash == request.PasswordHash
+        );
+
+        if (user == null)
+            return Unauthorized("Sai email hoặc mật khẩu");
+
+        // ❌ Không cho admin login app
+        if (user.Role == "Admin")
+            return Unauthorized("Admin đăng nhập ở hệ thống web");
+
+        // ❌ Không cho tài khoản bị khóa
+        if (user.Status != "Active")
+            return Unauthorized("Tài khoản đã bị khóa");
+
+        var claims = new[]
+        {
+        new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+        new Claim(ClaimTypes.Email, user.Email),
+        new Claim(ClaimTypes.Role, user.Role)
+    };
+
+        var key = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(_config["Jwt:Key"])
+        );
+
+        var token = new JwtSecurityToken(
+            issuer: _config["Jwt:Issuer"],
+            audience: _config["Jwt:Audience"],
+            claims: claims,
+            expires: DateTime.Now.AddHours(1),
+            signingCredentials: new SigningCredentials(
+                key,
+                SecurityAlgorithms.HmacSha256
+            )
+        );
+
+        return Ok(new LoginResponse
+        {
+            Token = new JwtSecurityTokenHandler().WriteToken(token),
+            Role = user.Role,
+            FullName = user.FullName
+        });
+    }
 
 
 

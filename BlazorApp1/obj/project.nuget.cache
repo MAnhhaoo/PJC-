@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "dV2u0SD83mI=",
+  "dgSpecHash": "Gucorif3g+k=",
   "success": true,
   "projectFilePath": "D:\\vscode\\WebApplication2\\BlazorApp1\\BlazorApp1.csproj",
   "expectedPackageFiles": [
@@ -31,11 +31,11 @@
     "C:\\Users\\PC\\.nuget\\packages\\microsoft.extensions.primitives\\8.0.0\\microsoft.extensions.primitives.8.0.0.nupkg.sha512",
     "C:\\Users\\PC\\.nuget\\packages\\microsoft.jsinterop\\8.0.23\\microsoft.jsinterop.8.0.23.nupkg.sha512",
     "C:\\Users\\PC\\.nuget\\packages\\microsoft.jsinterop.webassembly\\8.0.23\\microsoft.jsinterop.webassembly.8.0.23.nupkg.sha512",
-    "C:\\Users\\PC\\.nuget\\packages\\microsoft.net.illink.tasks\\8.0.23\\microsoft.net.illink.tasks.8.0.23.nupkg.sha512",
-    "C:\\Users\\PC\\.nuget\\packages\\microsoft.net.sdk.webassembly.pack\\10.0.2\\microsoft.net.sdk.webassembly.pack.10.0.2.nupkg.sha512",
+    "C:\\Users\\PC\\.nuget\\packages\\microsoft.net.illink.tasks\\8.0.24\\microsoft.net.illink.tasks.8.0.24.nupkg.sha512",
+    "C:\\Users\\PC\\.nuget\\packages\\microsoft.net.sdk.webassembly.pack\\10.0.3\\microsoft.net.sdk.webassembly.pack.10.0.3.nupkg.sha512",
     "C:\\Users\\PC\\.nuget\\packages\\mudblazor\\8.15.0\\mudblazor.8.15.0.nupkg.sha512",
     "C:\\Users\\PC\\.nuget\\packages\\system.io.pipelines\\8.0.0\\system.io.pipelines.8.0.0.nupkg.sha512",
-    "C:\\Users\\PC\\.nuget\\packages\\microsoft.netcore.app.runtime.mono.browser-wasm\\8.0.23\\microsoft.netcore.app.runtime.mono.browser-wasm.8.0.23.nupkg.sha512"
+    "C:\\Users\\PC\\.nuget\\packages\\microsoft.netcore.app.runtime.mono.browser-wasm\\8.0.24\\microsoft.netcore.app.runtime.mono.browser-wasm.8.0.24.nupkg.sha512"
   ],
   "logs": []
 }

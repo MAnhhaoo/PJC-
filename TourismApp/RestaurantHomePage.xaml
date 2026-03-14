@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="TourismApp.RestaurantHomePage"
+             Title="Đăng ký kinh doanh">
+
+    <VerticalStackLayout Padding="30" Spacing="15">
+
+        <Label Text="ĐĂNG KÝ KINH DOANH"
+               FontSize="24"
+               HorizontalOptions="Center"/>
+
+        <Entry Placeholder="Tên nhà hàng"/>
+        <Entry Placeholder="Địa chỉ"/>
+        <Entry Placeholder="Số điện thoại"/>
+
+        <Button Text="Gửi đăng ký"/>
+
+    </VerticalStackLayout>
+
+</ContentPage>

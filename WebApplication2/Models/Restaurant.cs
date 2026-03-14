@@ -13,12 +13,19 @@ public class Restaurant
     public double Longitude { get; set; }
     public string Description { get; set; }
 
+    // iamge of restaurant 
+    public string? Image { get; set; }
+
     [ForeignKey("Owner")]
     public int OwnerId { get; set; }
     public User Owner { get; set; }
 
     public bool IsApproved { get; set; }
     public DateTime CreatedAt { get; set; }
+
+    // ===== ⭐ THÊM PHẦN PREMIUM =====
+    public bool IsPremium { get; set; } = false;
+    public DateTime? PremiumExpireDate { get; set; }
 
     // Navigation
     public ICollection<Dish> Dishes { get; set; }

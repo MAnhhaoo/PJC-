@@ -15,6 +15,9 @@ namespace WebApplication2.Models
 
         public string FullName { get; set; }
 
+        // avatar 
+        public string? Avatar { get; set; }
+
         public string? Phone { get; set; }     // thêm
         public string? Address { get; set; }
 
