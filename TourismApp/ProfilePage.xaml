@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="TourismApp.ProfilePage"
+    Title="Hồ sơ"
+    BackgroundColor="#F8F8F8">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="15">
+
+            <!-- Avatar -->
+            <Frame HeightRequest="120"
+                   WidthRequest="120"
+                   CornerRadius="60"
+                   HorizontalOptions="Center"
+                   BackgroundColor="White">
+
+                <Image x:Name="imgAvatar"
+                       Source="user_default.png"
+                       Aspect="AspectFill"/>
+            </Frame>
+
+            <Label Text="Email" FontAttributes="Bold"/>
+            <Label x:Name="lblEmail"/>
+
+            <Label Text="Họ tên" FontAttributes="Bold"/>
+            <Label x:Name="lblFullName"/>
+
+            <Label Text="SĐT" FontAttributes="Bold"/>
+            <Label x:Name="lblPhone"/>
+
+            <Label Text="Địa chỉ" FontAttributes="Bold"/>
+            <Label x:Name="lblAddress"/>
+
+            <Button Text="Chỉnh sửa hồ sơ"
+                    Clicked="OnEditClicked"
+                    BackgroundColor="Orange"
+                    TextColor="White"/>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

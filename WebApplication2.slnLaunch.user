@@ -3,7 +3,7 @@
     "Name": "New Profile",
     "Projects": [
       {
-        "Path": "BlazorApp1\\BlazorApp1.csproj",
+        "Path": "TourismApp\\TourismApp.csproj",
         "Action": "Start"
       },
       {

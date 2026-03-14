@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="TourismApp.RegisterPage"
+    Title="Đăng ký">
+
+	<VerticalStackLayout Padding="30" Spacing="15">
+
+		<Label Text="ĐĂNG KÝ"
+               FontSize="28"
+               HorizontalOptions="Center"/>
+
+		<Entry Placeholder="Email"/>
+		<Entry Placeholder="Mật khẩu" IsPassword="True"/>
+
+		<Label Text="Chọn loại tài khoản:"/>
+
+		<RadioButton Content="Khách hàng"
+                     GroupName="role"
+                     Value="customer"
+                     IsChecked="True"/>
+
+		<RadioButton Content="Nhà hàng"
+                     GroupName="role"
+                     Value="restaurant"/>
+
+		<Button Text="Đăng ký"/>
+
+	</VerticalStackLayout>
+
+</ContentPage>

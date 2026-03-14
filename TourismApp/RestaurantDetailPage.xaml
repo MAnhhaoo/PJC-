@@ -1,0 +1,111 @@
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="TourismApp.RestaurantDetailPage"
+    Title="Chi tiết nhà hàng"
+    BackgroundColor="#F5F5F5">
+
+    <ScrollView>
+
+        <VerticalStackLayout Spacing="15">
+
+            <!-- Restaurant Image -->
+            <Image x:Name="RestaurantImage"
+                   HeightRequest="220"
+                   Aspect="AspectFill"/>
+
+            <VerticalStackLayout Padding="15" Spacing="8">
+
+                <!-- Name -->
+                <Label x:Name="RestaurantName"
+                       FontSize="24"
+                       FontAttributes="Bold"
+                       TextColor="Black"/>
+
+                <!-- Address -->
+                <Label x:Name="RestaurantAddress"
+                       FontSize="14"
+                       TextColor="Gray"/>
+
+                <!-- Distance -->
+                <Label x:Name="DistanceLabel"
+                       FontSize="14"
+                       TextColor="Orange"
+                       FontAttributes="Bold"/>
+
+                <!-- Description -->
+                <Label x:Name="RestaurantDescription"
+                       FontSize="14"
+                       TextColor="Black"/>
+
+                <!-- Map Button -->
+                <Button
+                    Text="📍 Xem trên Google Maps"
+                    BackgroundColor="Orange"
+                    TextColor="White"
+                    CornerRadius="10"
+                    Clicked="OnOpenMap"/>
+
+            </VerticalStackLayout>
+
+            <!-- Dish Title -->
+            <Label Text="Danh sách món ăn"
+                   FontSize="20"
+                   FontAttributes="Bold"
+                   Margin="15,0"/>
+
+            <!-- Dish List -->
+            <CollectionView x:Name="DishList">
+
+                <CollectionView.ItemTemplate>
+
+                    <DataTemplate>
+
+                        <Frame Margin="15,5"
+                               Padding="10"
+                               CornerRadius="12"
+                               BackgroundColor="White"
+                               HasShadow="True">
+
+                            <Grid ColumnDefinitions="100,*">
+
+                                <Image Source="{Binding Image}"
+                                       HeightRequest="90"
+                                       WidthRequest="90"
+                                       Aspect="AspectFill"/>
+
+                                <VerticalStackLayout
+                                    Grid.Column="1"
+                                    Padding="10"
+                                    Spacing="5">
+
+                                    <Label Text="{Binding Name}"
+                                           FontSize="16"
+                                           FontAttributes="Bold"/>
+
+                                    <Label Text="{Binding Description}"
+                                           FontSize="13"
+                                           TextColor="Gray"/>
+
+                                    <Label Text="{Binding Price, StringFormat='Giá: {0} đ'}"
+                                           FontSize="14"
+                                           TextColor="Orange"
+                                           FontAttributes="Bold"/>
+
+                                </VerticalStackLayout>
+
+                            </Grid>
+
+                        </Frame>
+
+                    </DataTemplate>
+
+                </CollectionView.ItemTemplate>
+
+            </CollectionView>
+
+        </VerticalStackLayout>
+
+    </ScrollView>
+
+</ContentPage>

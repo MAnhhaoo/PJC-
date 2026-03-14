@@ -98,7 +98,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 app.UseCors("AllowBlazor");
 
@@ -107,7 +107,8 @@ app.UseAuthorization();
 
 // 🔥 API PHẢI MAP TRƯỚC
 app.MapControllers();
-
+// Cho phép API chạy toàn mạng
+//app.Urls.Add("http://0.0.0.0:5000");
 // 🔥 BLazor fallback PHẢI SAU CÙNG
 //app.MapFallbackToFile("index.html");
 

@@ -214,26 +214,79 @@ public class PaymentsController : ControllerBase
     }
 
     [Authorize(Roles = "Admin")]
-[HttpGet("admin/monthly-revenue")]
-public IActionResult MonthlyRevenue()
-{
-    var sixMonthsAgo = DateTime.Now.AddMonths(-6);
+    [HttpGet("admin/monthly-revenue")]
+    public IActionResult MonthlyRevenue()
+    {
+        var today = DateTime.Today;
 
-    var data = _context.Payments
-        .Where(p => p.Status == "Success" && p.PaymentDate >= sixMonthsAgo)
-        .GroupBy(p => new { p.PaymentDate.Year, p.PaymentDate.Month })
-        .Select(g => new
+        // Lấy ngày đầu tiên của tháng hiện tại
+        var firstDayThisMonth = new DateTime(today.Year, today.Month, 1);
+
+        // Lùi 5 tháng để đủ 6 tháng gần nhất
+        var sixMonthsAgo = firstDayThisMonth.AddMonths(-5);
+
+        var data = _context.Payments
+            .Where(p => p.Status == "Success" && p.PaymentDate >= sixMonthsAgo)
+            .GroupBy(p => new { p.PaymentDate.Year, p.PaymentDate.Month })
+            .Select(g => new
+            {
+                Year = g.Key.Year,
+                Month = g.Key.Month,
+                Total = g.Sum(p => p.Amount)
+            })
+            .OrderBy(x => x.Year)
+            .ThenBy(x => x.Month)
+            .ToList();
+
+        return Ok(data);
+    }
+
+
+    [Authorize]
+    [HttpPost("confirm/{id}")]
+    public async Task<IActionResult> ConfirmPayment(int id)
+    {
+        var payment = await _context.Payments
+            .Include(p => p.Restaurant)
+            .Include(p => p.User)
+            .FirstOrDefaultAsync(p => p.PaymentId == id);
+
+        if (payment == null)
+            return NotFound("Payment not found");
+
+        if (payment.Status == "Success")
+            return BadRequest("Payment already confirmed");
+
+        // Cập nhật trạng thái
+        payment.Status = "Success";
+        payment.PaymentDate = DateTime.Now;
+
+        // ===== NÂNG CẤP USER VIP =====
+        if (payment.PaymentType == "UserUpgrade")
         {
-            Year = g.Key.Year,
-            Month = g.Key.Month,
-            Total = g.Sum(p => p.Amount)
-        })
-        .OrderBy(x => x.Year)
-        .ThenBy(x => x.Month)
-        .ToList();
+            payment.User.UserLevel = 1;
+        }
 
-    return Ok(data);
-}
+        // ===== NÂNG CẤP RESTAURANT PREMIUM =====
+        if (payment.PaymentType == "RestaurantPremium" && payment.Restaurant != null)
+        {
+            payment.Restaurant.IsPremium = true;
+
+            // Nếu có ExpireDate từ Payment thì dùng
+            if (payment.ExpireDate.HasValue)
+            {
+                payment.Restaurant.PremiumExpireDate = payment.ExpireDate;
+            }
+            else
+            {
+                payment.Restaurant.PremiumExpireDate = DateTime.Now.AddMonths(1);
+            }
+        }
+
+        await _context.SaveChangesAsync();
+
+        return Ok("Payment confirmed successfully");
+    }
 
 
 
