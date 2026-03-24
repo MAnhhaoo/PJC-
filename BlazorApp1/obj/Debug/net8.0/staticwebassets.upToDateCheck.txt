@@ -1,9 +1,0 @@
-wwwroot\css\admin-dashboard.css
-wwwroot\css\app.css
-wwwroot\css\bootstrap\bootstrap.min.css
-wwwroot\css\bootstrap\bootstrap.min.css.map
-wwwroot\favicon.png
-wwwroot\icon-192.png
-wwwroot\image\login.webp
-wwwroot\index.html
-wwwroot\sample-data\weather.json

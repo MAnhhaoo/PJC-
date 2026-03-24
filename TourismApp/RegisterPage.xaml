@@ -5,28 +5,36 @@
     x:Class="TourismApp.RegisterPage"
     Title="Đăng ký">
 
-	<VerticalStackLayout Padding="30" Spacing="15">
+    <VerticalStackLayout Padding="30" Spacing="15">
 
-		<Label Text="ĐĂNG KÝ"
+        <Label Text="ĐĂNG KÝ"
                FontSize="28"
                HorizontalOptions="Center"/>
 
-		<Entry Placeholder="Email"/>
-		<Entry Placeholder="Mật khẩu" IsPassword="True"/>
+        <Entry x:Name="txtFullName"
+               Placeholder="Họ và tên"/>
 
-		<Label Text="Chọn loại tài khoản:"/>
+        <Entry x:Name="txtEmail"
+               Placeholder="Email"/>
 
-		<RadioButton Content="Khách hàng"
-                     GroupName="role"
-                     Value="customer"
-                     IsChecked="True"/>
+        <Entry x:Name="txtPassword"
+               Placeholder="Mật khẩu"
+               IsPassword="True"/>
 
-		<RadioButton Content="Nhà hàng"
-                     GroupName="role"
-                     Value="restaurant"/>
+        <!-- 🔥 chọn role -->
+        <Picker x:Name="rolePicker" Title="Chọn loại tài khoản">
+            <Picker.Items>
+                <x:String>User</x:String>
+                <x:String>Restaurant</x:String>
+            </Picker.Items>
+        </Picker>
 
-		<Button Text="Đăng ký"/>
+        <Button Text="Đăng ký"
+                Clicked="OnRegisterClicked"/>
 
-	</VerticalStackLayout>
+        <Button Text="Quay lại đăng nhập"
+                Clicked="OnBackToLogin"/>
+
+    </VerticalStackLayout>
 
 </ContentPage>

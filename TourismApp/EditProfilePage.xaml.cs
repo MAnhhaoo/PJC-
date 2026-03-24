@@ -13,7 +13,31 @@ public partial class EditProfilePage : ContentPage
         InitializeComponent();
         _userService = userService;
     }
+    private async void OnAvatarTapped(object sender, EventArgs e)
+    {
+        try
+        {
+            var result = await MediaPicker.Default.PickPhotoAsync();
+            if (result != null)
+            {
+                // 1. Hiển thị tạm thời lên UI
+                var localStream = await result.OpenReadAsync();
+                imgAvatar.Source = ImageSource.FromStream(() => localStream);
 
+                // 2. Upload lên Server
+                var newUrl = await _userService.UploadAvatarAsync(result);
+                if (!string.IsNullOrEmpty(newUrl))
+                {
+                    _user.Avatar = newUrl;
+                    await DisplayAlert("Thông báo", "Đã tải ảnh lên thành công", "OK");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Lỗi", "Không thể chọn ảnh: " + ex.Message, "OK");
+        }
+    }
     protected override async void OnAppearing()
     {
         base.OnAppearing();
@@ -76,11 +100,28 @@ public partial class EditProfilePage : ContentPage
         _user.Phone = txtPhone.Text;
         _user.Address = txtAddress.Text;
 
-        var success = await _userService.UpdateMeAsync(_user);
 
-        if (success)
-            await DisplayAlert("Thành công", "Đã cập nhật", "OK");
-        else
-            await DisplayAlert("Lỗi", "Không thể cập nhật", "OK");
+        try
+        {
+            var success = await _userService.UpdateMeAsync(_user);
+
+            if (success)
+            {
+                // Sử dụng Dispatcher để đảm bảo chạy trên luồng giao diện chính
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await DisplayAlert("Thành công", "Đã cập nhật hồ sơ", "OK");
+                    await Shell.Current.GoToAsync("//CustomerHomePage/ProfilePage");
+                });
+            }
+            else
+            {
+                await DisplayAlert("Lỗi", "Không thể cập nhật thông tin lên Server", "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Lỗi hệ thống", ex.Message, "OK");
+        }
     }
 }

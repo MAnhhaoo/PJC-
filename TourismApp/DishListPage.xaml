@@ -1,0 +1,36 @@
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="TourismApp.DishListPage"
+             Title="Danh sách món">
+
+    <VerticalStackLayout Padding="20">
+
+        <CollectionView x:Name="dishList">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Frame Margin="0,5" Padding="10">
+                        <VerticalStackLayout>
+
+                            <Label Text="{Binding Name}"
+                                   FontSize="18"
+                                   FontAttributes="Bold"/>
+
+                            <Image Source="{Binding ImageUrl}"
+                                   HeightRequest="120"
+                                   Aspect="AspectFill"/>
+
+                            <HorizontalStackLayout>
+                                <Label Text="Hoạt động"/>
+                                <Switch IsToggled="{Binding IsActive}"
+                                        Toggled="OnToggleActive"/>
+                            </HorizontalStackLayout>
+
+                        </VerticalStackLayout>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+    </VerticalStackLayout>
+
+</ContentPage>

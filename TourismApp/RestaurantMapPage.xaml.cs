@@ -2,16 +2,15 @@ using Microsoft.Maui.Controls.Maps;
 using Microsoft.Maui.Maps;
 using Microsoft.Maui.Devices.Sensors;
 using System.Text.Json;
-using TourismApp.Models;
 
 namespace TourismApp;
 
 public partial class RestaurantMapPage : ContentPage
 {
-    private readonly Restaurant _restaurant;
+    private readonly TourismApp.Models.Restaurant _restaurant;
     private Location _userLocation;
 
-    public RestaurantMapPage(Restaurant restaurant)
+    public RestaurantMapPage(TourismApp.Models.Restaurant restaurant)
     {
         InitializeComponent();
         _restaurant = restaurant;
@@ -43,7 +42,7 @@ public partial class RestaurantMapPage : ContentPage
             RestaurantMap.Pins.Clear();
             RestaurantMap.MapElements.Clear();
 
-            // PIN USER
+            // USER
             RestaurantMap.Pins.Add(new Pin
             {
                 Label = "Bạn đang ở đây",
@@ -51,7 +50,7 @@ public partial class RestaurantMapPage : ContentPage
                 Type = PinType.Generic
             });
 
-            // PIN RESTAURANT
+            // RESTAURANT
             RestaurantMap.Pins.Add(new Pin
             {
                 Label = _restaurant.Name,
@@ -80,10 +79,10 @@ public partial class RestaurantMapPage : ContentPage
             RestaurantMap.MapElements.Add(polyline);
 
             RestaurantMap.MoveToRegion(
-     MapSpan.FromCenterAndRadius(
-         route[route.Count / 2],
-         Distance.FromKilometers(2)
-     ));
+                MapSpan.FromCenterAndRadius(
+                    route[route.Count / 2],
+                    Distance.FromKilometers(2)
+                ));
         }
         catch (Exception ex)
         {
@@ -99,7 +98,6 @@ public partial class RestaurantMapPage : ContentPage
             $"https://api.openrouteservice.org/v2/directions/driving-car?start={start.Longitude},{start.Latitude}&end={end.Longitude},{end.Latitude}";
 
         using var http = new HttpClient();
-
         http.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", apiKey);
 
         var response = await http.GetAsync(url);
@@ -108,7 +106,6 @@ public partial class RestaurantMapPage : ContentPage
             return new List<Location>();
 
         var json = await response.Content.ReadAsStringAsync();
-
         var data = JsonDocument.Parse(json);
 
         if (!data.RootElement.TryGetProperty("features", out var features))

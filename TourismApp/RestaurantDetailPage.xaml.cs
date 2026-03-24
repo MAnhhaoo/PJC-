@@ -1,5 +1,4 @@
 using TourismApp.Services;
-using TourismApp.Models;
 using Microsoft.Maui.Devices.Sensors;
 
 namespace TourismApp;
@@ -12,17 +11,14 @@ public partial class RestaurantDetailPage : ContentPage
     private readonly RestaurantService _restaurantService;
 
     private int _restaurantId;
-    private Restaurant _restaurant;
 
-    // lưu vị trí user
+    private TourismApp.Models.Restaurant _restaurant;
+
     private Location _userLocation;
 
     public string RestaurantId
     {
-        set
-        {
-            _restaurantId = int.Parse(value);
-        }
+        set => _restaurantId = int.Parse(value);
     }
 
     public RestaurantDetailPage(
@@ -41,19 +37,19 @@ public partial class RestaurantDetailPage : ContentPage
 
         try
         {
-            // lấy thông tin restaurant
             _restaurant = await _restaurantService.GetRestaurantByIdAsync(_restaurantId);
+
+            if (_restaurant == null)
+                return;
 
             RestaurantName.Text = _restaurant.Name;
             RestaurantAddress.Text = _restaurant.Address;
             RestaurantDescription.Text = _restaurant.Description;
             RestaurantImage.Source = _restaurant.Image;
 
-            // lấy danh sách món
             var dishes = await _dishService.GetDishesByRestaurantAsync(_restaurantId);
             DishList.ItemsSource = dishes;
 
-            // lấy vị trí user + tính khoảng cách
             await LoadUserLocationAndDistance();
         }
         catch (Exception ex)

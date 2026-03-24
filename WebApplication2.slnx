@@ -1,5 +1,10 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".gitignore" />
+  </Folder>
   <Project Path="BlazorApp1/BlazorApp1.csproj" Id="8957e30c-8b24-4f9a-92d5-415df5e7c0b3" />
-  <Project Path="TourismApp/TourismApp.csproj" Id="0fbce484-f6ae-4ccc-9bb6-23a2dc103da3" />
+  <Project Path="TourismApp/TourismApp.csproj" Id="0fbce484-f6ae-4ccc-9bb6-23a2dc103da3">
+    <Deploy Solution="Debug|*" />
+  </Project>
   <Project Path="WebApplication2/WebApplication2.csproj" />
 </Solution>

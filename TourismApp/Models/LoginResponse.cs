@@ -8,5 +8,7 @@ namespace TourismApp.Models
         public string FullName { get; set; }
         public string Token { get; set; }
         public string Role { get; set; }
+
+        public bool HasRestaurant { get; set; }
     }
 }

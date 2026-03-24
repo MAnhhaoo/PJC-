@@ -1,80 +1,84 @@
-﻿using System;
-using System.Net.Http;
-using System.Net.Http.Json;
-using Microsoft.Maui.Storage;
+﻿using System.Net.Http.Json;
 using TourismApp.Models;
+using TourismApp.Services;
 
 namespace TourismApp;
 
 public partial class LoginPage : ContentPage
 {
     private readonly HttpClient _httpClient;
+    private readonly AuthService _authService;
 
-    public LoginPage(HttpClient httpClient)
+    public LoginPage(HttpClient httpClient, AuthService authService)
     {
         InitializeComponent();
         _httpClient = httpClient;
+        _authService = authService;
     }
 
+    private async void OnGoToRegister(object sender, EventArgs e)
+    {
+        await Shell.Current.GoToAsync(nameof(RegisterPage));
+    }
+
+    // 1. Chỉ giữ lại DUY NHẤT một hàm này
     private async void OnLoginClicked(object sender, EventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(txtEmail.Text) ||
-            string.IsNullOrWhiteSpace(txtPassword.Text))
+        if (string.IsNullOrWhiteSpace(txtEmail.Text) || string.IsNullOrWhiteSpace(txtPassword.Text))
         {
-            await DisplayAlert("Lỗi", "Vui lòng nhập đầy đủ thông tin", "OK");
+            await DisplayAlert("Lỗi", "Vui lòng nhập đầy đủ email và mật khẩu", "OK");
             return;
         }
 
+        // Hiện màn hình chờ và khóa nút bấm
+        loadingOverlay.IsVisible = true;
+        btnLogin.IsEnabled = false;
+
         try
         {
-            var loginData = new
-            {
-                Email = txtEmail.Text.Trim(),
-                PasswordHash = txtPassword.Text.Trim()
-            };
-
-            var response = await _httpClient.PostAsJsonAsync(
-                "api/users/app-login",
-                loginData);
+            var loginData = new { Email = txtEmail.Text.Trim(), PasswordHash = txtPassword.Text.Trim() };
+            var response = await _httpClient.PostAsJsonAsync("api/users/app-login", loginData);
 
             if (!response.IsSuccessStatusCode)
             {
-                var error = await response.Content.ReadAsStringAsync();
-                await DisplayAlert("Đăng nhập thất bại", error, "OK");
+                await DisplayAlert("Lỗi", "Tài khoản hoặc mật khẩu không đúng", "Thử lại");
                 return;
             }
 
             var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
 
-            if (result == null || string.IsNullOrEmpty(result.Token))
+            // Lưu token đăng nhập
+            await _authService.SaveTokenAsync(result.Token);
+            if (Shell.Current is AppShell appShell)
             {
-                await DisplayAlert("Lỗi", "Không nhận được token", "OK");
-                return;
+                appShell.UpdateMenu(result.Role);
             }
 
-            // 🔐 Lưu JWT
-            await SecureStorage.SetAsync("auth_token", result.Token);
-            await SecureStorage.SetAsync("user_role", result.Role);
-
-            await DisplayAlert("Thành công", $"Xin chào {result.FullName}", "OK");
-
-            // 🔁 Điều hướng theo Role
+            // Điều hướng sang trang chủ (Reset luồng để hiện Flyout Menu)
             if (result.Role == "Restaurant")
             {
-                await Shell.Current.GoToAsync(nameof(RestaurantHomePage));
+                if (result.HasRestaurant)
+                    await Shell.Current.GoToAsync("//RestaurantManagerPage");
+                else
+                    await Shell.Current.GoToAsync("//RegisterRestaurantPage");
             }
             else
             {
-                await Shell.Current.GoToAsync(nameof(CustomerHomePage));
+                await Shell.Current.GoToAsync("//CustomerHomePage");
             }
-        }
-        catch (HttpRequestException)
-        {
-            await DisplayAlert("Lỗi", "Không kết nối được tới server", "OK");
         }
         catch (Exception ex)
         {
-            await DisplayAlert("Lỗi", ex.Message, "OK");
+            await DisplayAlert("Lỗi kết nối", "Không thể kết nối đến máy chủ", "Đóng");
         }
-    }
-}
+        finally
+        {
+            // Tắt màn hình chờ sau khi hoàn tất
+            loadingOverlay.IsVisible = false;
+            btnLogin.IsEnabled = true;
+        }
+    } // Đóng hàm OnLoginClicked
+
+} // Đóng class LoginPage (Hãy chắc chắn có dấu này ở cuối file)
+
+   

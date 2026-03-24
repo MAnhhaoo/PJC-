@@ -20,6 +20,9 @@ namespace TourismApp.Models
         public string Image { get; set; }
 
         public bool IsPremium { get; set; }
+        public bool IsActive { get; set; } = true;
+
+        public int PremiumLevel { get; set; } = 0;
 
         public bool IsApproved { get; set; }
 
@@ -27,7 +30,8 @@ namespace TourismApp.Models
 
         public DateTime? PremiumExpireDate { get; set; }
 
-
+        // Thêm dòng này vào class Restaurant của App Mobile
+        public List<Narration> Narrations { get; set; } = new List<Narration>();
 
         public double Distance { get; set; }
 

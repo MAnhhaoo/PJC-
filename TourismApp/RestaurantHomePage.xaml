@@ -2,21 +2,28 @@
 <ContentPage
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="TourismApp.RestaurantHomePage"
-             Title="Đăng ký kinh doanh">
+    x:Class="TourismApp.RestaurantHomePage"
+    Title="Đăng ký kinh doanh">
 
-    <VerticalStackLayout Padding="30" Spacing="15">
+    <ScrollView>
+        <VerticalStackLayout Padding="30" Spacing="15">
 
-        <Label Text="ĐĂNG KÝ KINH DOANH"
-               FontSize="24"
-               HorizontalOptions="Center"/>
+            <Label Text="ĐĂNG KÝ KINH DOANH"
+                   FontSize="24"
+                   HorizontalOptions="Center"/>
 
-        <Entry Placeholder="Tên nhà hàng"/>
-        <Entry Placeholder="Địa chỉ"/>
-        <Entry Placeholder="Số điện thoại"/>
+            <Entry x:Name="txtName" Placeholder="Tên nhà hàng"/>
+            <Entry x:Name="txtAddress" Placeholder="Địa chỉ"/>
+            <Entry x:Name="txtPhone" Placeholder="Số điện thoại"/>
 
-        <Button Text="Gửi đăng ký"/>
+            <!-- ✅ THÊM MỚI -->
+            <Entry x:Name="txtDescription" Placeholder="Mô tả"/>
+            <Entry x:Name="txtImage" Placeholder="Link hình ảnh"/>
 
-    </VerticalStackLayout>
+            <Button Text="Gửi đăng ký"
+                    Clicked="OnSubmit"/>
+
+        </VerticalStackLayout>
+    </ScrollView>
 
 </ContentPage>

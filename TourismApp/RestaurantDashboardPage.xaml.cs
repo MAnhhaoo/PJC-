@@ -21,6 +21,13 @@ public partial class RestaurantDashboardPage : ContentPage
         base.OnAppearing();
 
         var data = await _restaurantService.GetMyRestaurantAsync();
+
+        if (data == null)
+        {
+            await DisplayAlert("Lỗi", "Bạn chưa đăng ký nhà hàng", "OK");
+            return;
+        }
+
         var dishes = await _dishService.GetDishesByRestaurantAsync(data.RestaurantId);
 
         BindingContext = new
@@ -29,8 +36,8 @@ public partial class RestaurantDashboardPage : ContentPage
             data.Name,
             data.Address,
             data.Description,
-            PremiumText = data.IsPremium
-                ? $"⭐ Premium until {data.PremiumExpireDate}"
+            PremiumText = data.IsPremium && data.PremiumExpireDate != null
+                ? $"⭐ Premium đến {data.PremiumExpireDate.Value.ToString("dd/MM/yyyy")}"
                 : "Normal Account",
             Dishes = dishes
         };

@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
-using TourismApp.Services;   // 👈 thêm dòng này
-
+using TourismApp.Services;   
+using Plugin.Maui.Audio;
 namespace TourismApp
 {
     public static class MauiProgram
@@ -12,6 +12,7 @@ namespace TourismApp
             builder
      .UseMauiApp<App>()
      .UseMauiMaps()
+
      .ConfigureFonts(fonts =>
      {
          fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -25,6 +26,11 @@ namespace TourismApp
                     BaseAddress = new Uri("http://10.0.2.2:5216/")
                 };
             });
+            builder.Services.AddSingleton(AudioManager.Current);
+
+            builder.Services.AddSingleton<AuthService>();
+
+
 
             // 👇👇👇 THÊM 2 DÒNG NÀY
             builder.Services.AddSingleton<RestaurantService>();
@@ -36,6 +42,18 @@ namespace TourismApp
             builder.Services.AddSingleton<DishService>();
             builder.Services.AddTransient<RestaurantDetailPage>();
             builder.Services.AddTransient<RestaurantMapPage>();
+            builder.Services.AddTransient<RegisterPage>();
+
+
+            builder.Services.AddTransient<RestaurantDashboardPage>();
+            builder.Services.AddTransient<AddDishPage>();
+            builder.Services.AddTransient<DishListPage>();
+            builder.Services.AddTransient<EditRestaurantPage>();
+            builder.Services.AddTransient<UpgradePremiumPage>();
+
+            builder.Services.AddTransient<MyAudiosPage>(); // Đăng ký trang Audio
+            builder.Services.AddTransient<UpgradePremiumPage>();
+
 
 
 #if DEBUG
