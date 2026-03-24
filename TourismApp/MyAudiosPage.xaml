@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="TourismApp.MyAudiosPage"
+             Title="Thuyết minh của tôi">
+
+    <Grid RowDefinitions="Auto, *">
+        <Label Grid.Row="0" 
+               Text="Danh sách các bản thuyết minh đã lưu" 
+               Margin="20" 
+               FontAttributes="Bold" 
+               FontSize="18"/>
+
+        <CollectionView Grid.Row="1" x:Name="listAudios" Margin="10">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Border Margin="5" Padding="15" Stroke="#2196F3" StrokeThickness="1">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="10"/>
+                        </Border.StrokeShape>
+
+                        <VerticalStackLayout Spacing="10">
+                            <Label Text="{Binding LanguageName}" 
+                                   FontAttributes="Bold" 
+                                   FontSize="16" 
+                                   TextColor="#2196F3"/>
+
+                            <Label Text="{Binding TextContent}" 
+                                   MaxLines="2" 
+                                   LineBreakMode="TailTruncation" 
+                                   FontSize="13" 
+                                   TextColor="Gray"/>
+
+                            <HorizontalStackLayout Spacing="15">
+                                <Button Text="▶ NGHE THỬ" 
+                                        Clicked="OnPlayClicked" 
+                                        CommandParameter="{Binding .}" 
+                                        BackgroundColor="#4CAF50" 
+                                        CornerRadius="8"
+                                        HeightRequest="40"/>
+
+                                <Button Text="🗑 XÓA" 
+                                        Clicked="OnDeleteClicked" 
+                                        CommandParameter="{Binding .}" 
+                                        BackgroundColor="#F44336" 
+                                        CornerRadius="8"
+                                        HeightRequest="40"/>
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+</ContentPage>

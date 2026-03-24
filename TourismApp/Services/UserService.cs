@@ -16,7 +16,6 @@ public class UserService
     private async Task AddJwt()
     {
         var token = await SecureStorage.GetAsync("auth_token");
-
         if (!string.IsNullOrEmpty(token))
         {
             _httpClient.DefaultRequestHeaders.Authorization =
@@ -26,23 +25,72 @@ public class UserService
 
     public async Task<User> GetMeAsync()
     {
-        await AddJwt();
-        return await _httpClient.GetFromJsonAsync<User>("api/users/me");
+        try
+        {
+            await AddJwt();
+            return await _httpClient.GetFromJsonAsync<User>("api/users/me");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"GetMe Error: {ex.Message}");
+            return null;
+        }
     }
 
+    // CHỈ GIỮ 1 HÀM UpdateMeAsync DUY NHẤT
     public async Task<bool> UpdateMeAsync(User user)
     {
-        await AddJwt();
+        try
+        {
+            await AddJwt();
 
-        var response = await _httpClient.PutAsJsonAsync(
-            "api/users/me",
-            new
+            // Khớp với UpdateProfileDto ở Backend (Lưu ý: Avatar cũng cần gửi lên nếu có)
+            var updateData = new
             {
-                user.FullName,
-                user.Phone,
-                user.Address
-            });
+                fullName = user.FullName,
+                phone = user.Phone,
+                address = user.Address,
+                avatar = user.Avatar,
+                userLevel = user.UserLevel
+            };
 
-        return response.IsSuccessStatusCode;
+            var response = await _httpClient.PutAsJsonAsync("api/users/me", updateData);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"UpdateMe Error: {ex.Message}");
+            return false;
+        }
     }
+
+    public async Task<string> UploadAvatarAsync(FileResult file)
+    {
+        try
+        {
+            await AddJwt();
+            var content = new MultipartFormDataContent();
+            var stream = await file.OpenReadAsync();
+
+            // "file" phải khớp với tham số IFormFile file trong Backend
+            var fileContent = new StreamContent(stream);
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
+            content.Add(fileContent, "file", file.FileName);
+
+            var response = await _httpClient.PostAsync("api/users/upload-avatar", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<UploadResult>();
+                return result?.Url;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"UploadAvatar Error: {ex.Message}");
+        }
+        return null;
+    }
+
+    public class UploadResult { public string Url { get; set; } }
 }

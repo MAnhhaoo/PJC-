@@ -15,8 +15,8 @@ public class Dish
     public string ImageUrl { get; set; }
     public bool IsActive { get; set; }
 
-    public ICollection<Narration> Narrations { get; set; }
+    public ICollection<Narration>? Narrations { get; set; }
 
     // ⭐ THÊM DÒNG NÀY
-    public ICollection<DishHistory> DishHistories { get; set; }
+    public ICollection<DishHistory>? DishHistories { get; set; }
 }

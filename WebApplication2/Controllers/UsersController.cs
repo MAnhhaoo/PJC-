@@ -209,6 +209,7 @@ using System.Security.Claims;
 using System.Text;
 using WebApplication2.Data;
 using WebApplication2.DTOs;
+using WebApplication2.Models;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -412,7 +413,6 @@ public class UsersController : ControllerBase
 
 
     // APP
-
     // POST: api/users/app-login
     [HttpPost("app-login")]
     public IActionResult AppLogin([FromBody] LoginRequest request)
@@ -433,6 +433,11 @@ public class UsersController : ControllerBase
         if (user.Status != "Active")
             return Unauthorized("Tài khoản đã bị khóa");
 
+        // 🔥 CHECK NHÀ HÀNG Ở ĐÂY
+        var restaurant = _context.Restaurants
+            .FirstOrDefault(r => r.OwnerId == user.UserId);
+
+        // 🔐 JWT
         var claims = new[]
         {
         new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
@@ -455,14 +460,130 @@ public class UsersController : ControllerBase
             )
         );
 
+        // 🔥 TRẢ THÊM hasRestaurant
         return Ok(new LoginResponse
         {
             Token = new JwtSecurityTokenHandler().WriteToken(token),
             Role = user.Role,
-            FullName = user.FullName
+            FullName = user.FullName,
+            HasRestaurant = restaurant != null // 🔥 QUAN TRỌNG
         });
     }
 
 
+    // POST: api/users/register
+    [HttpPost("register")]
+    public IActionResult Register([FromBody] RegisterRequest request)
+    {
+        var existingUser = _context.Users
+            .FirstOrDefault(u => u.Email == request.Email);
 
+        if (existingUser != null)
+            return BadRequest("Email đã tồn tại");
+
+        var user = new User
+        {
+            Email = request.Email,
+            PasswordHash = request.PasswordHash,
+            FullName = request.FullName,
+            Role = request.Role ?? "User",
+            UserLevel = 0,
+            Status = "Active",
+            CreatedAt = DateTime.Now
+        };
+
+        _context.Users.Add(user);
+        _context.SaveChanges();
+
+        // 🔥 TẠO TOKEN LUÔN
+        var token = GenerateJwtToken(user);
+
+        return Ok(new
+        {
+            token = token,
+            role = user.Role,
+            fullName = user.FullName
+        });
+    }
+
+    // 🔥 Hàm tạo JWT dùng chung
+    private string GenerateJwtToken(User user)
+    {
+        var claims = new[]
+        {
+        new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+        new Claim(ClaimTypes.Email, user.Email),
+        new Claim(ClaimTypes.Role, user.Role)
+    };
+
+        var key = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(_config["Jwt:Key"])
+        );
+
+        var creds = new SigningCredentials(
+            key,
+            SecurityAlgorithms.HmacSha256
+        );
+
+        var token = new JwtSecurityToken(
+            issuer: _config["Jwt:Issuer"],
+            audience: _config["Jwt:Audience"],
+            claims: claims,
+            expires: DateTime.Now.AddHours(1),
+            signingCredentials: creds
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+
+    [HttpPost("register-restaurant")]
+    public IActionResult RegisterRestaurant([FromBody] RegisterRestaurantDto request)
+    {
+        var user = new User
+        {
+            FullName = request.RestaurantName,
+            Address = request.Address,
+            Phone = request.Phone,
+            Role = "Restaurant",
+            Status = "Active",
+            CreatedAt = DateTime.Now
+        };
+
+        _context.Users.Add(user);
+        _context.SaveChanges();
+
+        return Ok("Đăng ký thành công");
+    }
+
+    // Thêm API này vào UsersController.cs (Backend)
+    [Authorize]
+    [HttpPost("upload-avatar")]
+    public async Task<IActionResult> UploadAvatar(IFormFile file)
+    {
+        if (file == null || file.Length == 0) return BadRequest("File không hợp lệ");
+
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+        var user = _context.Users.Find(userId);
+        if (user == null) return NotFound();
+
+        // Tạo thư mục avatars nếu chưa có
+        var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "avatars");
+        if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
+
+        // Lưu file
+        var fileName = $"avatar_{userId}_{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+        var filePath = Path.Combine(folderPath, fileName);
+
+        using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        // Cập nhật đường dẫn vào DB (thay port 5216 bằng port của bạn)
+        user.Avatar = $"http://10.0.2.2:5216/avatars/{fileName}";
+        _context.SaveChanges();
+
+        return Ok(new { url = user.Avatar });
+    }
 }

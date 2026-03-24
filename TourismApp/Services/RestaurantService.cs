@@ -1,34 +1,29 @@
 ﻿using System.Net.Http.Json;
-using TourismApp.Models;
 
-namespace TourismApp.Services
+namespace TourismApp.Services;
+
+public class RestaurantService
 {
-    public class RestaurantService
+    private readonly HttpClient _httpClient;
+
+    public RestaurantService(HttpClient httpClient)
     {
-        private readonly HttpClient _httpClient;
+        _httpClient = httpClient;
+    }
 
-        public RestaurantService(HttpClient httpClient)
-        {
-            _httpClient = httpClient;
-        }
+    public async Task<List<TourismApp.Models.Restaurant>> GetRestaurantsAsync()
+    {
+        var response = await _httpClient.GetFromJsonAsync<List<TourismApp.Models.Restaurant>>("api/restaurants");
+        return response ?? new List<TourismApp.Models.Restaurant>();
+    }
 
-        // 🔹 Lấy tất cả nhà hàng
-        public async Task<List<Restaurant>> GetRestaurantsAsync()
-        {
-            var response = await _httpClient.GetFromJsonAsync<List<Restaurant>>("api/restaurants");
-            return response ?? new List<Restaurant>();
-        }
+    public async Task<TourismApp.Models.Restaurant?> GetMyRestaurantAsync()
+    {
+        return await _httpClient.GetFromJsonAsync<TourismApp.Models.Restaurant>("api/restaurants/my");
+    }
 
-        // 🔥 Lấy nhà hàng của chủ quán
-        public async Task<Restaurant?> GetMyRestaurantAsync()
-        {
-            return await _httpClient.GetFromJsonAsync<Restaurant>("api/restaurants/my");
-        }
-
-        // ⭐ THÊM HÀM NÀY
-        public async Task<Restaurant?> GetRestaurantByIdAsync(int id)
-        {
-            return await _httpClient.GetFromJsonAsync<Restaurant>($"api/restaurants/{id}");
-        }
+    public async Task<TourismApp.Models.Restaurant?> GetRestaurantByIdAsync(int id)
+    {
+        return await _httpClient.GetFromJsonAsync<TourismApp.Models.Restaurant>($"api/restaurants/{id}");
     }
 }

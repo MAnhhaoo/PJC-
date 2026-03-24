@@ -18,12 +18,27 @@ public partial class ProfilePage : ContentPage
     {
         base.OnAppearing();
 
-        _user = await _userService.GetMeAsync();
+        try
+        {
+            _user = await _userService.GetMeAsync();
 
-        lblEmail.Text = _user.Email;
-        lblFullName.Text = _user.FullName;
-        lblPhone.Text = _user.Phone;
-        lblAddress.Text = _user.Address;
+            if (_user != null)
+            {
+                lblEmail.Text = _user.Email;
+                lblFullNameHeader.Text = _user.FullName; // Hiển thị tên ở Header
+                lblPhone.Text = string.IsNullOrEmpty(_user.Phone) ? "Chưa cập nhật" : _user.Phone;
+                lblAddress.Text = string.IsNullOrEmpty(_user.Address) ? "Chưa cập nhật" : _user.Address;
+
+                if (!string.IsNullOrEmpty(_user.Avatar))
+                {
+                    imgAvatar.Source = _user.Avatar;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Lỗi", "Không thể tải thông tin", "OK");
+        }
     }
 
     private async void OnEditClicked(object sender, EventArgs e)

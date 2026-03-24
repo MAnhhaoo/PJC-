@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="TourismApp.UpgradePremiumPage"
+             Title="Nâng cấp Premium"
+             BackgroundColor="#F8F9FA">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="20">
+
+            <Frame BackgroundColor="#FFD700" CornerRadius="20" HasShadow="True" Padding="25" >
+                <Frame.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#F1C40F" Offset="0.1"/>
+                        <GradientStop Color="#D4AF37" Offset="1.0"/>
+                    </LinearGradientBrush>
+                </Frame.Background>
+                <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
+                    <Label Text="👑" FontSize="50" HorizontalOptions="Center"/>
+                    <Label Text="PREMIUM MERCHANT" FontSize="22" FontAttributes="Bold" TextColor="White"/>
+                    <Label Text="Nâng tầm thương hiệu nhà hàng" TextColor="White" HorizontalOptions="Center"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <Label Text="ĐẶC QUYỀN CỦA BẠN" FontAttributes="Bold" Margin="5,10,0,0" TextColor="#2C3E50"/>
+
+            <VerticalStackLayout Spacing="12" Margin="5,0">
+                <Grid ColumnDefinitions="30, *">
+                    <Label Text="✅" VerticalOptions="Center" FontSize="18"/>
+                    <Label Grid.Column="1" Text="Ưu tiên hiển thị trên trang chủ" FontSize="14" TextColor="#34495E"/>
+                </Grid>
+                <Grid ColumnDefinitions="30, *">
+                    <Label Text="✅" VerticalOptions="Center" FontSize="18"/>
+                    <Label Grid.Column="1" Text="Mở khóa thống kê doanh thu" FontSize="14" TextColor="#34495E"/>
+                </Grid>
+                <Grid ColumnDefinitions="30, *">
+                    <Label Text="✅" VerticalOptions="Center" FontSize="18"/>
+                    <Label Grid.Column="1" Text="Huy hiệu 'Xác minh' uy tín" FontSize="14" TextColor="#34495E"/>
+                </Grid>
+            </VerticalStackLayout>
+
+            <Label Text="CHỌN GÓI NÂNG CẤP" FontAttributes="Bold" Margin="5,10,0,0" TextColor="#2C3E50"/>
+
+            <VerticalStackLayout Spacing="15">
+
+                <Frame BorderColor="#A9A9A9" CornerRadius="15" Padding="15" BackgroundColor="White">
+                    <Grid ColumnDefinitions="*, Auto">
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Gói SILVER (Tháng)" FontAttributes="Bold" FontSize="17" TextColor="#7F8C8D"/>
+                            <Label Text="Dành cho quán mới trải nghiệm" TextColor="Gray" FontSize="13"/>
+                            <Label Text="Thời hạn: 30 ngày" TextColor="#95A5A6" FontSize="11" Margin="0,5,0,0"/>
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1" Text="50.000đ" 
+                                BackgroundColor="#95A5A6" TextColor="White"
+                                FontAttributes="Bold" CornerRadius="15" Padding="15,0"
+                                Clicked="OnUpgradeSilverClicked"/>
+                    </Grid>
+                </Frame>
+
+                <Frame BorderColor="#D4AF37" CornerRadius="15" Padding="15" HasShadow="True" BackgroundColor="White">
+                    <Grid ColumnDefinitions="*, Auto">
+                        <VerticalStackLayout Spacing="2">
+                            <HorizontalStackLayout Spacing="8">
+                                <Label Text="Gói GOLD (Năm)" FontAttributes="Bold" FontSize="17" TextColor="#D4AF37"/>
+                                <Frame BackgroundColor="#27AE60" Padding="6,2" CornerRadius="5"  VerticalOptions="Center">
+                                    <Label Text="HOT" TextColor="White" FontSize="10" FontAttributes="Bold"/>
+                                </Frame>
+                            </HorizontalStackLayout>
+                            <Label Text="Ưu tiên hiển thị vị trí Top 1" TextColor="Gray" FontSize="13"/>
+                            <Label Text="Thời hạn: 365 ngày (Tiết kiệm 20%)" TextColor="#27AE60" FontSize="11" FontAttributes="Bold" Margin="0,5,0,0"/>
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1" Text="500.000đ" 
+                                BackgroundColor="#D4AF37" TextColor="White"
+                                FontAttributes="Bold" CornerRadius="15" Padding="15,0"
+                                Clicked="OnUpgradeGoldClicked"/>
+                    </Grid>
+                </Frame>
+
+            </VerticalStackLayout>
+
+            <Label Text="Hỗ trợ thanh toán: 1900 1234" HorizontalOptions="Center" TextColor="#95A5A6" FontSize="12" Margin="0,10"/>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

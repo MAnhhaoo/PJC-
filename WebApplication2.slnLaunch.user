@@ -3,11 +3,11 @@
     "Name": "New Profile",
     "Projects": [
       {
-        "Path": "TourismApp\\TourismApp.csproj",
+        "Path": "WebApplication2\\WebApplication2.csproj",
         "Action": "Start"
       },
       {
-        "Path": "WebApplication2\\WebApplication2.csproj",
+        "Path": "TourismApp\\TourismApp.csproj",
         "Action": "Start"
       }
     ]

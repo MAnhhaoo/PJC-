@@ -1,58 +1,55 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage
-    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    x:Class="TourismApp.EditProfilePage"
-    Title="Chỉnh sửa hồ sơ"
-    BackgroundColor="#F8F8F8">
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="TourismApp.EditProfilePage"
+             Title="Chỉnh sửa hồ sơ">
 
     <ScrollView>
-        <VerticalStackLayout Padding="20" Spacing="15">
+        <VerticalStackLayout Padding="20" Spacing="20">
 
-            <!-- Avatar -->
-            <Frame HeightRequest="120"
-                   WidthRequest="120"
-                   CornerRadius="60"
-                   HorizontalOptions="Center"
-                   HasShadow="True"
-                   BackgroundColor="White">
+            <VerticalStackLayout HorizontalOptions="Center" Spacing="10">
+                <Border StrokeShape="RoundRectangle 60"
+                        HeightRequest="120" WidthRequest="120"
+                        StrokeThickness="2" Stroke="Orange">
+                    <Image x:Name="imgAvatar" Source="user_default.png" Aspect="AspectFill">
+                        <Image.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnAvatarTapped"/>
+                        </Image.GestureRecognizers>
+                    </Image>
+                </Border>
+                <Label Text="Chạm để đổi ảnh" FontSize="12" HorizontalOptions="Center" TextColor="Gray"/>
+            </VerticalStackLayout>
 
-                <Image x:Name="imgAvatar"
-                       Source="user_default.png"
-                       Aspect="AspectFill"/>
-            </Frame>
+            <VerticalStackLayout Spacing="15">
+                <Label Text="Email" FontAttributes="Bold" Margin="5,0"/>
+                <Border StrokeShape="RoundRectangle 10" Padding="15,0" BackgroundColor="#EEEEEE" StrokeThickness="0">
+                    <Entry x:Name="txtEmail" IsReadOnly="True" HeightRequest="50"/>
+                </Border>
 
-            <!-- Email (readonly) -->
-            <Label Text="Email" FontAttributes="Bold"/>
-            <Entry x:Name="txtEmail"
-                   IsReadOnly="True"
-                   BackgroundColor="#EEEEEE"/>
+                <Label Text="Họ tên" FontAttributes="Bold" Margin="5,0"/>
+                <Border StrokeShape="RoundRectangle 10" Padding="15,0" BackgroundColor="White" StrokeThickness="0">
+                    <Entry x:Name="txtFullName" Placeholder="Họ và tên" HeightRequest="50"/>
+                </Border>
 
-            <!-- Họ tên -->
-            <Label Text="Họ tên" FontAttributes="Bold"/>
-            <Entry x:Name="txtFullName"
-                   Placeholder="Nhập họ tên"/>
+                <Label Text="Số điện thoại" FontAttributes="Bold" Margin="5,0"/>
+                <Border StrokeShape="RoundRectangle 10" Padding="15,0" BackgroundColor="White" StrokeThickness="0">
+                    <Entry x:Name="txtPhone" Placeholder="Số điện thoại" Keyboard="Telephone" HeightRequest="50"/>
+                </Border>
 
-            <!-- SĐT -->
-            <Label Text="Số điện thoại" FontAttributes="Bold"/>
-            <Entry x:Name="txtPhone"
-                   Placeholder="Nhập số điện thoại"
-                   Keyboard="Telephone"/>
+                <Label Text="Địa chỉ" FontAttributes="Bold" Margin="5,0"/>
+                <Border StrokeShape="RoundRectangle 10" Padding="15,0" BackgroundColor="White" StrokeThickness="0">
+                    <Entry x:Name="txtAddress" Placeholder="Địa chỉ" HeightRequest="50"/>
+                </Border>
+            </VerticalStackLayout>
 
-            <!-- Địa chỉ -->
-            <Label Text="Địa chỉ" FontAttributes="Bold"/>
-            <Entry x:Name="txtAddress"
-                   Placeholder="Nhập địa chỉ"/>
-
-            <!-- Button -->
-            <Button Text="Lưu thay đổi"
-                    Clicked="OnSaveClicked"
-                    BackgroundColor="Orange"
-                    TextColor="White"
-                    CornerRadius="10"
-                    HeightRequest="50"/>
+            <Button Text="CẬP NHẬT HỒ SƠ" 
+                    Clicked="OnSaveClicked" 
+                    BackgroundColor="Orange" 
+                    CornerRadius="25" 
+                    FontAttributes="Bold"
+                    HeightRequest="50" 
+                    Margin="0,10,0,0"/>
 
         </VerticalStackLayout>
     </ScrollView>
-
 </ContentPage>

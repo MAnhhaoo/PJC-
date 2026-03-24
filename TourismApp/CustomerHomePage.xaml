@@ -7,121 +7,61 @@
 
     <Grid RowDefinitions="Auto,Auto,*,Auto">
 
-        <!-- Banner -->
         <Grid Grid.Row="0" HeightRequest="200">
-            <Image Source="vinhkhanh_banner.jpg"
-                   Aspect="AspectFill"/>
-
+            <Image Source="vinh_khanh_street.jpg" Aspect="AspectFill"/>
             <BoxView BackgroundColor="#66000000"/>
-
             <Label Text="KHU PHỐ ẨM THỰC VĨNH KHÁNH"
-                   TextColor="White"
-                   FontSize="24"
-                   FontAttributes="Bold"
-                   HorizontalOptions="Center"
-                   VerticalOptions="Center"/>
+                   TextColor="White" FontSize="24" FontAttributes="Bold"
+                   HorizontalOptions="Center" VerticalOptions="Center"/>
         </Grid>
 
-        <!-- Description -->
         <Label Grid.Row="1"
                Text="Thiên đường ốc và hải sản nổi tiếng Quận 4, sôi động về đêm với hàng chục quán ăn hấp dẫn."
-               Margin="15,10"
-               TextColor="Gray"
-               FontSize="14"/>
+               Margin="15,10" TextColor="Gray" FontSize="14"/>
 
-        <!-- Restaurant List -->
-        <CollectionView
-            x:Name="RestaurantList"
-            Grid.Row="2"
-            Margin="10">
-
+        <CollectionView x:Name="RestaurantList" Grid.Row="2" Margin="10">
             <CollectionView.ItemTemplate>
-
                 <DataTemplate>
-
-                    <Frame CornerRadius="16"
-                           Margin="0,10"
-                           Padding="0"
-                           HasShadow="True"
-                           BackgroundColor="White">
-
-                        <!-- CLICK -->
+                    <Frame CornerRadius="16" Margin="0,10" Padding="0" HasShadow="True" BackgroundColor="White">
                         <Frame.GestureRecognizers>
-                            <TapGestureRecognizer
-                                CommandParameter="{Binding RestaurantId}"
-                                Tapped="OnRestaurantTapped"/>
+                            <TapGestureRecognizer CommandParameter="{Binding RestaurantId}" Tapped="OnRestaurantTapped"/>
                         </Frame.GestureRecognizers>
 
                         <VerticalStackLayout>
-
-                            <!-- IMAGE -->
                             <Grid>
-
-                                <Image Source="{Binding Image}"
-                                       HeightRequest="180"
-                                       Aspect="AspectFill"/>
-
+                                <Image Source="{Binding Image}" HeightRequest="180" Aspect="AspectFill"/>
                                 <BoxView BackgroundColor="#66000000"/>
-
-                                <Label Text="{Binding Name}"
-                                       TextColor="White"
-                                       FontSize="20"
-                                       FontAttributes="Bold"
-                                       VerticalOptions="End"
-                                       Margin="10"/>
-
+                                <Label Text="{Binding Name}" TextColor="White" FontSize="20"
+                                       FontAttributes="Bold" VerticalOptions="End" Margin="10"/>
                             </Grid>
 
-                            <!-- INFO -->
                             <VerticalStackLayout Padding="12" Spacing="6">
+                                <Label Text="{Binding Address}" FontSize="13" TextColor="Gray"/>
+                                <Label Text="{Binding Distance, StringFormat='📍 {0:F2} km'}" FontSize="12" TextColor="Gray"/>
+                                <Label Text="{Binding Description}" FontSize="14" LineBreakMode="WordWrap"/>
 
-                                <Label Text="{Binding Address}"
-                                       FontSize="13"
-                                       TextColor="Gray"/>
+                                <Label Text="⭐ Premium" IsVisible="{Binding IsPremium}"
+                                       TextColor="OrangeRed" FontAttributes="Bold"/>
 
-                                <Label
-                                    Text="{Binding Distance, StringFormat='📍 {0:F2} km'}"
-                                    FontSize="12"
-                                    TextColor="Gray"/>
+                                <Button Text="🔊 Nghe giới thiệu" 
+                                        Clicked="OnPlayRestaurantIntro"
+                                        BindingContext="{Binding .}"
+                                        BackgroundColor="#E3F2FD" TextColor="#1976D2"
+                                        CornerRadius="12" HeightRequest="40" Margin="0,5"/>
 
-                                <Label Text="{Binding Description}"
-                                       FontSize="14"
-                                       LineBreakMode="WordWrap"/>
-
-                                <Label Text="⭐ Premium"
-                                       IsVisible="{Binding IsPremium}"
-                                       TextColor="OrangeRed"
-                                       FontAttributes="Bold"/>
-
+                                <Button Text="🗺 Xem bản đồ nhà hàng"
+                                        Clicked="OnOpenMap"
+                                        BackgroundColor="Orange" TextColor="White"
+                                        CornerRadius="12" HeightRequest="45"/>
                             </VerticalStackLayout>
-                            <Button
-    Text="🗺 Xem bản đồ nhà hàng"
-    Clicked="OnOpenMap"
-    Margin="15"
-    BackgroundColor="Orange"
-    TextColor="White"
-    CornerRadius="12"/>
-
                         </VerticalStackLayout>
-
                     </Frame>
-
                 </DataTemplate>
-
             </CollectionView.ItemTemplate>
-
         </CollectionView>
 
-        <!-- Profile Button -->
-        <Button Grid.Row="3"
-                Text="Hồ sơ"
-                Clicked="OnProfileClicked"
-                Margin="15"
-                BackgroundColor="Orange"
-                TextColor="White"
-                CornerRadius="12"
-                HeightRequest="50"/>
-
+        <Button Grid.Row="3" Text="Hồ sơ" Clicked="OnProfileClicked"
+                Margin="15" BackgroundColor="Orange" TextColor="White"
+                CornerRadius="12" HeightRequest="50"/>
     </Grid>
-
 </ContentPage>

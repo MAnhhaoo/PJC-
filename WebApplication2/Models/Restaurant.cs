@@ -7,6 +7,7 @@ public class Restaurant
     [Key]
     public int RestaurantId { get; set; }
 
+    public string  Phone { get; set; }
     public string Name { get; set; }
     public string Address { get; set; }
     public double Latitude { get; set; }
@@ -15,6 +16,8 @@ public class Restaurant
 
     // iamge of restaurant 
     public string? Image { get; set; }
+
+    public bool IsActive { get; set; } = true; 
 
     [ForeignKey("Owner")]
     public int OwnerId { get; set; }
@@ -25,6 +28,7 @@ public class Restaurant
 
     // ===== ⭐ THÊM PHẦN PREMIUM =====
     public bool IsPremium { get; set; } = false;
+    public int PremiumLevel { get; set; } = 0; 
     public DateTime? PremiumExpireDate { get; set; }
 
     // Navigation
@@ -33,4 +37,6 @@ public class Restaurant
 
     // ⭐ THÊM DÒNG NÀY
     public ICollection<LocationHistory> LocationHistories { get; set; }
+
+    public ICollection<Narration> Narrations { get; set; }
 }

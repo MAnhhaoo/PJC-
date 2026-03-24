@@ -1,0 +1,42 @@
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="TourismApp.AddDishPage"
+             Title="Thêm Món Ăn Mới">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="15">
+
+            <Frame Padding="0" HeightRequest="200" CornerRadius="10" IsClippedToBounds="True" HasShadow="True">
+                <Image x:Name="imgPreview" 
+                       Source="https://via.placeholder.com/400x200?text=Chưa+có+ảnh"
+                       Aspect="AspectFill"/>
+            </Frame>
+
+            <Frame HasShadow="True" CornerRadius="10" Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Thông tin món ăn" FontAttributes="Bold" FontSize="18" TextColor="#2196F3"/>
+
+                    <Entry x:Name="txtName" Placeholder="Tên món ăn (Ví dụ: Phở Bò)"/>
+
+                    <Entry x:Name="txtPrice" Placeholder="Giá bán (VNĐ)" Keyboard="Numeric"/>
+
+                    <Editor x:Name="txtDescription" Placeholder="Mô tả ngắn về món ăn..." HeightRequest="100"/>
+
+                    <Button Text="📁 Chọn ảnh từ thư viện" 
+                            Clicked="OnSelectImageClicked"
+                            BackgroundColor="#512BD4" 
+                            TextColor="White"
+                            Margin="0,10"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <Button Text="THÊM MÓN NGAY"
+                    Clicked="OnAddDish"
+                    CornerRadius="25"
+                    HeightRequest="50"
+                    BackgroundColor="#2196F3"
+                    TextColor="White"
+                    FontAttributes="Bold"/>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
