@@ -24,10 +24,7 @@ public class RestaurantsController : ControllerBase
     public IActionResult GetRestaurants()
     {
         var restaurants = _context.Restaurants
-            .Where(r =>
-                r.IsApproved &&
-               (!r.IsPremium || r.PremiumExpireDate == null || r.PremiumExpireDate > DateTime.Now)
-            )
+            .Where(r => r.IsApproved && (!r.IsPremium || r.PremiumExpireDate == null || r.PremiumExpireDate > DateTime.Now))
             .Select(r => new RestaurantDto
             {
                 RestaurantId = r.RestaurantId,
@@ -37,9 +34,23 @@ public class RestaurantsController : ControllerBase
                 Latitude = r.Latitude,
                 Longitude = r.Longitude,
                 Image = r.Image,
-
                 IsPremium = r.IsPremium,
-                IsApproved = r.IsApproved
+                IsApproved = r.IsApproved,
+
+                // THÊM DÒNG NÀY VÀO ĐỂ GỬI THUYẾT MINH VỀ MOBILE
+                Narrations = r.Narrations.Select(n => new NarrationDto
+                {
+                    NarrationId = n.NarrationId,
+                    TextContent = n.TextContent,
+                    // Tạo URL tuyệt đối cho Audio
+                    AudioUrl = string.IsNullOrEmpty(n.AudioUrl) ? "" :
+                               (n.AudioUrl.StartsWith("http") ? n.AudioUrl : $"http://10.0.2.2:5216/audios/{n.AudioUrl}"),
+                    Language = new LanguageDto
+                    {
+                        Code = n.Language.Code,
+                        Name = n.Language.Name
+                    }
+                }).ToList()
             })
             .ToList();
 
@@ -306,5 +317,92 @@ public class RestaurantsController : ControllerBase
 
         return Ok(result);
     }
+
+
+    // 🔹 GET: api/restaurants/admin/all-narrations
+    [Authorize(Roles = "Admin")]
+    [HttpGet("admin/all-narrations")]
+    public async Task<IActionResult> GetAllNarrationsForAdmin()
+    {
+        var narrations = await _context.Narrations
+            .Include(n => n.Language)
+            .Include(n => n.Dish).ThenInclude(d => d.Restaurant)
+            .Include(n => n.Restaurant)
+            .Select(n => new NarrationAdminDto
+            { // Dùng DTO để đồng bộ với Frontend
+                NarrationId = n.NarrationId,
+                DishId = n.DishId ?? 0,          // 🔥 Dòng này cứu sống nút "Dịch" của bạn
+                RestaurantId = n.RestaurantId,
+                TextContent = n.TextContent,
+                LanguageName = n.Language.Name,
+                AudioUrl = n.AudioUrl,
+                // Lấy tên nhà hàng dù là thuyết minh món ăn hay thuyết minh chung của nhà hàng
+                RestaurantName = n.Dish != null ? n.Dish.Restaurant.Name : (n.Restaurant != null ? n.Restaurant.Name : "N/A")
+            })
+            .ToListAsync();
+
+        return Ok(narrations);
+    }
+
+    // 🔹 POST: api/restaurants/admin/update-audiox`
+    [Authorize(Roles = "Admin")]
+    [HttpPost("admin/update-audio")]
+    public async Task<IActionResult> AdminUpdateAudio([FromForm] int narrationId, IFormFile audioFile)
+    {
+        var nar = await _context.Narrations.FindAsync(narrationId);
+        if (nar == null) return NotFound();
+
+        if (audioFile != null)
+        {
+            string audioName = Guid.NewGuid().ToString() + Path.GetExtension(audioFile.FileName);
+            string audioPath = Path.Combine(_env.WebRootPath, "audios", audioName);
+
+            using (var stream = new FileStream(audioPath, FileMode.Create))
+                await audioFile.CopyToAsync(stream);
+
+            nar.AudioUrl = audioName; // Cập nhật tên file audio do Admin upload
+            await _context.SaveChangesAsync();
+        }
+
+        return Ok(new { message = "Cập nhật Audio thành công", audioUrl = nar.AudioUrl });
+    }
+
+
+
+
+    // Đảm bảo Route khớp với: api/restaurants/admin/delete-narration/{id}
+    [HttpPost("admin/delete-narration/{id}")]
+    public async Task<IActionResult> DeleteNarration(int id)
+    {
+        var narration = await _context.Narrations.FindAsync(id);
+        if (narration == null) return NotFound();
+
+        // 1. Xóa file âm thanh vật lý để tránh rác server
+        if (!string.IsNullOrEmpty(narration.AudioUrl))
+        {
+            var filePath = Path.Combine(Directory.GetCurrentDirectory(), narration.AudioUrl);
+            if (System.IO.File.Exists(filePath)) System.IO.File.Delete(filePath);
+        }
+
+        // 2. Xóa trong DB
+        _context.Narrations.Remove(narration);
+        await _context.SaveChangesAsync();
+        return Ok();
+    }
+
+
+
+    // Thêm cái này vào cuối file NarrationsController.cs của Backend
+    public class NarrationAdminDto
+    {
+        public int NarrationId { get; set; }
+        public string? TextContent { get; set; }
+        public string? LanguageName { get; set; }
+        public string? AudioUrl { get; set; }
+        public int DishId { get; set; }
+        public string? RestaurantName { get; set; }
+        public int? RestaurantId { get; set; }
+    }
+
 
 }

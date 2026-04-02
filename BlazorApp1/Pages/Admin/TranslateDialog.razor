@@ -1,0 +1,116 @@
+﻿@using MudBlazor
+@using BlazorApp1.Services
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Translate" Class="mr-2" /> Dịch thuật nội dung
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudTextField Label="Nội dung gốc"
+                      Value="@SourceText"
+                      ReadOnly="true"
+                      Lines="3"
+                      Variant="Variant.Outlined"
+                      Color="Color.Info" />
+
+        <MudStack Row="true" AlignItems="AlignItems.Center" Class="mt-4">
+            <MudSelect T="string" Label="Dịch sang ngôn ngữ" @bind-Value="_targetLang" Style="width: 250px">
+                <MudSelectItem Value="@("en")">Tiếng Anh (English)</MudSelectItem>
+                <MudSelectItem Value="@("fr")">Tiếng Pháp (French)</MudSelectItem>
+                <MudSelectItem Value="@("ja")">Tiếng Nhật (Japanese)</MudSelectItem>
+                <MudSelectItem Value="@("zh")">Tiếng Trung (Chinese)</MudSelectItem>
+                <MudSelectItem Value="@("ko")">Tiếng Hàn (Korean)</MudSelectItem>
+            </MudSelect>
+            <MudButton OnClick="HandleAutoTranslate"
+                       Variant="Variant.Filled"
+                       Color="Color.Secondary"
+                       StartIcon="@Icons.Material.Filled.AutoFixHigh"
+                       Disabled="_isTranslating">
+                @(_isTranslating ? "Đang dịch..." : "Dịch tự động")
+            </MudButton>
+        </MudStack>
+
+        <MudTextField Label="Kết quả dịch (Có thể chỉnh sửa)"
+                      @bind-Value="_translatedResult"
+                      Lines="5"
+                      Variant="Variant.Outlined"
+                      Class="mt-4"
+                      Placeholder="Bản dịch sẽ xuất hiện ở đây..." />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Hủy</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   OnClick="Submit"
+                   Disabled="@(string.IsNullOrEmpty(_translatedResult))">Lưu bản dịch</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    // Sửa thành IMudDialogInstance để hết lỗi v7
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public string SourceText { get; set; } = "";
+
+    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private HttpClient Http { get; set; } = default!;
+
+    private string _targetLang = "en";
+    private string _translatedResult = "";
+    private bool _isTranslating = false;
+
+    private async Task HandleAutoTranslate()
+    {
+        if (string.IsNullOrWhiteSpace(SourceText)) return;
+
+        // ✅ KIỂM TRA ĐỘ DÀI (MyMemory giới hạn 500 ký tự)
+        if (SourceText.Length > 500)
+        {
+            Snackbar.Add($"Văn bản quá dài ({SourceText.Length}/500 ký tự). Vui lòng rút ngắn lại!", Severity.Warning);
+            return;
+        }
+
+        _isTranslating = true;
+        try
+        {
+            var url = $"/api/narrations/proxy-translate?text={Uri.EscapeDataString(SourceText)}&langPair=vi|{_targetLang}";
+            var response = await Http.GetFromJsonAsync<TranslationResponse>(url);
+
+            if (response?.responseData != null)
+            {
+                _translatedResult = response.responseData.translatedText;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Lỗi dịch thuật: " + ex.Message, Severity.Error);
+        }
+        finally { _isTranslating = false; }
+    }
+
+    // Trong TranslateDialog.razor, sửa lại class kết quả trả về
+    private void Submit()
+    {
+        // Tạo object kết quả
+        var resultData = new
+        {
+            Text = _translatedResult,
+            Lang = _targetLang
+        };
+
+        // QUAN TRỌNG: Phải ép kiểu sang DialogResult trước khi Close
+        MudDialog.Close(DialogResult.Ok(resultData));
+    }
+
+    private void Cancel()
+    {
+        // Đảm bảo nút Hủy hoạt động
+        MudDialog.Cancel();
+    }
+
+    public class TranslationResponse { public ResponseData? responseData { get; set; } }
+    public class ResponseData { public string translatedText { get; set; } = ""; }
+}

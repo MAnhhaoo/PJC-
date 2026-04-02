@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using WebApplication2.Data;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -101,10 +102,19 @@ if (app.Environment.IsDevelopment())
 //app.UseHttpsRedirection();
 
 app.UseCors("AllowBlazor");
-app.UseStaticFiles();
+// Đảm bảo thư mục audios tồn tại
+var audioPath = Path.Combine(builder.Environment.ContentRootPath, "audios");
+if (!Directory.Exists(audioPath)) Directory.CreateDirectory(audioPath);
+
+// Cấu hình duy nhất cho file tĩnh
+app.UseStaticFiles(); // Cho wwwroot
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(audioPath),
+    RequestPath = "/audios"
+});
 app.UseAuthentication();
 app.UseAuthorization();
-
 // 🔥 API PHẢI MAP TRƯỚC
 app.MapControllers();
 // Cho phép API chạy toàn mạng

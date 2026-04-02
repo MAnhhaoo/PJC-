@@ -1,146 +1,237 @@
-﻿    using Microsoft.Maui.Devices.Sensors;
-    using Plugin.Maui.Audio;
-    using System.Collections.ObjectModel;
-    using System.Globalization;
-    using TourismApp.Services;
+﻿using Microsoft.Maui.Devices.Sensors;
+using Plugin.Maui.Audio;
+using System.Collections.ObjectModel;
+using TourismApp.Services;
+using TourismApp.Models;
+using Microsoft.Maui.Media; // Dòng này cực kỳ quan trọng để hết lỗi đỏ SpeakOptions
+using Microsoft.Maui.Storage;
 
-    namespace TourismApp;
+namespace TourismApp;
 
-    public partial class CustomerHomePage : ContentPage
+public partial class CustomerHomePage : ContentPage
+{
+    private readonly RestaurantService _restaurantService;
+    private readonly IAudioManager _audioManager;
+    private readonly GpsService _gpsService;
+    private IAudioPlayer _activePlayer;
+    private Restaurant _currentPlayingRestaurant;
+    private bool _isMonitoring = false;
+    private readonly HashSet<int> _playedRestaurantIds = new();
+
+    public LanguageService LangService { get; }
+    public ObservableCollection<Restaurant> Restaurants { get; set; } = new();
+
+    public CustomerHomePage(RestaurantService restaurantService, UserService userService, IAudioManager audioManager, GpsService gpsService, LanguageService languageService)
     {
-        private readonly RestaurantService _restaurantService;
-        private readonly UserService _userService;
-        private readonly IAudioManager _audioManager;
-        private IAudioPlayer _activePlayer;
+        InitializeComponent();
+        _restaurantService = restaurantService;
+        _audioManager = audioManager;
+        _gpsService = gpsService;
+        LangService = languageService;
 
-        // Sử dụng namespace đầy đủ để tránh xung đột với các Model khác
-        public ObservableCollection<TourismApp.Models.Restaurant> Restaurants { get; set; } = new();
-
-        // SỬA LỖI: Thêm IAudioManager vào Constructor để Dependency Injection hoạt động
-        public CustomerHomePage(RestaurantService restaurantService, UserService userService, IAudioManager audioManager)
-        {
-            InitializeComponent();
-            _restaurantService = restaurantService;
-            _userService = userService;
-            _audioManager = audioManager;
-
-            RestaurantList.ItemsSource = Restaurants;
-        }
-
-        protected override async void OnAppearing()
-        {
-            base.OnAppearing();
-            await LoadData();
-        }
-
-        private async Task LoadData()
-        {
-            try
-            {
-                var user = await _userService.GetMeAsync();
-                var allRestaurants = await _restaurantService.GetRestaurantsAsync();
-
-                if (allRestaurants == null) return;
-
-                // Lọc nhà hàng đã duyệt
-                var filtered = allRestaurants.Where(r => r.IsApproved).ToList();
-
-                // Tính khoảng cách
-                try
-                {
-                    Location location = await Geolocation.GetLastKnownLocationAsync() ?? await Geolocation.GetLocationAsync();
-                    if (location != null)
-                    {
-                        foreach (var r in filtered)
-                        {
-                            r.Distance = Location.CalculateDistance(location.Latitude, location.Longitude, r.Latitude, r.Longitude, DistanceUnits.Kilometers);
-                        }
-                        filtered = filtered.OrderBy(r => r.Distance).ToList();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    // Nếu không lấy được vị trí thì bỏ qua bước tính khoảng cách
-                    System.Diagnostics.Debug.WriteLine($"Location Error: {ex.Message}");
-                }
-
-                Restaurants.Clear();
-                foreach (var item in filtered)
-                {
-                    Restaurants.Add(item);
-                }
-            }
-            catch (Exception ex)
-            {
-                await DisplayAlert("Lỗi", ex.Message, "OK");
-            }
-        }
-
-        // LOGIC PHÁT THUYẾT MINH THEO NGÔN NGỮ MÁY
-        private async void OnPlayRestaurantIntro(object sender, EventArgs e)
-        {
-            var button = sender as Button;
-            var restaurant = button?.BindingContext as TourismApp.Models.Restaurant;
-
-            if (restaurant == null || restaurant.Narrations == null || !restaurant.Narrations.Any())
-            {
-                await DisplayAlert("Thông báo", "Nhà hàng này chưa có bài thuyết minh.", "OK");
-                return; 
-            }
-
-            try
-            {
-                // 1. Lấy mã ngôn ngữ máy (vi, en, ja, ko...)
-                string deviceLang = CultureInfo.CurrentCulture.TwoLetterISOLanguageName.ToLower();
-
-                // 2. Tìm bản thuyết minh phù hợp
-                var matched = restaurant.Narrations.FirstOrDefault(n => n.Language.Code.ToLower() == deviceLang)
-                              ?? restaurant.Narrations.FirstOrDefault(n => n.Language.Code == "en");
-
-                if (matched != null)
-                {
-                    // Dừng âm thanh đang phát trước đó (nếu có)
-                    _activePlayer?.Stop();
-
-                    // TRƯỜNG HỢP 1: CÓ FILE AUDIO TRÊN SERVER
-                    if (!string.IsNullOrEmpty(matched.AudioUrl))
-                    {
-                        // Lưu ý: URL phải trỏ về 10.0.2.2 nếu dùng Android Emulator
-                        using var client = new HttpClient();
-                        var stream = await client.GetStreamAsync(matched.AudioUrl);
-
-                        _activePlayer = _audioManager.CreatePlayer(stream);
-                        _activePlayer.Play();
-                    }
-                    // TRƯỜNG HỢP 2: CHỈ CÓ VĂN BẢN THÌ DÙNG MÁY ĐỌC
-                    else if (!string.IsNullOrEmpty(matched.TextContent))
-                    {
-                        await TextToSpeech.Default.SpeakAsync(matched.TextContent);
-                    }
-                }
-                else
-                {
-                    await DisplayAlert("Thông báo", "Không có ngôn ngữ phù hợp.", "OK");
-                }
-            }
-            catch (Exception ex)
-            {
-                await DisplayAlert("Lỗi phát âm thanh", ex.Message, "OK");
-            }
-        }
-
-        private async void OnOpenMap(object sender, EventArgs e)
-        {
-            var restaurant = (sender as Button)?.BindingContext as TourismApp.Models.Restaurant;
-            if (restaurant != null) await Navigation.PushAsync(new RestaurantMapPage(restaurant));
-        }
-
-        private async void OnRestaurantTapped(object sender, TappedEventArgs e)
-        {
-            if (e.Parameter is int id)
-                await Shell.Current.GoToAsync($"RestaurantDetailPage?restaurantId={id}");
-        }
-
-        private async void OnProfileClicked(object sender, EventArgs e)
-            => await Shell.Current.GoToAsync(nameof(ProfilePage));
+        this.BindingContext = this;
+        RestaurantList.ItemsSource = Restaurants;
+        StartGpsMonitoring();
     }
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            var allRestaurants = await _restaurantService.GetRestaurantsAsync();
+            if (allRestaurants == null) return;
+
+            var filtered = allRestaurants.Where(r => r.IsApproved).ToList();
+            var userLocation = await _gpsService.GetCurrentLocation();
+
+            if (userLocation != null)
+            {
+                foreach (var r in filtered)
+                    r.Distance = _gpsService.CalculateDistance(userLocation.Latitude, userLocation.Longitude, r.Latitude, r.Longitude);
+
+                filtered = filtered.OrderBy(r => r.Distance).ToList();
+            }
+
+            Restaurants.Clear();
+            foreach (var item in filtered) Restaurants.Add(item);
+        }
+        catch (Exception ex) { Console.WriteLine(ex.Message); }
+    }
+
+    private async void StartGpsMonitoring()
+    {
+        if (_isMonitoring) return;
+        _isMonitoring = true;
+        while (_isMonitoring)
+        {
+            try
+            {
+                var loc = await _gpsService.GetCurrentLocation();
+                if (loc != null)
+                {
+                    foreach (var res in Restaurants)
+                    {
+                        res.Distance = _gpsService.CalculateDistance(loc.Latitude, loc.Longitude, res.Latitude, res.Longitude);
+                        if (res.Distance <= 0.1 && !_playedRestaurantIds.Contains(res.RestaurantId))
+                        {
+                            _playedRestaurantIds.Add(res.RestaurantId);
+                            await PlayRestaurantAudio(res);
+                            break;
+                        }
+                    }
+                }
+            }
+            catch { }
+            await Task.Delay(10000);
+        }
+    }
+
+    private async Task PlayRestaurantAudio(Restaurant restaurant)
+    {
+        Narration matched = null;
+        try
+        {
+            // 1. Dừng ngay lập tức âm thanh cũ nếu đang phát
+            StopCurrentAudio();
+
+            if (restaurant.Narrations == null || !restaurant.Narrations.Any()) return;
+
+            string selectedLang = (LangService.CurrentLanguage ?? "vi").Trim().ToLower();
+            matched = restaurant.Narrations.FirstOrDefault(n =>
+                n.Language != null && n.Language.Code?.Trim().ToLower() == selectedLang)
+                ?? restaurant.Narrations.FirstOrDefault();
+
+            if (matched == null || string.IsNullOrEmpty(matched.AudioUrl)) return;
+
+            // 2. Gọt link để tránh lặp /audios/audios/
+            string fileName = matched.AudioUrl;
+            if (fileName.Contains("/"))
+            {
+                fileName = fileName.Substring(fileName.LastIndexOf("/") + 1);
+            }
+
+            string audioUrl = $"http://10.0.2.2:5216/audios/{fileName}";
+
+            // 3. Thực hiện tải và khởi tạo Player hoàn toàn ở luồng phụ (Fix NetworkOnMainThread)
+            await Task.Run(async () =>
+            {
+                using var client = new HttpClient();
+                client.Timeout = TimeSpan.FromSeconds(15);
+
+                var response = await client.GetAsync(audioUrl);
+                response.EnsureSuccessStatusCode();
+                var stream = await response.Content.ReadAsStreamAsync();
+
+                // Khởi tạo Player ở đây
+                var player = _audioManager.CreatePlayer(stream);
+
+                // 4. Quay lại luồng chính ĐỂ PHÁT VÀ CẬP NHẬT UI
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    _activePlayer = player;
+                    _currentPlayingRestaurant = restaurant;
+                    _currentPlayingRestaurant.IsPlaying = true;
+
+                    // FIX ĐỨNG IM: Khi phát hết nhạc, phải gọi StopCurrentAudio trên luồng chính
+                    _activePlayer.PlaybackEnded += (s, e) =>
+                    {
+                        MainThread.BeginInvokeOnMainThread(() => StopCurrentAudio());
+                    };
+
+                    _activePlayer.Play();
+                });
+            });
+        }
+        catch (Exception ex)
+        {
+            // Nếu lỗi (404, mất mạng...), reset ngay trạng thái UI
+            MainThread.BeginInvokeOnMainThread(() => StopCurrentAudio());
+            string linkCheck = matched != null ? matched.AudioUrl : "null";
+            await DisplayAlert("Lỗi phát", $"File: {linkCheck}\nChi tiết: {ex.Message}", "OK");
+        }
+    }
+    private void StopCurrentAudio()
+    {
+        try
+        {
+            // 1. Giải phóng Player
+            if (_activePlayer != null)
+            {
+                if (_activePlayer.IsPlaying)
+                    _activePlayer.Stop();
+
+                _activePlayer.Dispose();
+                _activePlayer = null;
+            }
+
+            // 2. Cập nhật lại UI nút bấm
+            if (_currentPlayingRestaurant != null)
+            {
+                var resToReset = _currentPlayingRestaurant;
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    resToReset.IsPlaying = false;
+                });
+                _currentPlayingRestaurant = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Lỗi khi dừng Audio: {ex.Message}");
+        }
+    }
+    private async void OnSelectLanguageClicked(object sender, EventArgs e)
+    {
+        // Danh sách hiển thị có lá cờ
+        var langItems = new Dictionary<string, string> {
+            { "🇻🇳 Tiếng Việt", "vi" },
+            { "🇺🇸 English", "en" },
+            { "🇯🇵 Japanese", "ja" },
+            { "🇫🇷 French", "fr" },
+            { "🇰🇷 Korean", "ko" },
+            { "🇨🇳 Chinese", "zh" }
+        };
+
+        var action = await DisplayActionSheet(LangService["SelectLang"], LangService["Cancel"], null, langItems.Keys.ToArray());
+
+        if (action != null && action != LangService["Cancel"])
+        {
+            var code = langItems[action];
+            LangService.CurrentLanguage = code;
+            Preferences.Default.Set("UserLanguage", code);
+            await LoadData(); // Load lại để cập nhật
+        }
+    }
+
+    private async void OnPlayRestaurantIntro(object sender, EventArgs e)
+    {
+        if ((sender as Button)?.BindingContext is Restaurant res) await PlayRestaurantAudio(res);
+    }
+
+    private void OnStopAudioClicked(object sender, EventArgs e) => StopCurrentAudio();
+
+    private async void OnOpenMap(object sender, EventArgs e)
+    {
+        if ((sender as Button)?.BindingContext is Restaurant res)
+            await Navigation.PushAsync(new RestaurantMapPage(res));
+    }
+
+    private async void OnRestaurantTapped(object sender, TappedEventArgs e)
+    {
+        if (e.Parameter is int id) await Shell.Current.GoToAsync($"RestaurantDetailPage?restaurantId={id}");
+    }
+
+    private async void OnProfileClicked(object sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(ProfilePage));
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        StopCurrentAudio();
+    }
+}

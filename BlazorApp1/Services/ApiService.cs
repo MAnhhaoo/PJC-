@@ -59,9 +59,10 @@
 
 
 
+using Blazored.LocalStorage;
+using Microsoft.AspNetCore.Components.Forms;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using Blazored.LocalStorage;
 
 namespace BlazorApp1.Services;
 
@@ -138,6 +139,39 @@ public class ApiService
         }
 
         return true;
+    }
+
+
+    public async Task<bool> PostFileAsync(string url, int narrationId, IBrowserFile file)
+    {
+        try
+        {
+            await AttachToken();
+            using var content = new MultipartFormDataContent();
+
+            // Mở stream từ file trình duyệt
+            var fileContent = new StreamContent(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
+            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
+
+            content.Add(new StringContent(narrationId.ToString()), "narrationId");
+            content.Add(fileContent, "audioFile", file.Name);
+
+            var response = await _http.PostAsync(url, content);
+
+            // Bạn có thể log thêm lỗi ở đây nếu cần
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Upload Error: {error}");
+            }
+
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception: {ex.Message}");
+            return false;
+        }
     }
 
     public class LoginResponse

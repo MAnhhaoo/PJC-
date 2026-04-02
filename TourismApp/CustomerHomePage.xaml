@@ -1,58 +1,74 @@
-<ContentPage
-    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    x:Class="TourismApp.CustomerHomePage"
-    Title="Khu phố ẩm thực Vĩnh Khánh"
-    BackgroundColor="#F5F5F5">
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="TourismApp.CustomerHomePage"
+             x:Name="thisPage"
+             Title="{Binding LangService[HomeTitle]}"
+             BackgroundColor="#F5F5F5">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Ngôn ngữ" Clicked="OnSelectLanguageClicked">
+            <ToolbarItem.IconImageSource>
+                <FontImageSource Glyph="🌐" Color="Orange" Size="24"/>
+            </ToolbarItem.IconImageSource>
+        </ToolbarItem>
+    </ContentPage.ToolbarItems>
 
     <Grid RowDefinitions="Auto,Auto,*,Auto">
-
-        <Grid Grid.Row="0" HeightRequest="200">
+        <Grid Grid.Row="0" HeightRequest="180">
             <Image Source="vinh_khanh_street.jpg" Aspect="AspectFill"/>
-            <BoxView BackgroundColor="#66000000"/>
-            <Label Text="KHU PHỐ ẨM THỰC VĨNH KHÁNH"
-                   TextColor="White" FontSize="24" FontAttributes="Bold"
-                   HorizontalOptions="Center" VerticalOptions="Center"/>
+            <BoxView BackgroundColor="#80000000"/>
+            <Label Text="{Binding LangService[HomeTitle]}" 
+                   TextColor="White" FontSize="22" FontAttributes="Bold"
+                   HorizontalOptions="Center" VerticalOptions="Center"
+                   HorizontalTextAlignment="Center"/>
         </Grid>
 
-        <Label Grid.Row="1"
-               Text="Thiên đường ốc và hải sản nổi tiếng Quận 4, sôi động về đêm với hàng chục quán ăn hấp dẫn."
-               Margin="15,10" TextColor="Gray" FontSize="14"/>
+        <Label Grid.Row="1" 
+               Text="{Binding LangService[SubTitle]}"
+               Margin="15,10" TextColor="#444444" FontSize="14" FontAttributes="Italic"/>
 
         <CollectionView x:Name="RestaurantList" Grid.Row="2" Margin="10">
             <CollectionView.ItemTemplate>
                 <DataTemplate>
-                    <Frame CornerRadius="16" Margin="0,10" Padding="0" HasShadow="True" BackgroundColor="White">
+                    <Frame CornerRadius="16" Margin="0,8" Padding="0" HasShadow="True" BackgroundColor="White" BorderColor="Transparent">
                         <Frame.GestureRecognizers>
                             <TapGestureRecognizer CommandParameter="{Binding RestaurantId}" Tapped="OnRestaurantTapped"/>
                         </Frame.GestureRecognizers>
 
                         <VerticalStackLayout>
                             <Grid>
-                                <Image Source="{Binding Image}" HeightRequest="180" Aspect="AspectFill"/>
-                                <BoxView BackgroundColor="#66000000"/>
-                                <Label Text="{Binding Name}" TextColor="White" FontSize="20"
-                                       FontAttributes="Bold" VerticalOptions="End" Margin="10"/>
+                                <Image Source="{Binding Image}" HeightRequest="160" Aspect="AspectFill"/>
+                                <BoxView BackgroundColor="#33000000"/>
+                                <Label Text="{Binding Name}" TextColor="White" FontSize="18"
+                                       FontAttributes="Bold" VerticalOptions="End" Margin="12"/>
                             </Grid>
 
-                            <VerticalStackLayout Padding="12" Spacing="6">
-                                <Label Text="{Binding Address}" FontSize="13" TextColor="Gray"/>
-                                <Label Text="{Binding Distance, StringFormat='📍 {0:F2} km'}" FontSize="12" TextColor="Gray"/>
-                                <Label Text="{Binding Description}" FontSize="14" LineBreakMode="WordWrap"/>
+                            <VerticalStackLayout Padding="12" Spacing="8">
+                                <Label Text="{Binding Address}" FontSize="13" TextColor="Gray" MaxLines="1"/>
 
-                                <Label Text="⭐ Premium" IsVisible="{Binding IsPremium}"
-                                       TextColor="OrangeRed" FontAttributes="Bold"/>
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,5">
 
-                                <Button Text="🔊 Nghe giới thiệu" 
-                                        Clicked="OnPlayRestaurantIntro"
-                                        BindingContext="{Binding .}"
-                                        BackgroundColor="#E3F2FD" TextColor="#1976D2"
-                                        CornerRadius="12" HeightRequest="40" Margin="0,5"/>
+                                    <Button Grid.Column="0" 
+                                            Text="{Binding Source={x:Reference thisPage}, Path=LangService[Listen]}" 
+                                            Clicked="OnPlayRestaurantIntro"
+                                            BackgroundColor="#E3F2FD" TextColor="#1976D2"
+                                            CornerRadius="10" HeightRequest="40" FontSize="13"/>
 
-                                <Button Text="🗺 Xem bản đồ nhà hàng"
-                                        Clicked="OnOpenMap"
-                                        BackgroundColor="Orange" TextColor="White"
-                                        CornerRadius="12" HeightRequest="45"/>
+                                    <Button Grid.Column="1" 
+                                            Text="{Binding Source={x:Reference thisPage}, Path=LangService[Map]}" 
+                                            Clicked="OnOpenMap"
+                                            BackgroundColor="#FFF3E0" TextColor="#E65100"
+                                            CornerRadius="10" HeightRequest="40" FontSize="13"/>
+                                </Grid>
+
+                                <Button Text="{Binding Source={x:Reference thisPage}, Path=LangService[Stop]}" 
+                                        IsVisible="{Binding IsPlaying}"
+                                        Clicked="OnStopAudioClicked"
+                                        BackgroundColor="#FFEBEE" TextColor="#C62828"
+                                        CornerRadius="10" HeightRequest="35" FontSize="12"
+                                        Margin="0,2,0,0"/>
+
                             </VerticalStackLayout>
                         </VerticalStackLayout>
                     </Frame>
@@ -60,8 +76,10 @@
             </CollectionView.ItemTemplate>
         </CollectionView>
 
-        <Button Grid.Row="3" Text="Hồ sơ" Clicked="OnProfileClicked"
-                Margin="15" BackgroundColor="Orange" TextColor="White"
-                CornerRadius="12" HeightRequest="50"/>
+        <Button Grid.Row="3" 
+                Text="{Binding LangService[Profile]}" 
+                Clicked="OnProfileClicked"
+                Margin="15,10" BackgroundColor="Orange" TextColor="White"
+                CornerRadius="12" HeightRequest="50" FontAttributes="Bold"/>
     </Grid>
 </ContentPage>

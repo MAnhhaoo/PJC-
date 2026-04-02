@@ -478,7 +478,7 @@
           "build/Microsoft.NET.Sdk.WebAssembly.Pack.targets": {}
         }
       },
-      "MudBlazor/8.15.0": {
+      "MudBlazor/9.2.0": {
         "type": "package",
         "dependencies": {
           "Microsoft.AspNetCore.Components": "8.0.12",
@@ -997,7 +997,7 @@
           "build/Microsoft.NET.Sdk.WebAssembly.Pack.targets": {}
         }
       },
-      "MudBlazor/8.15.0": {
+      "MudBlazor/9.2.0": {
         "type": "package",
         "dependencies": {
           "Microsoft.AspNetCore.Components": "8.0.12",
@@ -1995,16 +1995,17 @@
         "tools/net472/Microsoft.NET.WebAssembly.Webcil.dll"
       ]
     },
-    "MudBlazor/8.15.0": {
-      "sha512": "iOJEnQ6tYGQPfPJaUazyC8H6pcczgaMX7vhUzrJPpB0WqEXNozwMfSzoOe2/JZmVWJcUfYZgKBeBU2Z27XY7Sw==",
+    "MudBlazor/9.2.0": {
+      "sha512": "ckAndxv3to3CahczgLrqKdzhPV3750B7taqICSIAdKXoh0dSyqcUcjAI5YlE5s7NB7C+NdpkfWpK+dKQwxvUOA==",
       "type": "package",
-      "path": "mudblazor/8.15.0",
+      "path": "mudblazor/9.2.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "LICENSE",
         "Nuget.png",
         "README.md",
+        "analyzers/dotnet/cs/MudBlazor.Analyzers.CodeFixes.dll",
         "analyzers/dotnet/cs/MudBlazor.Analyzers.dll",
         "build/Microsoft.AspNetCore.StaticWebAssetEndpoints.props",
         "build/Microsoft.AspNetCore.StaticWebAssets.props",
@@ -2012,14 +2013,17 @@
         "build/MudBlazor.targets",
         "buildMultiTargeting/MudBlazor.props",
         "buildTransitive/MudBlazor.props",
+        "lib/net10.0/MudBlazor.dll",
+        "lib/net10.0/MudBlazor.xml",
         "lib/net8.0/MudBlazor.dll",
         "lib/net8.0/MudBlazor.xml",
         "lib/net9.0/MudBlazor.dll",
         "lib/net9.0/MudBlazor.xml",
-        "mudblazor.8.15.0.nupkg.sha512",
+        "mudblazor.9.2.0.nupkg.sha512",
         "mudblazor.nuspec",
         "staticwebassets/MudBlazor.min.css",
-        "staticwebassets/MudBlazor.min.js"
+        "staticwebassets/MudBlazor.min.js",
+        "staticwebassets/MudBlazor.min.js.map"
       ]
     },
     "System.IO.Pipelines/8.0.0": {
@@ -2059,7 +2063,7 @@
       "Microsoft.AspNetCore.Components.WebAssembly.DevServer >= 8.0.23",
       "Microsoft.NET.ILLink.Tasks >= 8.0.24",
       "Microsoft.NET.Sdk.WebAssembly.Pack >= 10.0.3",
-      "MudBlazor >= 8.15.0"
+      "MudBlazor >= 9.2.0"
     ]
   },
   "packageFolders": {
@@ -2140,7 +2144,7 @@
           },
           "MudBlazor": {
             "target": "Package",
-            "version": "[8.15.0, )"
+            "version": "[9.2.0, )"
           }
         },
         "imports": [
