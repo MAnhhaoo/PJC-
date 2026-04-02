@@ -35,6 +35,32 @@
 
     <!-- 🔥 QUAN TRỌNG: MudBlazor JS -->
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+    <script>
+        // Dùng một đối tượng Audio duy nhất
+        window.audioControl = new Audio();
+
+        window.playAudio = (url) => {
+            console.log("Đang phát file: " + url);
+            window.audioControl.src = url;
+            window.audioControl.load(); // Buộc trình duyệt tải lại file mới
+            window.audioControl.play().catch(e => {
+                console.error("Không thể phát nhạc: ", e);
+                alert("Lỗi: Không tìm thấy file âm thanh tại đường dẫn này!");
+            });
+        };
+
+        window.stopAudio = () => {
+            window.audioControl.pause();
+            window.audioControl.currentTime = 0;
+        };
+
+
+
+
+    </script>
+
+
+
 
 </body>
 

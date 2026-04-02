@@ -7,6 +7,17 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Content Remove="audios\narr_1d284417_ja.mp3" />
+	  <Content Remove="audios\narr_1d82b5b1_zh.mp3" />
+	  <Content Remove="audios\res_5_3f588.mp3" />
+	  <Content Remove="audios\res_5_62029.mp3" />
+	  <Content Remove="audios\res_9_5b57e.mp3" />
+	  <Content Remove="audios\res_9_920bb.mp3" />
+	  <Content Remove="audios\res_9_c6c30.mp3" />
+	  <Content Remove="audios\res__ed3b0.mp3" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.2" />
@@ -18,11 +29,6 @@
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="wwwroot\images\" />
-	  <Folder Include="wwwroot\audios\" />
 	</ItemGroup>
 
 </Project>

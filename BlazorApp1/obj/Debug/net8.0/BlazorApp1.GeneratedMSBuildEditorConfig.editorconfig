@@ -33,12 +33,24 @@ build_property.EnableCodeStyleSeverity =
 build_metadata.AdditionalFiles.TargetPath = QXBwLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/vscode/WebApplication2/BlazorApp1/Pages/Admin.razor]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW4ucmF6b3I=
+[D:/vscode/WebApplication2/BlazorApp1/Pages/AdminDashboard.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5EYXNoYm9hcmQucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
 [D:/vscode/WebApplication2/BlazorApp1/Pages/AdminPayments.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5QYXltZW50cy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/vscode/WebApplication2/BlazorApp1/Pages/Admin/CreateNarrationDialog.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cQ3JlYXRlTmFycmF0aW9uRGlhbG9nLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/vscode/WebApplication2/BlazorApp1/Pages/Admin/ManageNarrations.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cTWFuYWdlTmFycmF0aW9ucy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/vscode/WebApplication2/BlazorApp1/Pages/Admin/TranslateDialog.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cVHJhbnNsYXRlRGlhbG9nLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
 [D:/vscode/WebApplication2/BlazorApp1/Pages/Counter.razor]

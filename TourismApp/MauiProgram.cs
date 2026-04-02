@@ -1,6 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
-using TourismApp.Services;   
+﻿using CommunityToolkit.Maui;
+using Microsoft.Extensions.Logging;
 using Plugin.Maui.Audio;
+using TourismApp.Services;   
 namespace TourismApp
 {
     public static class MauiProgram
@@ -8,12 +9,12 @@ namespace TourismApp
         public static MauiApp CreateMauiApp()
         {
             var builder = MauiApp.CreateBuilder();
-
             builder
-     .UseMauiApp<App>()
-     .UseMauiMaps()
+                .UseMauiApp<App>()
+                .UseMauiCommunityToolkit() // Nếu xóa dòng này mà hết lỗi thì nên xóa
+                .UseMauiMaps()
 
-     .ConfigureFonts(fonts =>
+                 .ConfigureFonts(fonts =>
      {
          fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
      });
@@ -26,8 +27,10 @@ namespace TourismApp
                     BaseAddress = new Uri("http://10.0.2.2:5216/")
                 };
             });
-            builder.Services.AddSingleton(AudioManager.Current);
-
+            // Thay dòng cũ bằng dòng này để đảm bảo DI tìm đúng IAudioManager
+            builder.Services.AddSingleton<IAudioManager>(AudioManager.Current);
+            // Thêm dòng này vào cụm Services trong MauiProgram.cs
+            builder.Services.AddSingleton<GpsService>();
             builder.Services.AddSingleton<AuthService>();
 
 
@@ -53,6 +56,7 @@ namespace TourismApp
 
             builder.Services.AddTransient<MyAudiosPage>(); // Đăng ký trang Audio
             builder.Services.AddTransient<UpgradePremiumPage>();
+            builder.Services.AddSingleton<LanguageService>(); // Đăng ký dạng Singleton để lưu app state
 
 
 

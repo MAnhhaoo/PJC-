@@ -93,9 +93,7 @@ public partial class RestaurantDetailPage : ContentPage
 
         try
         {
-            var url =
-                $"https://www.google.com/maps/dir/{_userLocation.Latitude},{_userLocation.Longitude}/{_restaurant.Latitude},{_restaurant.Longitude}";
-
+            var url = $"https://www.google.com/maps/dir/?api=1&origin={_userLocation.Latitude},{_userLocation.Longitude}&destination={_restaurant.Latitude},{_restaurant.Longitude}";
             await Launcher.OpenAsync(url);
         }
         catch (Exception ex)

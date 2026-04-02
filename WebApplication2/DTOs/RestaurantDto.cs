@@ -12,5 +12,6 @@
         public string? Image { get; set; }
         public bool IsPremium { get; set; }
         public bool IsApproved { get; set; }
+        public List<NarrationDto> Narrations { get; set; } = new List<NarrationDto>();
     }
 }

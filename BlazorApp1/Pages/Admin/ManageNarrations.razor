@@ -1,0 +1,138 @@
+﻿@page "/admin/narrations"
+@using BlazorApp1.Services
+@using BlazorApp1.Models
+@using Microsoft.AspNetCore.Components.Forms
+@using MudBlazor
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject IJSRuntime JSRuntime
+
+<div class="pa-4 mt-10">
+<MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-6">
+    <MudText Typo="Typo.h4">Quản lý Thuyết minh</MudText>
+    <MudSpacer />
+    @* NÚT TẠO MỚI - Sẽ hiện ra sau khi bạn lưu file này *@
+    <MudButton Variant="Variant.Filled" 
+               Color="Color.Success" 
+               StartIcon="@Icons.Material.Filled.Add"
+               OnClick="OpenCreateDialog">
+        Tạo mới bản ghi
+    </MudButton>
+</MudStack>
+
+<MudTable Items="@_narrations" Hover="true" Loading="@_loading" Bordered="true" Striped="true">
+    <HeaderContent>
+        <MudTh>Nhà hàng/Món ăn</MudTh>
+        <MudTh>Ngôn ngữ</MudTh>
+        <MudTh>Nội dung</MudTh>
+        <MudTh>Thao tác</MudTh>
+        <MudTh>Nghe thử</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Nhà hàng">@context.RestaurantName</MudTd>
+        <MudTd>
+            <MudChip T="string" Color="Color.Info" Size="Size.Small">@context.LanguageName</MudChip>
+        </MudTd>
+        <MudTd DataLabel="Nội dung">@context.TextContent</MudTd>
+        <MudTd DataLabel="Thao tác">
+            <MudStack Row="true">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                           OnClick="@(() => OpenTranslateDialog(context))">Dịch</MudButton>
+
+                <MudFileUpload T="IBrowserFile" 
+                               OnFilesChanged="@((e) => UploadAudio(context.NarrationId, e))" 
+                               Accept=".mp3" Style="display:inline-block">
+                    <ActivatorContent>
+                        <MudIconButton Variant="Variant.Filled" Color="Color.Info"
+                                       Icon="@Icons.Material.Filled.CloudUpload" Size="Size.Small" />
+                    </ActivatorContent>
+                </MudFileUpload>
+
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
+                               OnClick="@(() => DeleteNarration(context.NarrationId))" />
+            </MudStack>
+        </MudTd>
+        <MudTd DataLabel="Nghe thử">
+            @if (_playingId == context.NarrationId)
+            {
+                <MudIconButton Icon="@Icons.Material.Filled.Stop" Color="Color.Error" OnClick="StopAudio" />
+            }
+            else
+            {
+                <MudIconButton Icon="@Icons.Material.Filled.PlayArrow" Color="Color.Success"
+                               OnClick="@(() => PlayAudio(context.NarrationId, context.AudioUrl))"
+                               Disabled="@string.IsNullOrEmpty(context.AudioUrl)" />
+            }
+        </MudTd>
+    </RowTemplate>
+</MudTable>
+</div>
+
+@code {
+    private List<NarrationAdminDto> _narrations = new();
+    private bool _loading = true;
+    private int? _playingId;
+
+    protected override async Task OnInitializedAsync() => await LoadData();
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        try {
+            _narrations = await ApiService.GetFromJsonAsync<List<NarrationAdminDto>>("api/restaurants/admin/all-narrations") ?? new();
+        } catch (Exception ex) {
+            Snackbar.Add("Lỗi: " + ex.Message, Severity.Error);
+        } finally { _loading = false; }
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+        var dialog = await DialogService.ShowAsync<CreateNarrationDialog>("Tạo thuyết minh mới", options);
+        var result = await dialog.Result;
+        if (!result.Canceled) await LoadData();
+    }
+
+    private async Task OpenTranslateDialog(NarrationAdminDto item)
+    {
+        var parameters = new DialogParameters { ["SourceText"] = item.TextContent };
+        var dialog = await DialogService.ShowAsync<TranslateDialog>("Dịch thuật", parameters);
+        var result = await dialog.Result;
+        if (!result.Canceled && result.Data != null)
+        {
+            dynamic data = result.Data;
+            var newNarration = new { 
+                DishId = item.DishId > 0 ? (int?)item.DishId : null, 
+                RestaurantId = item.RestaurantId, 
+                TextContent = (string)data.Text, 
+                LanguageCode = (string)data.Lang 
+            };
+            await ApiService.PostAsync("api/narrations/create-translated", newNarration);
+            await LoadData();
+        }
+    }
+
+    private async Task UploadAudio(int id, InputFileChangeEventArgs e)
+    {
+        var success = await ApiService.PostFileAsync("api/restaurants/admin/update-audio", id, e.File);
+        if (success) { Snackbar.Add("Thành công!", Severity.Success); await LoadData(); }
+    }
+
+    private async Task PlayAudio(int id, string url)
+    {
+        if (string.IsNullOrEmpty(url)) return;
+        string fileName = url.Replace("audios/", "").TrimStart('/');
+        string fullUrl = $"https://localhost:7111/audios/{fileName}"; // Kiểm tra lại cổng Backend
+        _playingId = id;
+        await JSRuntime.InvokeVoidAsync("playAudio", fullUrl);
+    }
+
+    private async Task StopAudio() { _playingId = null; await JSRuntime.InvokeVoidAsync("stopAudio"); }
+
+    private async Task DeleteNarration(int id)
+    {
+        var response = await ApiService.PostAsync($"api/restaurants/admin/delete-narration/{id}", new { });
+        if (response.IsSuccessStatusCode) { Snackbar.Add("Đã xóa!", Severity.Success); await LoadData(); }
+    }
+}

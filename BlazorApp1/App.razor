@@ -1,4 +1,11 @@
 ﻿@using BlazorApp1.Shared
+@using MudBlazor
+
+@* Đặt các Provider ở đây để đảm bảo an toàn cho toàn bộ Route *@
+@* <MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider /> *@
 
 <Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">

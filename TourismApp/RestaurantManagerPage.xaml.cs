@@ -75,7 +75,7 @@ public partial class RestaurantManagerPage : ContentPage
         await Shell.Current.GoToAsync("AddDishPage");
 
     private async void GoListDish(object sender, EventArgs e) =>
-        await Navigation.PushAsync(new DishListPage(_httpClient));
+        await Navigation.PushAsync(new DishListPage(_httpClient, _authService));
 
     private async void GoEditRestaurant(object sender, EventArgs e) =>
         await Shell.Current.GoToAsync("EditRestaurantPage");

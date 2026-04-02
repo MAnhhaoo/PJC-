@@ -1,29 +1,22 @@
 ﻿@inherits LayoutComponentBase
 @using MudBlazor
+@* <MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<MudPopoverProvider /> *@
 
-<MudThemeProvider>
-    <MudDialogProvider />
-    <MudSnackbarProvider />
-    <MudPopoverProvider />
+<MudLayout>
+    <MudDrawer Open="true" Elevation="1" Class="pa-4">
+        <NavMenu />
+    </MudDrawer>
 
-    <MudLayout>
+    <MudMainContent>
+        <MudAppBar Elevation="1">
+            <MudText Typo="Typo.h6">Admin Dashboard</MudText>
+        </MudAppBar>
 
-        <MudDrawer Open="true" Elevation="1" Class="pa-4">
-            <NavMenu />
-        </MudDrawer>
-
-        <MudMainContent>
-
-            <MudAppBar Elevation="1">
-                <MudText Typo="Typo.h6">Admin Dashboard</MudText>
-            </MudAppBar>
-
-            <MudContainer MaxWidth="MaxWidth.False" Class="mt-4">
-                @Body
-            </MudContainer>
-
-        </MudMainContent>
-
-    </MudLayout>
-
-</MudThemeProvider>
+        <MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>

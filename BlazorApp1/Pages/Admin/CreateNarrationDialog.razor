@@ -1,0 +1,60 @@
+﻿@using MudBlazor
+@using BlazorApp1.Models
+@using BlazorApp1.Services
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>Tạo thuyết minh Nhà hàng</TitleContent>
+    <DialogContent>
+        <MudStack Spacing="4">
+            <MudSelect T="int?" Label="Chọn Nhà hàng" @bind-Value="_selectedRestaurantId" Variant="Variant.Outlined">
+                @foreach (var res in _restaurants)
+                {
+                    <MudSelectItem T="int?" Value="@res.RestaurantId">@res.Name</MudSelectItem>
+                }
+            </MudSelect>
+            <MudTextField T="string" Label="Nội dung Tiếng Việt" @bind-Value="_textContent" Lines="3" Variant="Variant.Outlined" />
+            <MudSelect T="string" Label="Ngôn ngữ mục tiêu" @bind-Value="_targetLangCode" Variant="Variant.Outlined">
+                <MudSelectItem Value="@("vi")">Tiếng Việt</MudSelectItem>
+                <MudSelectItem Value="@("en")">Tiếng Anh (English)</MudSelectItem>
+                <MudSelectItem Value="@("fr")">Tiếng Pháp (French)</MudSelectItem>
+                <MudSelectItem Value="@("ja")">Tiếng Nhật (Japanese)</MudSelectItem>
+                <MudSelectItem Value="@("zh")">Tiếng Trung (Chinese)</MudSelectItem>
+                <MudSelectItem Value="@("ko")">Tiếng Hàn (Korean)</MudSelectItem>
+            </MudSelect>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Hủy</MudButton>
+        <MudButton Color="Color.Success" Variant="Variant.Filled" OnClick="Submit">Xác nhận & Tạo</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    private List<RestaurantDto> _restaurants = new();
+    private int? _selectedRestaurantId;
+    private string _textContent = "";
+    private string _targetLangCode = "vi";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var res = await ApiService.GetFromJsonAsync<List<RestaurantDto>>("api/restaurants");
+        if (res != null) _restaurants = res;
+    }
+
+    private async Task Submit()
+    {
+        var newItem = new
+        {
+            RestaurantId = _selectedRestaurantId,
+            DishId = (int?)null, // Cho nhà hàng nên DishId là NULL
+            TextContent = _textContent,
+            LanguageCode = _targetLangCode
+        };
+        var response = await ApiService.PostAsync("api/narrations/create-translated", newItem);
+        if (response.IsSuccessStatusCode) MudDialog.Close(DialogResult.Ok(true));
+    }
+    private void Cancel() => MudDialog.Cancel();
+}
