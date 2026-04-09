@@ -5,56 +5,206 @@
 @inject ISnackbar Snackbar
 
 <MudDialog>
-    <TitleContent>Tạo thuyết minh Nhà hàng</TitleContent>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Restaurant" Class="mr-2 mb-n1" />
+            Tạo thuyết minh Nhà hàng
+        </MudText>
+    </TitleContent>
     <DialogContent>
-        <MudStack Spacing="4">
-            <MudSelect T="int?" Label="Chọn Nhà hàng" @bind-Value="_selectedRestaurantId" Variant="Variant.Outlined">
+        <MudStack Spacing="3" Class="py-2">
+            @* 1. Chọn nhà hàng *@
+            <MudSelect T="int?" Label="Chọn Nhà hàng" @bind-Value="_selectedRestaurantId" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter">
                 @foreach (var res in _restaurants)
                 {
                     <MudSelectItem T="int?" Value="@res.RestaurantId">@res.Name</MudSelectItem>
                 }
             </MudSelect>
-            <MudTextField T="string" Label="Nội dung Tiếng Việt" @bind-Value="_textContent" Lines="3" Variant="Variant.Outlined" />
-            <MudSelect T="string" Label="Ngôn ngữ mục tiêu" @bind-Value="_targetLangCode" Variant="Variant.Outlined">
-                <MudSelectItem Value="@("vi")">Tiếng Việt</MudSelectItem>
-                <MudSelectItem Value="@("en")">Tiếng Anh (English)</MudSelectItem>
-                <MudSelectItem Value="@("fr")">Tiếng Pháp (French)</MudSelectItem>
-                <MudSelectItem Value="@("ja")">Tiếng Nhật (Japanese)</MudSelectItem>
-                <MudSelectItem Value="@("zh")">Tiếng Trung (Chinese)</MudSelectItem>
-                <MudSelectItem Value="@("ko")">Tiếng Hàn (Korean)</MudSelectItem>
-            </MudSelect>
+
+            @* 2. Nội dung tiếng Việt *@
+            <MudTextField T="string" Label="Nội dung (Tiếng Việt)" @bind-Value="_textContent"
+                          Lines="3" Variant="Variant.Outlined" Placeholder="Nhập nội dung gốc để dịch..." />
+
+            @* 3. Ô nhập mã ngôn ngữ *@
+            <MudTextField T="string"
+                          Label="Mã ngôn ngữ đích"
+                          @bind-Value="_langCodesText"
+                          Placeholder="Ví dụ: en, ja, fr..."
+                          HelperText="Phân cách bằng dấu phẩy hoặc khoảng trắng"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.End"
+                          AdornmentIcon="@Icons.Material.Filled.Language" />
+
+            @* 4. Vùng gợi ý 30 ngôn ngữ (Có Scroll giúp giao diện giãn đều) *@
+            <div>
+                <MudText Typo="Typo.caption" Color="Color.Primary" Class="ml-1 mb-1 d-block"><b>Gợi ý từ hệ thống (Click để chọn):</b></MudText>
+                <div style="max-height: 150px; overflow-y: auto; border: 1px dashed #bdbdbd; padding: 12px; border-radius: 12px; background-color: #f9f9f9;">
+                    <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1">
+                        @{
+                            var currentToken = GetCurrentToken();
+                            var displayOptions = string.IsNullOrWhiteSpace(currentToken)
+                            ? SuggestedLangs
+                            : SuggestedLangs.Where(s => MatchesSuggestion(s, currentToken));
+
+                            foreach (var opt in displayOptions)
+                            {
+                                <MudChip T="string"
+                                         Size="Size.Small"
+                                         Variant="Variant.Outlined"
+                                         Color="Color.Info"
+                                         Clickable="true"
+                                         OnClick="() => AddSuggestion(opt.Code)"
+                                         Style="font-size: 12px; background: white;">
+                                    <b>@opt.Code</b> (@opt.Label)
+                                </MudChip>
+                            }
+                        }
+                    </MudStack>
+                </div>
+            </div>
         </MudStack>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">Hủy</MudButton>
-        <MudButton Color="Color.Success" Variant="Variant.Filled" OnClick="Submit">Xác nhận & Tạo</MudButton>
+        <MudButton OnClick="Cancel" Disabled="@_isProcessing" Variant="Variant.Text" Class="px-6">Hủy</MudButton>
+        <MudButton Color="Color.Success"
+                   Variant="Variant.Filled"
+                   OnClick="Submit"
+                   Disabled="@_isProcessing"
+                   Class="px-8 ml-2">
+            @if (_isProcessing)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                <MudText Class="ms-2">Đang xử lý...</MudText>
+            }
+            else
+            {
+                <MudText>Xác nhận & Tạo</MudText>
+            }
+        </MudButton>
     </DialogActions>
 </MudDialog>
 
 @code {
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
     private List<RestaurantDto> _restaurants = new();
     private int? _selectedRestaurantId;
     private string _textContent = "";
-    private string _targetLangCode = "vi";
+    private string _langCodesText = "";
+    private bool _isProcessing = false;
+
+    // Danh sách đầy đủ 30 ngôn ngữ khớp chính xác với DB của bạn
+    private readonly List<(string Code, string Label)> SuggestedLangs = new()
+    {
+        ("vi", "Tiếng Việt"), ("en", "English"), ("ja", "Japanese"), ("fr", "French"),
+        ("ko", "Korean"), ("zh", "Chinese"), ("de", "German"), ("it", "Italian"),
+        ("th", "Thai"), ("khm", "Khmer"), ("es", "Spanish"), ("pt", "Portuguese"),
+        ("ru", "Russian"), ("ar", "Arabic"), ("hi", "Hindi"), ("bn", "Bengali"),
+        ("pa", "Punjabi"), ("jv", "Javanese"), ("ms", "Malay"), ("tr", "Turkish"),
+        ("pl", "Polish"), ("nl", "Dutch"), ("sv", "Swedish"), ("no", "Norwegian"),
+        ("fi", "Finnish"), ("da", "Danish"), ("he", "Hebrew"), ("id", "Indonesian"),
+        ("el", "Greek"), ("ro", "Romanian")
+    };
+
+    private string GetCurrentToken()
+    {
+        if (string.IsNullOrWhiteSpace(_langCodesText)) return string.Empty;
+        var parts = _langCodesText.Split(new[] { ',', ';', ' ', '\n', '\r', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length == 0 ? string.Empty : parts.Last();
+    }
+
+    private bool MatchesSuggestion((string Code, string Label) s, string token)
+    {
+        if (string.IsNullOrWhiteSpace(token)) return true;
+        token = token.Trim().ToLower();
+        return s.Code.StartsWith(token) || s.Label.ToLower().Contains(token);
+    }
+
+    private void AddSuggestion(string code)
+    {
+        var codes = (_langCodesText ?? string.Empty)
+            .Split(new[] { ',', ';', ' ', '\n', '\r', '\t' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => s.Trim().ToLower())
+            .ToList();
+
+        // Xóa phần đang gõ dở nếu nó không phải là một code hoàn chỉnh
+        if (codes.Count > 0 && !SuggestedLangs.Any(x => x.Code == codes.Last()))
+        {
+            codes.RemoveAt(codes.Count - 1);
+        }
+
+        if (!codes.Contains(code.ToLower()))
+        {
+            codes.Add(code.ToLower());
+        }
+
+        _langCodesText = string.Join(", ", codes);
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        var res = await ApiService.GetFromJsonAsync<List<RestaurantDto>>("api/restaurants");
-        if (res != null) _restaurants = res;
+        try
+        {
+            var res = await ApiService.GetFromJsonAsync<List<RestaurantDto>>("api/restaurants");
+            if (res != null) _restaurants = res;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Không thể tải danh sách nhà hàng", Severity.Error);
+        }
     }
 
     private async Task Submit()
     {
-        var newItem = new
+        if (_selectedRestaurantId == null)
         {
-            RestaurantId = _selectedRestaurantId,
-            DishId = (int?)null, // Cho nhà hàng nên DishId là NULL
-            TextContent = _textContent,
-            LanguageCode = _targetLangCode
-        };
-        var response = await ApiService.PostAsync("api/narrations/create-translated", newItem);
-        if (response.IsSuccessStatusCode) MudDialog.Close(DialogResult.Ok(true));
+            Snackbar.Add("Vui lòng chọn nhà hàng", Severity.Warning);
+            return;
+        }
+
+        var codes = (_langCodesText ?? string.Empty)
+            .Split(new[] { ',', ';', ' ', '\n', '\r', '\t' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => s.Trim().ToLower())
+            .Distinct()
+            .ToList();
+
+        if (!codes.Any())
+        {
+            Snackbar.Add("Vui lòng nhập ít nhất một ngôn ngữ", Severity.Warning);
+            return;
+        }
+
+        _isProcessing = true;
+        try
+        {
+            var newItem = new
+            {
+                RestaurantId = _selectedRestaurantId,
+                TextContent = _textContent,
+                LanguageCodes = codes
+            };
+
+            var response = await ApiService.PostAsync("api/narrations/create-translated-multi", newItem);
+
+            if (response.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Đã tạo thuyết minh thành công!", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                Snackbar.Add("Lỗi từ máy chủ khi tạo bản dịch", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Lỗi kết nối: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
     }
+
     private void Cancel() => MudDialog.Cancel();
 }

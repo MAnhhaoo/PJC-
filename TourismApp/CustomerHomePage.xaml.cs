@@ -1,4 +1,5 @@
 ﻿using Microsoft.Maui.Devices.Sensors;
+using System.IO;
 using Plugin.Maui.Audio;
 using System.Collections.ObjectModel;
 using TourismApp.Services;
@@ -107,14 +108,26 @@ public partial class CustomerHomePage : ContentPage
                 n.Language != null && n.Language.Code?.Trim().ToLower() == selectedLang)
                 ?? restaurant.Narrations.FirstOrDefault();
 
-            if (matched == null || string.IsNullOrEmpty(matched.AudioUrl)) return;
+            if (matched == null)
+                return;
 
-            // 2. Gọt link để tránh lặp /audios/audios/
-            string fileName = matched.AudioUrl;
-            if (fileName.Contains("/"))
+            // If no audio file, fallback to TTS (speak text) so button still works
+            if (string.IsNullOrEmpty(matched.AudioUrl))
             {
-                fileName = fileName.Substring(fileName.LastIndexOf("/") + 1);
+                if (!string.IsNullOrEmpty(matched.TextContent))
+                {
+                    try
+                    {
+                        await TextToSpeech.Default.SpeakAsync(matched.TextContent);
+                    }
+                    catch { }
+                }
+                return;
             }
+
+            // 2. Lấy filename an toàn (loại bỏ bất kỳ đường dẫn nào) để tránh 'audios/audios/...'
+            var fileName = string.IsNullOrEmpty(matched.AudioUrl) ? string.Empty : Path.GetFileName(matched.AudioUrl);
+            if (string.IsNullOrEmpty(fileName)) return;
 
             string audioUrl = $"http://10.0.2.2:5216/audios/{fileName}";
 
@@ -160,30 +173,41 @@ public partial class CustomerHomePage : ContentPage
     {
         try
         {
-            // 1. Giải phóng Player
+            // 1. Dừng TextToSpeech nếu đang nói
+            TextToSpeech.Default.SpeakAsync(string.Empty);
+
+            // 2. Xử lý Player an toàn
             if (_activePlayer != null)
             {
-                if (_activePlayer.IsPlaying)
-                    _activePlayer.Stop();
+                // Tách biệt việc Stop và Dispose để tránh xung đột luồng
+                var playerToDispose = _activePlayer;
+                _activePlayer = null; // Gán null ngay để các hàm khác không gọi vào
 
-                _activePlayer.Dispose();
-                _activePlayer = null;
+                if (playerToDispose.IsPlaying)
+                    playerToDispose.Stop();
+
+                playerToDispose.Dispose();
             }
 
-            // 2. Cập nhật lại UI nút bấm
-            if (_currentPlayingRestaurant != null)
+            // 3. Cập nhật UI trên luồng chính
+            MainThread.BeginInvokeOnMainThread(() =>
             {
-                var resToReset = _currentPlayingRestaurant;
-                MainThread.BeginInvokeOnMainThread(() =>
+                if (_currentPlayingRestaurant != null)
                 {
-                    resToReset.IsPlaying = false;
-                });
-                _currentPlayingRestaurant = null;
-            }
+                    _currentPlayingRestaurant.IsPlaying = false;
+                    _currentPlayingRestaurant = null;
+                }
+
+                // Reset toàn bộ danh sách để chắc chắn không nút nào bị kẹt trạng thái IsPlaying
+                foreach (var res in Restaurants)
+                {
+                    res.IsPlaying = false;
+                }
+            });
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Lỗi khi dừng Audio: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"Lỗi dừng nhạc: {ex.Message}");
         }
     }
     private async void OnSelectLanguageClicked(object sender, EventArgs e)
