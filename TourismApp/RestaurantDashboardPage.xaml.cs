@@ -38,13 +38,33 @@ public partial class RestaurantDashboardPage : ContentPage
             data.Description,
             PremiumText = data.IsPremium && data.PremiumExpireDate != null
                 ? $"⭐ Premium đến {data.PremiumExpireDate.Value.ToString("dd/MM/yyyy")}"
-                : "Normal Account",
+                : "Tài khoản thường",
             Dishes = dishes
         };
     }
 
+    private async void OnEditRestaurantClicked(object sender, EventArgs e)
+    {
+        await Shell.Current.GoToAsync(nameof(EditRestaurantPage));
+    }
+
+    private async void OnManageNarrationsClicked(object sender, EventArgs e)
+    {
+        await Shell.Current.GoToAsync(nameof(MyAudiosPage));
+    }
+
+    private async void OnDishListClicked(object sender, EventArgs e)
+    {
+        await Shell.Current.GoToAsync(nameof(DishListPage));
+    }
+
+    private async void OnAddDishClicked(object sender, EventArgs e)
+    {
+        await Shell.Current.GoToAsync(nameof(AddDishPage));
+    }
+
     private async void OnUpgradeClicked(object sender, EventArgs e)
     {
-        await DisplayAlert("Upgrade", "Redirect to payment screen", "OK");
+        await Shell.Current.GoToAsync(nameof(UpgradePremiumPage));
     }
 }

@@ -110,7 +110,7 @@ namespace WebApplication2.Controllers
             try
             {
                 using var client = new HttpClient();
-                // Google TTS: tl = ngôn ngữ (vi, en, zh...)
+                client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
                 string ttsUrl = $"https://translate.google.com/translate_tts?ie=UTF-8&q={Uri.EscapeDataString(dto.TextContent)}&tl={dto.LanguageCode}&client=tw-ob";
                 var audioBytes = await client.GetByteArrayAsync(ttsUrl);
                 await System.IO.File.WriteAllBytesAsync(Path.Combine(folderPath, fileName), audioBytes);
@@ -124,10 +124,10 @@ namespace WebApplication2.Controllers
             var newNarration = new Narration
             {
                 RestaurantId = dto.RestaurantId,
-                DishId = dto.DishId, // Sẽ là null nếu Admin tạo cho nhà hàng
+                DishId = dto.DishId,
                 TextContent = dto.TextContent,
                 LanguageId = language.LanguageId,
-                AudioUrl = string.IsNullOrEmpty(fileName) ? "" : $"audios/{fileName}"
+                AudioUrl = string.IsNullOrEmpty(fileName) ? "" : fileName
             };
 
             _context.Narrations.Add(newNarration);
@@ -174,7 +174,7 @@ namespace WebApplication2.Controllers
                     try
                     {
                         using var client = new HttpClient();
-                        // Use translated text for TTS
+                        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
                         string ttsUrl = $"https://translate.google.com/translate_tts?ie=UTF-8&q={Uri.EscapeDataString(textForTts)}&tl={code}&client=tw-ob";
                         var audioBytes = await client.GetByteArrayAsync(ttsUrl);
                         var fullPath = Path.Combine(folderPath, fileName);
@@ -191,10 +191,9 @@ namespace WebApplication2.Controllers
                     {
                         RestaurantId = dto.RestaurantId,
                         DishId = dto.DishId,
-                        // save the translated text (or original if translation failed)
                         TextContent = textForTts,
                         LanguageId = language.LanguageId,
-                        AudioUrl = string.IsNullOrEmpty(savedFile) ? string.Empty : ($"audios/{Path.GetFileName(savedFile)}")
+                        AudioUrl = string.IsNullOrEmpty(savedFile) ? string.Empty : Path.GetFileName(savedFile)
                     };
 
                     _context.Narrations.Add(newNarration);

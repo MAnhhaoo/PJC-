@@ -1,0 +1,142 @@
+@page "/admin/restaurants"
+@layout BlazorApp1.Shared.AdminLayout
+@using MudBlazor
+@inject HttpClient Http
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.h4" Class="mb-4">🏪 Quản lý nhà hàng</MudText>
+
+@if (_loading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (_restaurants == null || !_restaurants.Any())
+{
+    <MudAlert Severity="Severity.Info">Chưa có nhà hàng nào.</MudAlert>
+}
+else
+{
+    <MudTable Items="@_restaurants" Hover="true" Striped="true" Dense="true" Elevation="2">
+        <HeaderContent>
+            <MudTh>ID</MudTh>
+            <MudTh>Tên nhà hàng</MudTh>
+            <MudTh>Địa chỉ</MudTh>
+            <MudTh>Chủ sở hữu</MudTh>
+            <MudTh>Trạng thái</MudTh>
+            <MudTh>Duyệt</MudTh>
+            <MudTh>Ngày tạo</MudTh>
+            <MudTh>Hành động</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.RestaurantId</MudTd>
+            <MudTd>@context.Name</MudTd>
+            <MudTd>@context.Address</MudTd>
+            <MudTd>
+                <MudText Typo="Typo.body2">@context.OwnerName</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">@context.OwnerEmail</MudText>
+            </MudTd>
+            <MudTd>
+                @if (context.IsActive)
+                {
+                    <MudChip T="string" Color="Color.Success" Size="Size.Small">Hoạt động</MudChip>
+                }
+                else
+                {
+                    <MudChip T="string" Color="Color.Default" Size="Size.Small">Đóng cửa</MudChip>
+                }
+            </MudTd>
+            <MudTd>
+                @if (context.IsApproved)
+                {
+                    <MudChip T="string" Color="Color.Success" Size="Size.Small">Đã duyệt</MudChip>
+                }
+                else
+                {
+                    <MudChip T="string" Color="Color.Warning" Size="Size.Small">Chờ duyệt</MudChip>
+                }
+            </MudTd>
+            <MudTd>@context.CreatedAt?.ToString("dd/MM/yyyy")</MudTd>
+            <MudTd>
+                <MudButton Variant="Variant.Filled"
+                           Color="@(context.IsApproved ? Color.Error : Color.Success)"
+                           Size="Size.Small"
+                           OnClick="@(() => ToggleApproval(context))">
+                    @(context.IsApproved ? "Hủy duyệt" : "Duyệt")
+                </MudButton>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@code {
+    private List<RestaurantAdmin> _restaurants = new();
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        try
+        {
+            var token = await localStorage.GetItemAsync<string>("token");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            _restaurants = await Http.GetFromJsonAsync<List<RestaurantAdmin>>("api/restaurants/admin/all") ?? new();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Lỗi tải dữ liệu: " + ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task ToggleApproval(RestaurantAdmin restaurant)
+    {
+        try
+        {
+            var token = await localStorage.GetItemAsync<string>("token");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.PatchAsync($"api/restaurants/admin/{restaurant.RestaurantId}/approve", null);
+            if (response.IsSuccessStatusCode)
+            {
+                restaurant.IsApproved = !restaurant.IsApproved;
+                Snackbar.Add(restaurant.IsApproved ? "Đã duyệt nhà hàng" : "Đã hủy duyệt", Severity.Success);
+                StateHasChanged();
+            }
+            else
+            {
+                Snackbar.Add("Thao tác thất bại", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Lỗi: " + ex.Message, Severity.Error);
+        }
+    }
+
+    public class RestaurantAdmin
+    {
+        public int RestaurantId { get; set; }
+        public string? Name { get; set; }
+        public string? Address { get; set; }
+        public string? Phone { get; set; }
+        public string? Description { get; set; }
+        public bool IsApproved { get; set; }
+        public bool IsActive { get; set; }
+        public bool IsPremium { get; set; }
+        public DateTime? CreatedAt { get; set; }
+        public string? OwnerName { get; set; }
+        public string? OwnerEmail { get; set; }
+    }
+}

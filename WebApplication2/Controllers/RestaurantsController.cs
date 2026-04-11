@@ -20,6 +20,32 @@ public class RestaurantsController : ControllerBase
         _env = env;
     }
 
+    private async Task<string> TranslateTextAsync(string text, string sourceLang, string targetLang)
+    {
+        if (string.IsNullOrWhiteSpace(text) || string.Equals(sourceLang, targetLang, StringComparison.OrdinalIgnoreCase))
+            return text;
+
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
+
+        var url = $"https://api.mymemory.translated.net/get?q={Uri.EscapeDataString(text)}&langpair={sourceLang}|{targetLang}";
+        var resp = await client.GetAsync(url);
+        if (!resp.IsSuccessStatusCode) return text;
+
+        var content = await resp.Content.ReadAsStringAsync();
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(content);
+            if (doc.RootElement.TryGetProperty("responseData", out var data) && data.TryGetProperty("translatedText", out var t))
+            {
+                return t.GetString() ?? text;
+            }
+        }
+        catch { }
+
+        return text;
+    }
+
     // 🔹 GET: api/restaurants
     [HttpGet]
     public IActionResult GetRestaurants()
@@ -43,9 +69,9 @@ public class RestaurantsController : ControllerBase
                 {
                     NarrationId = n.NarrationId,
                     TextContent = n.TextContent,
-                    // Tạo URL tuyệt đối cho Audio
+                    // Trả về đường dẫn tương đối (client tự ghép IP)
                     AudioUrl = string.IsNullOrEmpty(n.AudioUrl) ? "" :
-                               (n.AudioUrl.StartsWith("http") ? n.AudioUrl : $"http://10.0.2.2:5216/audios/{n.AudioUrl}"),
+                               n.AudioUrl.Replace("audios/", "").TrimStart('/'),
                     Language = new LanguageDto
                     {
                         Code = n.Language.Code,
@@ -56,6 +82,16 @@ public class RestaurantsController : ControllerBase
             .ToList();
 
         return Ok(restaurants);
+    }
+
+    // 🔹 GET: api/restaurants/languages
+    [HttpGet("languages")]
+    public IActionResult GetLanguages()
+    {
+        var languages = _context.Languages
+            .Select(l => new { l.LanguageId, l.Code, l.Name })
+            .ToList();
+        return Ok(languages);
     }
 
     // 🔹 GET: api/restaurants/{id}
@@ -74,13 +110,17 @@ public class RestaurantsController : ControllerBase
                 Longitude = r.Longitude,
                 Image = r.Image,
                 IsPremium = r.IsPremium,
+                IsActive = r.IsActive,
                 IsApproved = r.IsApproved,
+                PremiumExpireDate = r.PremiumExpireDate,
                 Narrations = r.Narrations.Select(n => new NarrationDto
                 {
                     NarrationId = n.NarrationId,
+                    LanguageId = n.LanguageId,
                     TextContent = n.TextContent,
+                    // Trả về đường dẫn tương đối (client tự ghép IP)
                     AudioUrl = string.IsNullOrEmpty(n.AudioUrl) ? "" :
-                               (n.AudioUrl.StartsWith("http") ? n.AudioUrl : $"http://10.0.2.2:5216/audios/{n.AudioUrl}"),
+                               n.AudioUrl.Replace("audios/", "").TrimStart('/'),
                     Language = new LanguageDto
                     {
                         Code = n.Language.Code,
@@ -123,6 +163,33 @@ public class RestaurantsController : ControllerBase
         var userId = int.Parse(userIdClaim.Value);
         var restaurant = await _context.Restaurants
             .Where(r => r.OwnerId == userId)
+            .Select(r => new RestaurantDto
+            {
+                RestaurantId = r.RestaurantId,
+                Name = r.Name,
+                Address = r.Address,
+                Description = r.Description,
+                Phone = r.Phone,
+                Latitude = r.Latitude,
+                Longitude = r.Longitude,
+                Image = r.Image,
+                IsPremium = r.IsPremium,
+                IsActive = r.IsActive,
+                IsApproved = r.IsApproved,
+                PremiumExpireDate = r.PremiumExpireDate,
+                Narrations = r.Narrations.Select(n => new NarrationDto
+                {
+                    NarrationId = n.NarrationId,
+                    LanguageId = n.LanguageId,
+                    TextContent = n.TextContent,
+                    AudioUrl = n.AudioUrl,
+                    Language = n.Language != null ? new LanguageDto
+                    {
+                        Code = n.Language.Code,
+                        Name = n.Language.Name
+                    } : null
+                }).ToList()
+            })
             .FirstOrDefaultAsync();
 
         if (restaurant == null) return NotFound();
@@ -196,16 +263,15 @@ public class RestaurantsController : ControllerBase
     [HttpPut("update-my")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UpdateMyRestaurant(
-    [FromForm] string name,
-    [FromForm] string address,
-    [FromForm] string description,
-    [FromForm] string phone,
-    [FromForm] double latitude,
-    [FromForm] double longitude,
-    [FromForm] int? languageId,
-    [FromForm] string textContent,
-   IFormFile? imageFile, // Sửa thành IFormFile?
-    IFormFile? audioFile)
+        [FromForm] string name,
+        [FromForm] string address,
+        [FromForm] string description,
+        [FromForm] string phone,
+        [FromForm] string? latitude,
+        [FromForm] string? longitude,
+        [FromForm] List<int>? languageIds,
+        [FromForm] List<string>? textContents,
+        IFormFile? imageFile)
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userIdClaim == null) return Unauthorized();
@@ -217,59 +283,109 @@ public class RestaurantsController : ControllerBase
 
         if (restaurant == null) return NotFound("Không tìm thấy nhà hàng");
 
-        // Cập nhật thông tin cơ bản
         restaurant.Name = name;
         restaurant.Address = address;
         restaurant.Description = description;
         restaurant.Phone = phone;
-        restaurant.Latitude = latitude;
-        restaurant.Longitude = longitude;
 
-        // 1. Xử lý Ảnh nhà hàng
+        if (double.TryParse(latitude, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var lat))
+            restaurant.Latitude = lat;
+
+        if (double.TryParse(longitude, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var lng))
+            restaurant.Longitude = lng;
+
         if (imageFile != null)
         {
             string fileName = Guid.NewGuid().ToString() + Path.GetExtension(imageFile.FileName);
             string path = Path.Combine(_env.WebRootPath, "images", fileName);
             if (!Directory.Exists(Path.Combine(_env.WebRootPath, "images"))) Directory.CreateDirectory(Path.Combine(_env.WebRootPath, "images"));
             using (var stream = new FileStream(path, FileMode.Create)) await imageFile.CopyToAsync(stream);
-            restaurant.Image = "http://10.0.2.2:5216/images/" + fileName;
+            restaurant.Image = "images/" + fileName;
         }
 
-        // 2. Xử lý Thuyết minh (Narration)
-        if (languageId.HasValue)
+        // Xử lý nhiều thuyết minh (multi-language narrations) — tự động dịch + tạo TTS
+        if (languageIds != null && languageIds.Count > 0)
         {
-            var nar = restaurant.Narrations?.FirstOrDefault(n => n.LanguageId == languageId.Value);
-            string audioUrl = nar?.AudioUrl ?? "";
+            var langInfos = await _context.Languages
+                .Where(l => languageIds.Contains(l.LanguageId))
+                .ToDictionaryAsync(l => l.LanguageId, l => l.Code);
 
-            // Nếu có file Audio mới thì upload, nếu không có thì giữ nguyên AudioUrl cũ (hoặc trống)
-            // Trong hàm UpdateMyRestaurant, đoạn xử lý Audio
-            if (audioFile != null)
+            string audioFolder = Path.Combine(_env.ContentRootPath, "audios");
+            if (!Directory.Exists(audioFolder)) Directory.CreateDirectory(audioFolder);
+
+            string sharedUploadedAudio = null;
+            const string sourceLang = "vi";
+
+            for (int i = 0; i < languageIds.Count; i++)
             {
-                string audioName = Guid.NewGuid().ToString() + Path.GetExtension(audioFile.FileName);
-                string audioFolder = Path.Combine(_env.WebRootPath, "audios");
-                if (!Directory.Exists(audioFolder)) Directory.CreateDirectory(audioFolder);
+                var langId = languageIds[i];
+                var originalText = (textContents != null && i < textContents.Count) ? textContents[i] : "";
+                langInfos.TryGetValue(langId, out var langCode);
+                langCode ??= "vi";
+                var audioFile = Request.Form.Files.FirstOrDefault(f => f.Name == $"audioFile_{i}");
 
-                string audioPath = Path.Combine(audioFolder, audioName);
-                using (var stream = new FileStream(audioPath, FileMode.Create)) await audioFile.CopyToAsync(stream);
+                var nar = restaurant.Narrations?.FirstOrDefault(n => n.LanguageId == langId);
 
-                // CHỈ LƯU TÊN FILE VÀO BIẾN audioUrl
-                audioUrl = audioName;
-            }
-
-            if (nar != null) // Cập nhật bản cũ
-            {
-                nar.TextContent = textContent ?? "";
-                nar.AudioUrl = audioUrl;
-            }
-            else // Thêm mới bản thuyết minh cho ngôn ngữ này
-            {
-                _context.Narrations.Add(new Narration
+                // 1. Dịch nội dung nếu ngôn ngữ đích khác nguồn
+                string finalText = originalText;
+                if (!string.Equals(langCode, sourceLang, StringComparison.OrdinalIgnoreCase)
+                    && !string.IsNullOrWhiteSpace(originalText))
                 {
-                    RestaurantId = restaurant.RestaurantId,
-                    LanguageId = languageId.Value,
-                    TextContent = textContent ?? "",
-                    AudioUrl = audioUrl
-                });
+                    try { finalText = await TranslateTextAsync(originalText, sourceLang, langCode); }
+                    catch { finalText = originalText; }
+                }
+
+                // 2. Xử lý audio
+                string audioUrl = nar?.AudioUrl ?? "";
+
+                if (audioFile != null)
+                {
+                    // Người dùng upload file audio
+                    string audioName = Guid.NewGuid().ToString() + Path.GetExtension(audioFile.FileName);
+                    string audioPath = Path.Combine(audioFolder, audioName);
+                    using (var stream = new FileStream(audioPath, FileMode.Create)) await audioFile.CopyToAsync(stream);
+                    audioUrl = audioName;
+                    sharedUploadedAudio ??= audioName;
+                }
+                else
+                {
+                    // Không có file upload → tạo TTS tự động
+                    try
+                    {
+                        string ttsFileName = $"res_{restaurant.RestaurantId}_{langCode}_{Guid.NewGuid().ToString()[..5]}.mp3";
+                        using var httpClient = new HttpClient();
+                        httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
+                        string ttsUrl = $"https://translate.google.com/translate_tts?ie=UTF-8&q={Uri.EscapeDataString(finalText)}&tl={langCode}&client=tw-ob";
+                        var audioBytes = await httpClient.GetByteArrayAsync(ttsUrl);
+                        await System.IO.File.WriteAllBytesAsync(Path.Combine(audioFolder, ttsFileName), audioBytes);
+                        audioUrl = ttsFileName;
+                    }
+                    catch
+                    {
+                        // TTS thất bại — dùng audio đã upload hoặc giữ nguyên
+                        if (sharedUploadedAudio != null && string.IsNullOrEmpty(audioUrl))
+                            audioUrl = sharedUploadedAudio;
+                    }
+                }
+
+                // 3. Lưu narration
+                if (nar != null)
+                {
+                    nar.TextContent = finalText;
+                    nar.AudioUrl = audioUrl;
+                }
+                else
+                {
+                    _context.Narrations.Add(new Narration
+                    {
+                        RestaurantId = restaurant.RestaurantId,
+                        LanguageId = langId,
+                        TextContent = finalText,
+                        AudioUrl = audioUrl
+                    });
+                }
             }
         }
 
@@ -330,18 +446,27 @@ public class RestaurantsController : ControllerBase
         var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
         var restaurant = await _context.Restaurants
             .Include(r => r.Narrations)
+                .ThenInclude(n => n.Language)
             .FirstOrDefaultAsync(r => r.OwnerId == userId);
 
         if (restaurant == null) return NotFound();
 
-        var result = restaurant.Narrations.Select(n => new {
-            n.NarrationId,
-            LanguageName = n.LanguageId == 1 ? "Tiếng Việt" : "English",
-            n.TextContent,
-            // Tạo URL chuẩn: Nếu là tên file thì nối thêm host, nếu đã có http thì giữ nguyên
-            AudioUrl = (string.IsNullOrEmpty(n.AudioUrl) || n.AudioUrl.StartsWith("http"))
-                       ? n.AudioUrl
-                       : $"http://10.0.2.2:5216/audios/{n.AudioUrl}"
+        var baseUrl = $"{Request.Scheme}://{Request.Host}";
+        var result = restaurant.Narrations.Select(n => {
+            var rawAudio = n.AudioUrl ?? "";
+            if (rawAudio.StartsWith("audios/", StringComparison.OrdinalIgnoreCase))
+                rawAudio = rawAudio.Substring(7);
+            return new {
+                n.NarrationId,
+                LanguageName = n.Language?.Name ?? "Unknown",
+                LanguageCode = n.Language?.Code ?? "vi",
+                n.TextContent,
+                AudioUrl = string.IsNullOrEmpty(rawAudio)
+                           ? ""
+                           : rawAudio.StartsWith("http")
+                               ? rawAudio
+                               : $"{baseUrl}/audios/{rawAudio}"
+            };
         });
 
         return Ok(result);
@@ -370,6 +495,18 @@ public class RestaurantsController : ControllerBase
             })
             .ToListAsync();
 
+        var baseUrl = $"{Request.Scheme}://{Request.Host}";
+        foreach (var n in narrations)
+        {
+            if (!string.IsNullOrEmpty(n.AudioUrl) && !n.AudioUrl.StartsWith("http"))
+            {
+                var rawAudio = n.AudioUrl;
+                if (rawAudio.StartsWith("audios/", StringComparison.OrdinalIgnoreCase))
+                    rawAudio = rawAudio.Substring(7);
+                n.AudioUrl = $"{baseUrl}/audios/{rawAudio}";
+            }
+        }
+
         return Ok(narrations);
     }
 
@@ -384,7 +521,9 @@ public class RestaurantsController : ControllerBase
         if (audioFile != null)
         {
             string audioName = Guid.NewGuid().ToString() + Path.GetExtension(audioFile.FileName);
-            string audioPath = Path.Combine(_env.WebRootPath, "audios", audioName);
+            string audioFolder = Path.Combine(_env.ContentRootPath, "audios");
+            if (!Directory.Exists(audioFolder)) Directory.CreateDirectory(audioFolder);
+            string audioPath = Path.Combine(audioFolder, audioName);
 
             using (var stream = new FileStream(audioPath, FileMode.Create))
                 await audioFile.CopyToAsync(stream);
@@ -419,6 +558,31 @@ public class RestaurantsController : ControllerBase
         return Ok();
     }
 
+    // DELETE: api/restaurants/my/narrations/{id}
+    [Authorize]
+    [HttpDelete("my/narrations/{id}")]
+    public async Task<IActionResult> DeleteMyNarration(int id)
+    {
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+        var restaurant = await _context.Restaurants
+            .Include(r => r.Narrations)
+            .FirstOrDefaultAsync(r => r.OwnerId == userId);
+
+        if (restaurant == null) return NotFound();
+
+        var narration = restaurant.Narrations?.FirstOrDefault(n => n.NarrationId == id);
+        if (narration == null) return NotFound("Không tìm thấy thuyết minh");
+
+        if (!string.IsNullOrEmpty(narration.AudioUrl) && !narration.AudioUrl.StartsWith("http"))
+        {
+            var filePath = Path.Combine(_env.WebRootPath, "audios", narration.AudioUrl);
+            if (System.IO.File.Exists(filePath)) System.IO.File.Delete(filePath);
+        }
+
+        _context.Narrations.Remove(narration);
+        await _context.SaveChangesAsync();
+        return Ok(new { message = "Xóa thuyết minh thành công" });
+    }
 
 
     // Thêm cái này vào cuối file NarrationsController.cs của Backend
@@ -431,6 +595,47 @@ public class RestaurantsController : ControllerBase
         public int DishId { get; set; }
         public string? RestaurantName { get; set; }
         public int? RestaurantId { get; set; }
+    }
+
+    // 🔹 GET: api/restaurants/admin/all — List all restaurants for admin
+    [Authorize(Roles = "Admin")]
+    [HttpGet("admin/all")]
+    public IActionResult GetAllRestaurantsForAdmin()
+    {
+        var restaurants = _context.Restaurants
+            .Include(r => r.Owner)
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => new
+            {
+                r.RestaurantId,
+                r.Name,
+                r.Address,
+                r.Phone,
+                r.Description,
+                r.IsApproved,
+                r.IsActive,
+                r.IsPremium,
+                r.CreatedAt,
+                OwnerName = r.Owner != null ? r.Owner.FullName : "N/A",
+                OwnerEmail = r.Owner != null ? r.Owner.Email : "N/A"
+            })
+            .ToList();
+
+        return Ok(restaurants);
+    }
+
+    // 🔹 PATCH: api/restaurants/admin/{id}/approve — Toggle approval
+    [Authorize(Roles = "Admin")]
+    [HttpPatch("admin/{id}/approve")]
+    public async Task<IActionResult> ToggleApproval(int id)
+    {
+        var restaurant = await _context.Restaurants.FindAsync(id);
+        if (restaurant == null) return NotFound();
+
+        restaurant.IsApproved = !restaurant.IsApproved;
+        await _context.SaveChangesAsync();
+
+        return Ok(new { restaurant.IsApproved, message = restaurant.IsApproved ? "Đã duyệt nhà hàng" : "Đã hủy duyệt nhà hàng" });
     }
 
 

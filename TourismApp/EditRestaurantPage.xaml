@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:maps="clr-namespace:Microsoft.Maui.Controls.Maps;assembly=Microsoft.Maui.Controls.Maps"
              x:Class="TourismApp.EditRestaurantPage"
              Title="Quản lý nhà hàng"
              BackgroundColor="#F0F2F5">
 
+    <Grid>
     <ScrollView>
         <VerticalStackLayout Padding="20" Spacing="15" BackgroundColor="#F5F5F5">
+            <!-- Image preview -->
             <Border StrokeShape="RoundRectangle 20" HeightRequest="250" Margin="0,10" StrokeThickness="0" BackgroundColor="#F0F0F0">
                 <Grid>
                     <Image x:Name="imgPreview" Aspect="AspectFill" Source="https://via.placeholder.com/400x250?text=Chưa+có+ảnh"/>
@@ -16,6 +19,7 @@
                 </Grid>
             </Border>
 
+            <!-- Basic info -->
             <Frame CornerRadius="12" Padding="15" HasShadow="False" BorderColor="#DDD">
                 <VerticalStackLayout Spacing="12">
                     <Label Text="Thông tin cơ bản" FontAttributes="Bold" TextColor="#2196F3" FontSize="16"/>
@@ -28,47 +32,75 @@
                 </VerticalStackLayout>
             </Frame>
 
+            <!-- Multi-language narration section -->
             <Frame CornerRadius="12" Padding="15" HasShadow="False" BorderColor="#FF9800" BackgroundColor="#FFF9F0">
                 <VerticalStackLayout Spacing="12">
                     <Label Text="🔊 Thuyết minh nhà hàng" FontAttributes="Bold" TextColor="#FF9800" FontSize="16"/>
 
-                    <Label Text="Ngôn ngữ" FontSize="12" TextColor="Gray" Margin="0,0,0,-10"/>
-                    <Picker x:Name="pickerLanguage" 
-                Title="Chọn ngôn ngữ" 
-                SelectedIndexChanged="OnLanguageChanged">
-                        <Picker.Items>
-                            <x:String>Tiếng Việt</x:String>
-                            <x:String>English</x:String>
-                        </Picker.Items>
-                    </Picker>
-
                     <Label Text="Lời giới thiệu (Text)" FontSize="12" TextColor="Gray" Margin="0,0,0,-10"/>
-
                     <Editor x:Name="txtNarrationContent" 
-                Placeholder="Nhập nội dung để máy tự động đọc..." 
-                HeightRequest="100" 
-                AutoSize="TextChanges"
-                TextColor="Black"
-                BackgroundColor="White"/>
+                            Placeholder="Nhập nội dung để máy tự động đọc..." 
+                            HeightRequest="100" 
+                            AutoSize="TextChanges"
+                            TextColor="Black"
+                            BackgroundColor="White"/>
 
                     <Grid ColumnDefinitions="*, Auto" ColumnSpacing="10">
                         <Label x:Name="lblAudioStatus" Text="Chưa chọn file audio (.mp3)" VerticalOptions="Center" TextColor="#555" FontSize="12" FontAttributes="Italic"/>
                         <Button Grid.Column="1" Text="🎵 CHỌN FILE" Clicked="OnSelectAudioClicked" 
-                    BackgroundColor="#607D8B" TextColor="White" HeightRequest="40" CornerRadius="20" Padding="15,0"/>
+                                BackgroundColor="#607D8B" TextColor="White" HeightRequest="40" CornerRadius="20" Padding="15,0"/>
                     </Grid>
+
+                    <Frame x:Name="languageDropdownFrame" CornerRadius="8" Padding="10,8" HasShadow="False" 
+                           BorderColor="#FF9800" BackgroundColor="White">
+                        <Grid ColumnDefinitions="*, Auto">
+                            <Label x:Name="lblSelectedLanguages" Text="Chọn ngôn ngữ thuyết minh..." 
+                                   TextColor="#888" FontSize="13" VerticalOptions="Center"/>
+                            <Label x:Name="lblDropdownArrow" Grid.Column="1" Text="▼" 
+                                   TextColor="#FF9800" FontSize="14" VerticalOptions="Center"/>
+                        </Grid>
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnToggleLanguageDropdown"/>
+                        </Frame.GestureRecognizers>
+                    </Frame>
+                    <VerticalStackLayout x:Name="languageCheckboxContainer" Spacing="4" IsVisible="False"/>
                 </VerticalStackLayout>
             </Frame>
 
+            <!-- Location with embedded map -->
             <Frame CornerRadius="12" Padding="15" HasShadow="False" BorderColor="#DDD">
                 <VerticalStackLayout Spacing="12">
-                    <Label Text="Vị trí &amp; Bản đồ" FontAttributes="Bold" TextColor="#FF9800" FontSize="16"/>
+                    <Label Text="📍 Vị trí &amp; Bản đồ" FontAttributes="Bold" TextColor="#FF9800" FontSize="16"/>
                     <Label Text="Địa chỉ" FontSize="12" TextColor="Gray" Margin="0,0,0,-10"/>
-                    <Entry x:Name="txtAddress" Placeholder="Nhập địa chỉ nhà hàng" TextColor="Black"/>
                     <Grid ColumnDefinitions="*, Auto" ColumnSpacing="10">
-                        <Label x:Name="lblLocation" Text="Tọa độ: Đang lấy..." VerticalOptions="Center" TextColor="#555" FontSize="13"/>
-                        <Button Grid.Column="1" Text="📍 LẤY GPS" Clicked="OnGetLocationClicked" 
+                        <Entry x:Name="txtAddress" Placeholder="Nhập địa chỉ nhà hàng" TextColor="Black"/>
+                        <Button Grid.Column="1" Text="🔍 TÌM" Clicked="OnSearchAddressClicked"
                                 BackgroundColor="#FF9800" TextColor="White" HeightRequest="40" CornerRadius="20" Padding="15,0"/>
                     </Grid>
+                    <Border StrokeShape="RoundRectangle 12" StrokeThickness="1" Stroke="#DDD">
+                        <maps:Map x:Name="locationMap" HeightRequest="280" MapClicked="OnMapClicked"/>
+                    </Border>
+                    <Label x:Name="lblLocation" Text="Tọa độ: Đang lấy..." TextColor="#555" FontSize="13"/>
+                    <Label Text="👆 Chạm vào bản đồ để chọn vị trí chính xác" FontSize="11" TextColor="Gray" FontAttributes="Italic"/>
+
+                    <Button x:Name="btnConfirmLocation" Text="✅ XÁC NHẬN VỊ TRÍ NÀY" 
+                            IsVisible="False"
+                            Clicked="OnConfirmLocationClicked"
+                            BackgroundColor="#4CAF50" TextColor="White" 
+                            HeightRequest="45" CornerRadius="20" 
+                            FontAttributes="Bold"/>
+
+                    <Frame x:Name="locationConfirmedFrame" IsVisible="False" 
+                           Padding="10" CornerRadius="10" HasShadow="False"
+                           BackgroundColor="#E8F5E9" BorderColor="#4CAF50">
+                        <Label x:Name="lblLocationConfirmed" 
+                               Text="✅ Đã xác nhận vị trí nhà hàng" 
+                               TextColor="#2E7D32" FontSize="13" 
+                               FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                    </Frame>
+
+                    <Button Text="📍 LẤY GPS HIỆN TẠI" Clicked="OnGetLocationClicked"
+                            BackgroundColor="#607D8B" TextColor="White" HeightRequest="40" CornerRadius="20"/>
                 </VerticalStackLayout>
             </Frame>
 
@@ -76,4 +108,20 @@
                     FontAttributes="Bold" HeightRequest="55" CornerRadius="28" Margin="0,10,0,20"/>
         </VerticalStackLayout>
     </ScrollView>
+
+    <!-- Loading overlay -->
+    <Grid x:Name="loadingOverlay" IsVisible="False" BackgroundColor="#88000000" ZIndex="100">
+        <Frame CornerRadius="16" Padding="30" HasShadow="True" BackgroundColor="White"
+               HorizontalOptions="Center" VerticalOptions="Center" WidthRequest="280">
+            <VerticalStackLayout Spacing="15" HorizontalOptions="Center">
+                <ActivityIndicator IsRunning="True" Color="#FF9800" HeightRequest="50" WidthRequest="50"/>
+                <Label x:Name="lblLoadingStatus" Text="Đang dịch thuyết minh..." 
+                       HorizontalOptions="Center" TextColor="#333" FontSize="14" FontAttributes="Bold"/>
+                <Label Text="Hệ thống đang dịch nội dung và tạo audio cho các ngôn ngữ đã chọn"
+                       HorizontalOptions="Center" HorizontalTextAlignment="Center" 
+                       TextColor="#777" FontSize="12"/>
+            </VerticalStackLayout>
+        </Frame>
+    </Grid>
+    </Grid>
 </ContentPage>

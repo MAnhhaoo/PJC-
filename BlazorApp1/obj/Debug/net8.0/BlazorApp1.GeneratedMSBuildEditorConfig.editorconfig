@@ -53,6 +53,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cTWFuYWdlUVJDb2Rlcy5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/vscode/WebApplication2/BlazorApp1/Pages/Admin/ManageRestaurants.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cTWFuYWdlUmVzdGF1cmFudHMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/vscode/WebApplication2/BlazorApp1/Pages/Admin/TranslateDialog.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cVHJhbnNsYXRlRGlhbG9nLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
