@@ -58,6 +58,16 @@
                             Padding="0"/>
                 </HorizontalStackLayout>
 
+                <Label Text="⚙ Cài đặt IP máy chủ"
+                       TextColor="#95A5A6"
+                       FontSize="12"
+                       HorizontalOptions="Center"
+                       TextDecorations="Underline">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnChangeServerIp"/>
+                    </Label.GestureRecognizers>
+                </Label>
+
             </VerticalStackLayout>
         </ScrollView>
 

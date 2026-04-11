@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:TourismApp.Controls"
              x:Class="TourismApp.CustomerHomePage"
              x:Name="thisPage"
+             Shell.TabBarIsVisible="False"
              Title="{Binding LangService[HomeTitle]}"
              BackgroundColor="#F5F5F5">
 
@@ -14,72 +16,72 @@
         </ToolbarItem>
     </ContentPage.ToolbarItems>
 
-    <Grid RowDefinitions="Auto,Auto,*,Auto">
-        <Grid Grid.Row="0" HeightRequest="180">
-            <Image Source="vinh_khanh_street.jpg" Aspect="AspectFill"/>
-            <BoxView BackgroundColor="#80000000"/>
-            <Label Text="{Binding LangService[HomeTitle]}" 
-                   TextColor="White" FontSize="22" FontAttributes="Bold"
-                   HorizontalOptions="Center" VerticalOptions="Center"
-                   HorizontalTextAlignment="Center"/>
-        </Grid>
+    <Grid RowDefinitions="*,Auto">
+        <!-- Main content -->
+        <Grid Grid.Row="0" RowDefinitions="Auto,Auto,*">
+            <Grid Grid.Row="0" HeightRequest="180">
+                <Image Source="vinh_khanh_street.jpg" Aspect="AspectFill"/>
+                <BoxView BackgroundColor="#80000000"/>
+                <Label Text="{Binding LangService[HomeTitle]}" 
+                       TextColor="White" FontSize="22" FontAttributes="Bold"
+                       HorizontalOptions="Center" VerticalOptions="Center"
+                       HorizontalTextAlignment="Center"/>
+            </Grid>
 
-        <Label Grid.Row="1" 
-               Text="{Binding LangService[SubTitle]}"
-               Margin="15,10" TextColor="#444444" FontSize="14" FontAttributes="Italic"/>
+            <Label Grid.Row="1" 
+                   Text="{Binding LangService[SubTitle]}"
+                   Margin="15,10" TextColor="#444444" FontSize="14" FontAttributes="Italic"/>
 
-        <CollectionView x:Name="RestaurantList" Grid.Row="2" Margin="10">
-            <CollectionView.ItemTemplate>
-                <DataTemplate>
-                    <Frame CornerRadius="16" Margin="0,8" Padding="0" HasShadow="True" BackgroundColor="White" BorderColor="Transparent">
-                        <Frame.GestureRecognizers>
-                            <TapGestureRecognizer CommandParameter="{Binding RestaurantId}" Tapped="OnRestaurantTapped"/>
-                        </Frame.GestureRecognizers>
+            <CollectionView x:Name="RestaurantList" Grid.Row="2" Margin="10">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame CornerRadius="16" Margin="0,8" Padding="0" HasShadow="True" BackgroundColor="White" BorderColor="Transparent">
+                            <Frame.GestureRecognizers>
+                                <TapGestureRecognizer CommandParameter="{Binding RestaurantId}" Tapped="OnRestaurantTapped"/>
+                            </Frame.GestureRecognizers>
 
-                        <VerticalStackLayout>
-                            <Grid>
-                                <Image Source="{Binding Image}" HeightRequest="160" Aspect="AspectFill"/>
-                                <BoxView BackgroundColor="#33000000"/>
-                                <Label Text="{Binding Name}" TextColor="White" FontSize="18"
-                                       FontAttributes="Bold" VerticalOptions="End" Margin="12"/>
-                            </Grid>
-
-                            <VerticalStackLayout Padding="12" Spacing="8">
-                                <Label Text="{Binding Address}" FontSize="13" TextColor="Gray" MaxLines="1"/>
-
-                                <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,5">
-
-                                    <Button Grid.Column="0" 
-                                            Text="{Binding Source={x:Reference thisPage}, Path=LangService[Listen]}" 
-                                            Clicked="OnPlayRestaurantIntro"
-                                            BackgroundColor="#E3F2FD" TextColor="#1976D2"
-                                            CornerRadius="10" HeightRequest="40" FontSize="13"/>
-
-                                    <Button Grid.Column="1" 
-                                            Text="{Binding Source={x:Reference thisPage}, Path=LangService[Map]}" 
-                                            Clicked="OnOpenMap"
-                                            BackgroundColor="#FFF3E0" TextColor="#E65100"
-                                            CornerRadius="10" HeightRequest="40" FontSize="13"/>
+                            <VerticalStackLayout>
+                                <Grid>
+                                    <Image Source="{Binding Image}" HeightRequest="160" Aspect="AspectFill"/>
+                                    <BoxView BackgroundColor="#33000000"/>
+                                    <Label Text="{Binding Name}" TextColor="White" FontSize="18"
+                                           FontAttributes="Bold" VerticalOptions="End" Margin="12"/>
                                 </Grid>
 
-                                <Button Text="{Binding Source={x:Reference thisPage}, Path=LangService[Stop]}" 
-                                        IsVisible="{Binding IsPlaying}"
-                                        Clicked="OnStopAudioClicked"
-                                        BackgroundColor="#FFEBEE" TextColor="#C62828"
-                                        CornerRadius="10" HeightRequest="35" FontSize="12"
-                                        Margin="0,2,0,0"/>
+                                <VerticalStackLayout Padding="12" Spacing="8">
+                                    <Label Text="{Binding Address}" FontSize="13" TextColor="Gray" MaxLines="1"/>
 
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,5">
+
+                                        <Button Grid.Column="0" 
+                                                Text="{Binding Source={x:Reference thisPage}, Path=LangService[Listen]}" 
+                                                Clicked="OnPlayRestaurantIntro"
+                                                BackgroundColor="#E3F2FD" TextColor="#1976D2"
+                                                CornerRadius="10" HeightRequest="40" FontSize="13"/>
+
+                                        <Button Grid.Column="1" 
+                                                Text="{Binding Source={x:Reference thisPage}, Path=LangService[Map]}" 
+                                                Clicked="OnOpenMap"
+                                                BackgroundColor="#FFF3E0" TextColor="#E65100"
+                                                CornerRadius="10" HeightRequest="40" FontSize="13"/>
+                                    </Grid>
+
+                                    <Button Text="{Binding Source={x:Reference thisPage}, Path=LangService[Stop]}" 
+                                            IsVisible="{Binding IsPlaying}"
+                                            Clicked="OnStopAudioClicked"
+                                            BackgroundColor="#FFEBEE" TextColor="#C62828"
+                                            CornerRadius="10" HeightRequest="35" FontSize="12"
+                                            Margin="0,2,0,0"/>
+
+                                </VerticalStackLayout>
                             </VerticalStackLayout>
-                        </VerticalStackLayout>
-                    </Frame>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </Grid>
 
-        <Button Grid.Row="3" 
-                Text="{Binding LangService[Profile]}" 
-                Clicked="OnProfileClicked"
-                Margin="15,10" BackgroundColor="Orange" TextColor="White"
-                CornerRadius="12" HeightRequest="50" FontAttributes="Bold"/>
+        <!-- Custom bottom bar -->
+        <controls:CustomBottomBar Grid.Row="1" ActiveTab="0"/>
     </Grid>
 </ContentPage>

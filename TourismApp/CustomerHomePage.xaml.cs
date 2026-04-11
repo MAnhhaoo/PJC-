@@ -129,7 +129,8 @@ public partial class CustomerHomePage : ContentPage
             var fileName = string.IsNullOrEmpty(matched.AudioUrl) ? string.Empty : Path.GetFileName(matched.AudioUrl);
             if (string.IsNullOrEmpty(fileName)) return;
 
-            string audioUrl = $"http://10.0.2.2:5216/audios/{fileName}";
+            var host = DeviceInfo.DeviceType == DeviceType.Virtual ? "10.0.2.2" : "192.168.1.14";
+            string audioUrl = $"http://{host}:5216/audios/{fileName}";
 
             // 3. Thực hiện tải và khởi tạo Player hoàn toàn ở luồng phụ (Fix NetworkOnMainThread)
             await Task.Run(async () =>

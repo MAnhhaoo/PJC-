@@ -79,6 +79,22 @@ public partial class LoginPage : ContentPage
         }
     } // Đóng hàm OnLoginClicked
 
+    private async void OnChangeServerIp(object sender, EventArgs e)
+    {
+        var currentIp = Preferences.Default.Get("server_ip", "192.168.1.12");
+        var newIp = await DisplayPromptAsync(
+            "Cài đặt máy chủ",
+            "Nhập địa chỉ IP WiFi của máy tính\n(chạy 'ipconfig' trên máy tính để xem):",
+            initialValue: currentIp,
+            keyboard: Keyboard.Url);
+
+        if (!string.IsNullOrWhiteSpace(newIp) && newIp != currentIp)
+        {
+            Preferences.Default.Set("server_ip", newIp.Trim());
+            await DisplayAlert("Đã lưu", $"IP máy chủ: {newIp.Trim()}\nVui lòng tắt và mở lại app để áp dụng.", "OK");
+        }
+    }
+
 } // Đóng class LoginPage (Hãy chắc chắn có dấu này ở cuối file)
 
    

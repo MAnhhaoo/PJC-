@@ -1,0 +1,89 @@
+@page "/admin/qrcodes"
+@layout BlazorApp1.Shared.AdminLayout
+@using BlazorApp1.Services
+@using MudBlazor
+@inject ApiService ApiService
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
+
+<div class="pa-4 mt-10">
+    <MudText Typo="Typo.h4" Class="mb-6">Quản lý mã QR nhà hàng</MudText>
+
+    <MudTable Items="@_restaurants" Hover="true" Loading="@_loading" Bordered="true" Striped="true">
+        <HeaderContent>
+            <MudTh>ID</MudTh>
+            <MudTh>Tên nhà hàng</MudTh>
+            <MudTh>Mã QR</MudTh>
+            <MudTh>Thao tác</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="ID">@context.RestaurantId</MudTd>
+            <MudTd DataLabel="Tên">@context.Name</MudTd>
+            <MudTd DataLabel="QR">
+                <img src="@GetQRCodeUrl(context.RestaurantId)" alt="QR @context.Name"
+                     style="width:120px;height:120px;" />
+            </MudTd>
+            <MudTd DataLabel="Thao tác">
+                <MudStack Row="true">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.Download"
+                               OnClick="@(() => DownloadQR(context.RestaurantId, context.Name))">
+                        Tải xuống
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Secondary" Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.Print"
+                               OnClick="@(() => PrintQR(context.RestaurantId, context.Name))">
+                        In
+                    </MudButton>
+                </MudStack>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</div>
+
+@code {
+    private List<QRRestaurantItem> _restaurants = new();
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync() => await LoadData();
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        try
+        {
+            var list = await ApiService.GetFromJsonAsync<List<QRRestaurantItem>>("api/restaurants") ?? new();
+            _restaurants = list;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Lỗi: " + ex.Message, Severity.Error);
+        }
+        finally { _loading = false; }
+    }
+
+    private string GetQRCodeUrl(int restaurantId)
+    {
+        return $"{Http.BaseAddress}api/restaurants/{restaurantId}/qrcode";
+    }
+
+    private async Task DownloadQR(int restaurantId, string name)
+    {
+        var url = GetQRCodeUrl(restaurantId);
+        await JSRuntime.InvokeVoidAsync("downloadFile", url, $"qr-{name}.png");
+    }
+
+    private async Task PrintQR(int restaurantId, string name)
+    {
+        var url = GetQRCodeUrl(restaurantId);
+        await JSRuntime.InvokeVoidAsync("printQR", url, name);
+    }
+
+    public class QRRestaurantItem
+    {
+        public int RestaurantId { get; set; }
+        public string Name { get; set; } = "";
+        public string Address { get; set; } = "";
+    }
+}

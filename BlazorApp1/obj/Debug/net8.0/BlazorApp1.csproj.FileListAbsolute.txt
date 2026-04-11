@@ -865,6 +865,7 @@ D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\91oxgph4mo-{0}-
 D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\rgn8k6mg5c-{0}-lsakbjp1fg-lsakbjp1fg.gz
 D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\ikroel9hjw-{0}-n3v608e77n-n3v608e77n.gz
 D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\81g41oifme-{0}-t1164wgsgd-t1164wgsgd.gz
+D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\ppxnghehhz-{0}-zi2utu9jg2-zi2utu9jg2.gz
 D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\620a94b23v-{0}-iudrcw56e1-iudrcw56e1.gz
 D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\655spgaphj-{0}-p0hrnlugkj-p0hrnlugkj.gz
 D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\vvdrumqgt8-{0}-vtp1skr5fa-vtp1skr5fa.gz
@@ -1044,6 +1045,9 @@ D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\wrnfiqcclm-{0}-
 D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\m2waow3ayo-{0}-tptq2av103-tptq2av103.gz
 D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\yvizlwgna6-{0}-lfu7j35m59-lfu7j35m59.gz
 D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\fyixgo0u6y-{0}-oyz0vx2fzb-oyz0vx2fzb.gz
+D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\mpnezo3ggr-{0}-7zgxsi68pt-7zgxsi68pt.gz
+D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\kyjy2iuvp1-{0}-3e5xbbe81m-3e5xbbe81m.gz
+D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\5jzqasczcu-{0}-l3pbe07nn7-l3pbe07nn7.gz
 D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\staticwebassets.build.json
 D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\staticwebassets.build.json.cache
 D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\staticwebassets.development.json
@@ -1055,7 +1059,3 @@ D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\BlazorApp1.dll
 D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\refint\BlazorApp1.dll
 D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\BlazorApp1.pdb
 D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\ref\BlazorApp1.dll
-D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\ppxnghehhz-{0}-zi2utu9jg2-zi2utu9jg2.gz
-D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\mpnezo3ggr-{0}-1pjs8gmakw-1pjs8gmakw.gz
-D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\kyjy2iuvp1-{0}-wh58me3pmb-wh58me3pmb.gz
-D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\5jzqasczcu-{0}-pn6zpatemd-pn6zpatemd.gz

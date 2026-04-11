@@ -1,7 +1,8 @@
 ﻿using CommunityToolkit.Maui;
 using Microsoft.Extensions.Logging;
 using Plugin.Maui.Audio;
-using TourismApp.Services;   
+using TourismApp.Services;
+using ZXing.Net.Maui.Controls;
 namespace TourismApp
 {
     public static class MauiProgram
@@ -11,20 +12,25 @@ namespace TourismApp
             var builder = MauiApp.CreateBuilder();
             builder
                 .UseMauiApp<App>()
-                .UseMauiCommunityToolkit() // Nếu xóa dòng này mà hết lỗi thì nên xóa
+                .UseMauiCommunityToolkit()
                 .UseMauiMaps()
+                .UseBarcodeReader()
 
                  .ConfigureFonts(fonts =>
      {
          fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
      });
 
-            // 🔥 HttpClient cho Android Emulator
+            // 🔥 Auto-detect: máy ảo dùng 10.0.2.2, điện thoại thật dùng IP WiFi (lưu trong Preferences)
+            var savedIp = Preferences.Default.Get("server_ip", "192.168.1.12");
+            var baseUrl = DeviceInfo.DeviceType == DeviceType.Virtual
+                ? "http://10.0.2.2:5216/"
+                : $"http://{savedIp}:5216/";
             builder.Services.AddSingleton<HttpClient>(s =>
             {
                 return new HttpClient
                 {
-                    BaseAddress = new Uri("http://10.0.2.2:5216/")
+                    BaseAddress = new Uri(baseUrl)
                 };
             });
             // Thay dòng cũ bằng dòng này để đảm bảo DI tìm đúng IAudioManager
@@ -49,6 +55,7 @@ namespace TourismApp
 
 
             builder.Services.AddTransient<RestaurantDashboardPage>();
+            builder.Services.AddTransient<POIMapPage>();
             builder.Services.AddTransient<AddDishPage>();
             builder.Services.AddTransient<DishListPage>();
             builder.Services.AddTransient<EditRestaurantPage>();
@@ -57,6 +64,7 @@ namespace TourismApp
             builder.Services.AddTransient<MyAudiosPage>(); // Đăng ký trang Audio
             builder.Services.AddTransient<UpgradePremiumPage>();
             builder.Services.AddSingleton<LanguageService>(); // Đăng ký dạng Singleton để lưu app state
+            builder.Services.AddTransient<QRScannerPage>();
 
 
 

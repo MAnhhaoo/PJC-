@@ -1,5 +1,5 @@
+using System.Globalization;
 using System.Text.Json;
-using Microsoft.Maui.Controls.Maps;
 using Microsoft.Maui.Controls.Maps;
 using Microsoft.Maui.Maps;
 namespace TourismApp;
@@ -23,7 +23,7 @@ public partial class MapPage : ContentPage
         double endLng = 106.660172;
 
         string url =
-        $"https://api.openrouteservice.org/v2/directions/driving-car?start={startLng},{startLat}&end={endLng},{endLat}";
+        $"https://api.openrouteservice.org/v2/directions/driving-car?start={startLng.ToString(CultureInfo.InvariantCulture)},{startLat.ToString(CultureInfo.InvariantCulture)}&end={endLng.ToString(CultureInfo.InvariantCulture)},{endLat.ToString(CultureInfo.InvariantCulture)}";
 
         HttpClient client = new HttpClient();
         client.DefaultRequestHeaders.Add("Authorization", apiKey);

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Net.Http.Headers;
@@ -126,8 +127,8 @@ public partial class EditRestaurantPage : ContentPage
             content.Add(new StringContent(txtAddress.Text ?? ""), "address");
             content.Add(new StringContent(txtDescription.Text ?? ""), "description");
             content.Add(new StringContent(txtPhone.Text ?? ""), "phone");
-            content.Add(new StringContent(_latitude.ToString()), "latitude");
-            content.Add(new StringContent(_longitude.ToString()), "longitude");
+            content.Add(new StringContent(_latitude.ToString(CultureInfo.InvariantCulture)), "latitude");
+            content.Add(new StringContent(_longitude.ToString(CultureInfo.InvariantCulture)), "longitude");
 
             // 2. Gửi Ảnh
             if (_selectedImageBytes != null)

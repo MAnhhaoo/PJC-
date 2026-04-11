@@ -347,12 +347,24 @@ public class UsersController : ControllerBase
     [HttpPost("login")]
     public IActionResult Login([FromBody] LoginRequest request)
     {
-        var user = _context.Users.FirstOrDefault(u =>
-            u.Email == request.Email &&
-            u.PasswordHash == request.PasswordHash
-        );
+        var user = _context.Users.FirstOrDefault(u => u.Email == request.Email);
 
         if (user == null)
+            return Unauthorized("Sai email hoặc mật khẩu");
+
+        // Verify password: support both BCrypt hash and plain text
+        bool passwordValid = false;
+        try
+        {
+            passwordValid = BCrypt.Net.BCrypt.Verify(request.PasswordHash, user.PasswordHash);
+        }
+        catch
+        {
+            // Fallback for plain text passwords in DB
+            passwordValid = user.PasswordHash == request.PasswordHash;
+        }
+
+        if (!passwordValid)
             return Unauthorized("Sai email hoặc mật khẩu");
 
         // 🔐 Chỉ Admin được login
@@ -417,12 +429,24 @@ public class UsersController : ControllerBase
     [HttpPost("app-login")]
     public IActionResult AppLogin([FromBody] LoginRequest request)
     {
-        var user = _context.Users.FirstOrDefault(u =>
-            u.Email == request.Email &&
-            u.PasswordHash == request.PasswordHash
-        );
+        var user = _context.Users.FirstOrDefault(u => u.Email == request.Email);
 
         if (user == null)
+            return Unauthorized("Sai email hoặc mật khẩu");
+
+        // Verify password: support both BCrypt hash and plain text
+        bool passwordValid = false;
+        try
+        {
+            passwordValid = BCrypt.Net.BCrypt.Verify(request.PasswordHash, user.PasswordHash);
+        }
+        catch
+        {
+            // Fallback for plain text passwords in DB
+            passwordValid = user.PasswordHash == request.PasswordHash;
+        }
+
+        if (!passwordValid)
             return Unauthorized("Sai email hoặc mật khẩu");
 
         // ❌ Không cho admin login app
@@ -484,7 +508,7 @@ public class UsersController : ControllerBase
         var user = new User
         {
             Email = request.Email,
-            PasswordHash = request.PasswordHash,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.PasswordHash),
             FullName = request.FullName,
             Role = request.Role ?? "User",
             UserLevel = 0,
