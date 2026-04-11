@@ -3,15 +3,30 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:local="clr-namespace:TourismApp"
-    FlyoutBehavior="Flyout">
+    FlyoutBehavior="Disabled">
 
-    <ShellContent
-        Title="Đăng nhập"
-        ContentTemplate="{DataTemplate local:LoginPage}"
-        Route="LoginPage"
-        Shell.FlyoutBehavior="Disabled"
-        Shell.NavBarIsVisible="False"
-        FlyoutItemIsVisible="False" />
+    <!-- Customer main app (default start) -->
+    <TabBar Route="CustomerHomePage">
+        <Tab Title="Trang chủ" Icon="tab_home.png">
+            <ShellContent Title="Trang chủ" ContentTemplate="{DataTemplate local:CustomerHomePage}" />
+        </Tab>
 
-    <MenuItem Text="🚪 Đăng xuất" Clicked="OnLogoutClicked" />
+        <Tab Title="Khám phá" Icon="tab_explore.png">
+            <ShellContent Title="Khám phá" ContentTemplate="{DataTemplate local:POIMapPage}" />
+        </Tab>
+
+        <Tab Title="Hồ sơ" Icon="tab_profile.png">
+            <ShellContent Title="Hồ sơ" ContentTemplate="{DataTemplate local:ProfilePage}" />
+        </Tab>
+    </TabBar>
+
+    <!-- Login page (navigated to on logout, no tab bar) -->
+    <TabBar Route="LoginPage">
+        <ShellContent ContentTemplate="{DataTemplate local:LoginPage}" />
+    </TabBar>
+
+    <!-- Restaurant manager (for restaurant role) -->
+    <TabBar Route="RestaurantManagerPage">
+        <ShellContent ContentTemplate="{DataTemplate local:RestaurantManagerPage}" />
+    </TabBar>
 </Shell>

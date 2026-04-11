@@ -1,6 +1,7 @@
 using Microsoft.Maui.Controls.Maps;
 using Microsoft.Maui.Maps;
 using Microsoft.Maui.Devices.Sensors;
+using System.Globalization;
 using System.Text.Json;
 
 namespace TourismApp;
@@ -22,6 +23,15 @@ public partial class RestaurantMapPage : ContentPage
 
         try
         {
+            // Debug: kiểm tra tọa độ nhà hàng
+            if (_restaurant.Latitude == 0 && _restaurant.Longitude == 0)
+            {
+                await DisplayAlert("Lỗi tọa độ",
+                    $"Nhà hàng '{_restaurant.Name}' chưa có tọa độ (0, 0).\nVui lòng vào Chỉnh sửa nhà hàng → Lấy vị trí GPS → Lưu lại.",
+                    "OK");
+                return;
+            }
+
             var request = new GeolocationRequest(
                 GeolocationAccuracy.Medium,
                 TimeSpan.FromSeconds(10));
@@ -95,7 +105,7 @@ public partial class RestaurantMapPage : ContentPage
         var apiKey = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjAxNjY2NDQxYjU3OTQ1N2E5Y2I1NjgxZTkxOGMwZTg3IiwiaCI6Im11cm11cjY0In0=";
 
         var url =
-            $"https://api.openrouteservice.org/v2/directions/driving-car?start={start.Longitude},{start.Latitude}&end={end.Longitude},{end.Latitude}";
+            $"https://api.openrouteservice.org/v2/directions/driving-car?start={start.Longitude.ToString(CultureInfo.InvariantCulture)},{start.Latitude.ToString(CultureInfo.InvariantCulture)}&end={end.Longitude.ToString(CultureInfo.InvariantCulture)},{end.Latitude.ToString(CultureInfo.InvariantCulture)}";
 
         using var http = new HttpClient();
         http.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", apiKey);
@@ -133,8 +143,22 @@ public partial class RestaurantMapPage : ContentPage
 
     private async void OpenGoogleMaps(object sender, EventArgs e)
     {
-        var url =
-            $"https://www.google.com/maps/dir/?api=1&destination={_restaurant.Latitude},{_restaurant.Longitude}&travelmode=driving";
+        if (_restaurant.Latitude == 0 && _restaurant.Longitude == 0)
+        {
+            await DisplayAlert("Lỗi", "Nhà hàng chưa có tọa độ. Vui lòng cập nhật vị trí GPS trong phần Chỉnh sửa nhà hàng.", "OK");
+            return;
+        }
+
+        var lat = _restaurant.Latitude.ToString(CultureInfo.InvariantCulture);
+        var lng = _restaurant.Longitude.ToString(CultureInfo.InvariantCulture);
+
+        string url;
+        if (DeviceInfo.Platform == DevicePlatform.Android)
+            url = $"google.navigation:q={lat},{lng}&mode=d";
+        else if (DeviceInfo.Platform == DevicePlatform.iOS)
+            url = $"http://maps.apple.com/?daddr={lat},{lng}&dirflg=d";
+        else
+            url = $"https://www.google.com/maps/dir/?api=1&destination={lat},{lng}&travelmode=driving";
 
         await Launcher.OpenAsync(url);
     }

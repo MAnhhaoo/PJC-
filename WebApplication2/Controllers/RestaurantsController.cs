@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using QRCoder;
 using System.Security.Claims;
 using WebApplication2.Data;
 using WebApplication2.DTOs;
@@ -73,7 +74,19 @@ public class RestaurantsController : ControllerBase
                 Longitude = r.Longitude,
                 Image = r.Image,
                 IsPremium = r.IsPremium,
-                IsApproved = r.IsApproved
+                IsApproved = r.IsApproved,
+                Narrations = r.Narrations.Select(n => new NarrationDto
+                {
+                    NarrationId = n.NarrationId,
+                    TextContent = n.TextContent,
+                    AudioUrl = string.IsNullOrEmpty(n.AudioUrl) ? "" :
+                               (n.AudioUrl.StartsWith("http") ? n.AudioUrl : $"http://10.0.2.2:5216/audios/{n.AudioUrl}"),
+                    Language = new LanguageDto
+                    {
+                        Code = n.Language.Code,
+                        Name = n.Language.Name
+                    }
+                }).ToList()
             })
             .FirstOrDefaultAsync();
 
@@ -81,6 +94,22 @@ public class RestaurantsController : ControllerBase
             return NotFound();
 
         return Ok(restaurant);
+    }
+
+    // 🔹 GET: api/restaurants/{id}/qrcode
+    [HttpGet("{id}/qrcode")]
+    public IActionResult GetQRCode(int id)
+    {
+        var exists = _context.Restaurants.Any(r => r.RestaurantId == id);
+        if (!exists) return NotFound();
+
+        var qrContent = $"tourismapp://restaurant/{id}";
+        using var qrGenerator = new QRCodeGenerator();
+        using var qrCodeData = qrGenerator.CreateQrCode(qrContent, QRCodeGenerator.ECCLevel.Q);
+        var qrCode = new PngByteQRCode(qrCodeData);
+        var pngBytes = qrCode.GetGraphic(10);
+
+        return File(pngBytes, "image/png", $"qr-restaurant-{id}.png");
     }
 
     // 🔹 GET: api/restaurants/my

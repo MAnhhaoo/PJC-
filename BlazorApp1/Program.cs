@@ -54,9 +54,17 @@ builder.Services.AddScoped(sp =>
     var handler = sp.GetRequiredService<AuthMessageHandler>();
     handler.InnerHandler = new HttpClientHandler();
 
+    // Khi hosted bởi API (cùng origin) → dùng BaseAddress của host
+    // Khi chạy standalone dev server → dùng URL API cố định
+    var baseAddress = builder.HostEnvironment.BaseAddress;
+    if (!baseAddress.Contains("7111"))
+    {
+        baseAddress = "https://localhost:7111/";
+    }
+
     return new HttpClient(handler)
     {
-        BaseAddress = new Uri("https://localhost:7111/")
+        BaseAddress = new Uri(baseAddress)
     };
 });
 

@@ -59,26 +59,47 @@
     {
         error = "";
 
-        var res = await api.PostAsync("api/users/login", new
+        try
         {
-            Email = email,
-            PasswordHash = password
-        });
+            var res = await api.PostAsync("api/users/login", new
+            {
+                Email = email,
+                PasswordHash = password
+            });
 
-        var text = await res.Content.ReadAsStringAsync();
+            var text = await res.Content.ReadAsStringAsync();
 
-        if (!res.IsSuccessStatusCode)
-        {
-            error = text;
-            return;
+            if (!res.IsSuccessStatusCode)
+            {
+                error = text;
+                return;
+            }
+
+            var data = System.Text.Json.JsonSerializer.Deserialize<LoginResponse>(text,
+                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            if (data == null || string.IsNullOrEmpty(data.Token))
+            {
+                error = "Không nhận được token từ server";
+                return;
+            }
+
+            await localStorage.SetItemAsync("token", data.Token);
+            await localStorage.SetItemAsync("role", data.Role);
+
+            nav.NavigateTo("/profile");
         }
-
-        var data = await res.Content.ReadFromJsonAsync<LoginResponse>();
-
-        await localStorage.SetItemAsync("token", data.Token);
-        await localStorage.SetItemAsync("role", data.Role);
-
-        nav.NavigateTo("/profile");
+        catch (HttpRequestException ex)
+        {
+            error = $"Không kết nối được server ({ex.Message}). "
+                  + "Hãy chắc chắn: (1) WebApplication2 đang chạy, "
+                  + "(2) Đã mở https://localhost:7111/swagger trong trình duyệt và chấp nhận chứng chỉ SSL, "
+                  + "(3) Chạy 'dotnet dev-certs https --trust' nếu cần.";
+        }
+        catch (Exception ex)
+        {
+            error = $"Lỗi: {ex.GetType().Name} — {ex.Message}";
+        }
     }
 
     class LoginResponse

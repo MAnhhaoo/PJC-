@@ -1,82 +1,89 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:TourismApp.Controls"
              x:Class="TourismApp.ProfilePage"
+             Shell.TabBarIsVisible="False"
              Title="Hồ sơ cá nhân"
              BackgroundColor="#F5F6FA">
 
-    <ScrollView>
-        <VerticalStackLayout Spacing="0">
-            <Grid HeightRequest="220">
-                <BoxView BackgroundColor="Orange" HeightRequest="150" VerticalOptions="Start"/>
+    <Grid RowDefinitions="*,Auto">
+        <!-- Main content -->
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Spacing="0">
+                <Grid HeightRequest="220">
+                    <BoxView BackgroundColor="Orange" HeightRequest="150" VerticalOptions="Start"/>
 
-                <VerticalStackLayout VerticalOptions="End" HorizontalOptions="Center" Spacing="10">
-                    <Border StrokeShape="RoundRectangle 75"
-                            Stroke="White"
-                            StrokeThickness="4"
-                            HeightRequest="150"
-                            WidthRequest="150"
-                            BackgroundColor="White">
-                        <Image x:Name="imgAvatar"
-                               Source="user_default.png"
-                               Aspect="AspectFill"/>
-                    </Border>
-                    <Label x:Name="lblFullNameHeader" 
-                           FontSize="22" 
-                           FontAttributes="Bold" 
-                           HorizontalOptions="Center"
-                           TextColor="#2C3E50"/>
-                </VerticalStackLayout>
-            </Grid>
-
-            <VerticalStackLayout Padding="20" Spacing="15">
-
-                <Border StrokeShape="RoundRectangle 15" BackgroundColor="White" Padding="20" StrokeThickness="0">
-                    <VerticalStackLayout Spacing="15">
-                        <Grid ColumnDefinitions="40, *">
-                            <Label Text="✉️" FontSize="18" VerticalOptions="Center"/>
-                            <VerticalStackLayout Grid.Column="1">
-                                <Label Text="Email" FontSize="12" TextColor="Gray"/>
-                                <Label x:Name="lblEmail" FontSize="16" TextColor="#2C3E50" FontAttributes="Bold"/>
-                            </VerticalStackLayout>
-                        </Grid>
-
-                        <BoxView HeightRequest="1" Color="#F0F0F0"/>
-
-                        <Grid ColumnDefinitions="40, *">
-                            <Label Text="📞" FontSize="18" VerticalOptions="Center"/>
-                            <VerticalStackLayout Grid.Column="1">
-                                <Label Text="Số điện thoại" FontSize="12" TextColor="Gray"/>
-                                <Label x:Name="lblPhone" FontSize="16" TextColor="#2C3E50" FontAttributes="Bold"/>
-                            </VerticalStackLayout>
-                        </Grid>
-
-                        <BoxView HeightRequest="1" Color="#F0F0F0"/>
-
-                        <Grid ColumnDefinitions="40, *">
-                            <Label Text="📍" FontSize="18" VerticalOptions="Center"/>
-                            <VerticalStackLayout Grid.Column="1">
-                                <Label Text="Địa chỉ" FontSize="12" TextColor="Gray"/>
-                                <Label x:Name="lblAddress" FontSize="16" TextColor="#2C3E50" FontAttributes="Bold"/>
-                            </VerticalStackLayout>
-                        </Grid>
+                    <VerticalStackLayout VerticalOptions="End" HorizontalOptions="Center" Spacing="10">
+                        <Border StrokeShape="RoundRectangle 75"
+                                Stroke="White"
+                                StrokeThickness="4"
+                                HeightRequest="150"
+                                WidthRequest="150"
+                                BackgroundColor="White">
+                            <Image x:Name="imgAvatar"
+                                   Source="user_default.png"
+                                   Aspect="AspectFill"/>
+                        </Border>
+                        <Label x:Name="lblFullNameHeader" 
+                               FontSize="22" 
+                               FontAttributes="Bold" 
+                               HorizontalOptions="Center"
+                               TextColor="#2C3E50"/>
                     </VerticalStackLayout>
-                </Border>
+                </Grid>
 
-                <Button Text="CHỈNH SỬA HỒ SƠ"
-                        Clicked="OnEditClicked"
-                        BackgroundColor="Orange"
-                        TextColor="White"
-                        HeightRequest="55"
-                        CornerRadius="27"
-                        FontAttributes="Bold"
-                        Margin="0,10,0,0">
-                    <Button.Shadow>
-                        <Shadow Brush="Black" Offset="0,5" Radius="10" Opacity="0.1"/>
-                    </Button.Shadow>
-                </Button>
+                <VerticalStackLayout Padding="20" Spacing="15">
 
+                    <Border StrokeShape="RoundRectangle 15" BackgroundColor="White" Padding="20" StrokeThickness="0">
+                        <VerticalStackLayout Spacing="15">
+                            <Grid ColumnDefinitions="40, *">
+                                <Label Text="✉️" FontSize="18" VerticalOptions="Center"/>
+                                <VerticalStackLayout Grid.Column="1">
+                                    <Label Text="Email" FontSize="12" TextColor="Gray"/>
+                                    <Label x:Name="lblEmail" FontSize="16" TextColor="#2C3E50" FontAttributes="Bold"/>
+                                </VerticalStackLayout>
+                            </Grid>
+
+                            <BoxView HeightRequest="1" Color="#F0F0F0"/>
+
+                            <Grid ColumnDefinitions="40, *">
+                                <Label Text="📞" FontSize="18" VerticalOptions="Center"/>
+                                <VerticalStackLayout Grid.Column="1">
+                                    <Label Text="Số điện thoại" FontSize="12" TextColor="Gray"/>
+                                    <Label x:Name="lblPhone" FontSize="16" TextColor="#2C3E50" FontAttributes="Bold"/>
+                                </VerticalStackLayout>
+                            </Grid>
+
+                            <BoxView HeightRequest="1" Color="#F0F0F0"/>
+
+                            <Grid ColumnDefinitions="40, *">
+                                <Label Text="📍" FontSize="18" VerticalOptions="Center"/>
+                                <VerticalStackLayout Grid.Column="1">
+                                    <Label Text="Địa chỉ" FontSize="12" TextColor="Gray"/>
+                                    <Label x:Name="lblAddress" FontSize="16" TextColor="#2C3E50" FontAttributes="Bold"/>
+                                </VerticalStackLayout>
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Button Text="✏️ Chỉnh sửa hồ sơ" 
+                            Clicked="OnEditClicked"
+                            BackgroundColor="#1976D2" TextColor="White"
+                            CornerRadius="12" HeightRequest="48" FontAttributes="Bold"
+                            Margin="0,10,0,0"/>
+
+                    <Button Text="🚪 Đăng xuất" 
+                            Clicked="OnLogoutClicked"
+                            BackgroundColor="#E53935" TextColor="White"
+                            CornerRadius="12" HeightRequest="48" FontAttributes="Bold"
+                            Margin="0,5,0,0"/>
+
+                </VerticalStackLayout>
             </VerticalStackLayout>
-        </VerticalStackLayout>
-    </ScrollView>
+        </ScrollView>
+
+        <!-- Custom bottom bar -->
+        <controls:CustomBottomBar Grid.Row="1" ActiveTab="2"/>
+    </Grid>
 </ContentPage>

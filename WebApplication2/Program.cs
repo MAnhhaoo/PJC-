@@ -32,9 +32,10 @@ builder.Services.AddCors(options =>
         policy =>
         {
             policy
-                .AllowAnyOrigin()
+                .SetIsOriginAllowed(_ => true)
                 .AllowAnyHeader()
-                .AllowAnyMethod();
+                .AllowAnyMethod()
+                .AllowCredentials();
         });
 });
 
@@ -101,13 +102,35 @@ if (app.Environment.IsDevelopment())
 }
 //app.UseHttpsRedirection();
 
+// Xử lý preflight OPTIONS trước để tránh xung đột
+app.Use(async (context, next) =>
+{
+    if (context.Request.Method == "OPTIONS")
+    {
+        var origin = context.Request.Headers.Origin.ToString();
+        if (!string.IsNullOrEmpty(origin))
+        {
+            context.Response.Headers["Access-Control-Allow-Origin"] = origin;
+            context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
+            context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization";
+            context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
+            context.Response.Headers["Vary"] = "Origin";
+        }
+        context.Response.StatusCode = 204;
+        return;
+    }
+    await next();
+});
 app.UseCors("AllowBlazor");
 // Đảm bảo thư mục audios tồn tại
 var audioPath = Path.Combine(builder.Environment.ContentRootPath, "audios");
 if (!Directory.Exists(audioPath)) Directory.CreateDirectory(audioPath);
 
+// 🔥 Phục vụ Blazor WASM từ cùng origin
+app.UseBlazorFrameworkFiles();
+
 // Cấu hình duy nhất cho file tĩnh
-app.UseStaticFiles(); // Cho wwwroot
+app.UseStaticFiles(); // Cho wwwroot + Blazor WASM
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(audioPath),
@@ -119,8 +142,8 @@ app.UseAuthorization();
 app.MapControllers();
 // Cho phép API chạy toàn mạng
 //app.Urls.Add("http://0.0.0.0:5000");
-// 🔥 BLazor fallback PHẢI SAU CÙNG
-//app.MapFallbackToFile("index.html");
+// 🔥 Blazor fallback PHẢI SAU CÙNG
+app.MapFallbackToFile("index.html");
 
 app.Run();
 

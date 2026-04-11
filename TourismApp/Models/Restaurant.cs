@@ -37,6 +37,20 @@ namespace TourismApp.Models
             }
         }
 
+        private bool _isNearest;
+        public bool IsNearest
+        {
+            get => _isNearest;
+            set
+            {
+                if (_isNearest != value)
+                {
+                    _isNearest = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {

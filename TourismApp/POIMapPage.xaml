@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:maps="clr-namespace:Microsoft.Maui.Controls.Maps;assembly=Microsoft.Maui.Controls.Maps"
+             xmlns:controls="clr-namespace:TourismApp.Controls"
+             x:Class="TourismApp.POIMapPage"
+             Shell.TabBarIsVisible="False"
+             Title="Khám phá">
+
+    <Grid RowDefinitions="*,Auto">
+        <!-- Main content -->
+        <Grid Grid.Row="0" RowDefinitions="Auto,*,Auto">
+            <StackLayout Orientation="Horizontal" Padding="10" BackgroundColor="#FFFFFF">
+                <Label Text="Bản đồ ẩm thực" FontAttributes="Bold" FontSize="18" VerticalOptions="Center" />
+                <Button Text="Refresh" Clicked="OnRefreshClicked" HorizontalOptions="EndAndExpand"
+                        BackgroundColor="#E3F2FD" TextColor="#1976D2" CornerRadius="10" FontSize="13"/>
+            </StackLayout>
+
+            <Grid Grid.Row="1">
+                <maps:Map x:Name="map" MapType="Street" IsShowingUser="True" />
+
+                <!-- Floating route info card on map -->
+                <Frame x:Name="routeInfoCard" IsVisible="False"
+                       BackgroundColor="#F0F0F0" CornerRadius="12" Padding="8,6"
+                       HasShadow="True" BorderColor="Transparent"
+                       HorizontalOptions="Fill" VerticalOptions="End"
+                       Margin="8,0,8,6" Opacity="0.95">
+                    <Grid ColumnDefinitions="*,Auto,Auto" RowDefinitions="Auto" ColumnSpacing="6">
+                        <StackLayout Orientation="Vertical" Spacing="1" VerticalOptions="Center">
+                            <Label x:Name="lblRouteName" FontAttributes="Bold" FontSize="13" TextColor="#1976D2" LineBreakMode="TailTruncation" MaxLines="1" />
+                            <Label x:Name="lblRouteInfo" FontSize="11" TextColor="#555" LineBreakMode="TailTruncation" MaxLines="1" />
+                        </StackLayout>
+                        <Button x:Name="btnOpenGoogleMaps" Grid.Column="1"
+                                Text="🗺️ Maps" FontSize="11"
+                                BackgroundColor="#E3F2FD" TextColor="#1976D2" CornerRadius="8"
+                                HeightRequest="30" MinimumWidthRequest="70" Padding="6,0"
+                                Clicked="OnOverlayNavigateClicked" VerticalOptions="Center" />
+                        <Button x:Name="btnCloseRoute" Grid.Column="2"
+                                Text="✕" FontSize="13" TextColor="#999"
+                                BackgroundColor="Transparent" WidthRequest="28" HeightRequest="28"
+                                Clicked="OnCloseRouteClicked" VerticalOptions="Center" Padding="0" />
+                    </Grid>
+                </Frame>
+            </Grid>
+
+            <CollectionView x:Name="PoiList" Grid.Row="2" HeightRequest="200" ItemsSource="{Binding Restaurants}" SelectionMode="None">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame CornerRadius="10" Margin="8,4" Padding="10" BackgroundColor="White" HasShadow="True" BorderColor="Transparent">
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                                <Label Text="{Binding Name}" FontAttributes="Bold" FontSize="15" />
+                                <Label Grid.Row="1" Text="{Binding Address}" FontSize="12" TextColor="Gray" MaxLines="1" />
+
+                                <Button Grid.Column="1" Grid.RowSpan="2"
+                                        Text="Chỉ đường"
+                                        Clicked="OnNavigateClicked"
+                                        CommandParameter="{Binding .}"
+                                        BackgroundColor="#FFF3E0" TextColor="#E65100"
+                                        CornerRadius="10" HeightRequest="40" WidthRequest="90" FontSize="12"
+                                        VerticalOptions="Center"/>
+                            </Grid>
+                            <Frame.Triggers>
+                                <DataTrigger TargetType="Frame" Binding="{Binding IsNearest}" Value="True">
+                                    <Setter Property="BackgroundColor" Value="#E8F5E9" />
+                                    <Setter Property="BorderColor" Value="#66BB6A" />
+                                </DataTrigger>
+                            </Frame.Triggers>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </Grid>
+
+        <!-- Custom bottom bar -->
+        <controls:CustomBottomBar Grid.Row="1" ActiveTab="1"/>
+    </Grid>
+</ContentPage>

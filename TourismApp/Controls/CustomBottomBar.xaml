@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="TourismApp.Controls.CustomBottomBar">
+
+    <Grid ColumnDefinitions="*,*,80,*" HeightRequest="65" BackgroundColor="White" Padding="0">
+
+        <!-- Top separator line -->
+        <BoxView Grid.ColumnSpan="4" HeightRequest="0.5" VerticalOptions="Start" Color="#E0E0E0"/>
+
+        <!-- Tab 0: Trang chủ -->
+        <VerticalStackLayout Grid.Column="0" VerticalOptions="Center" HorizontalOptions="Center" Spacing="2">
+            <Label x:Name="IconHome" Text="🏠" FontSize="22" HorizontalTextAlignment="Center"/>
+            <Label x:Name="LabelHome" Text="Trang chủ" FontSize="10" HorizontalTextAlignment="Center" TextColor="Gray"/>
+            <VerticalStackLayout.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnHomeTapped"/>
+            </VerticalStackLayout.GestureRecognizers>
+        </VerticalStackLayout>
+
+        <!-- Tab 1: Khám phá -->
+        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" HorizontalOptions="Center" Spacing="2">
+            <Label x:Name="IconExplore" Text="🔍" FontSize="22" HorizontalTextAlignment="Center"/>
+            <Label x:Name="LabelExplore" Text="Khám phá" FontSize="10" HorizontalTextAlignment="Center" TextColor="Gray"/>
+            <VerticalStackLayout.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnExploreTapped"/>
+            </VerticalStackLayout.GestureRecognizers>
+        </VerticalStackLayout>
+
+        <!-- Floating center button: Quét QR -->
+        <Border Grid.Column="2"
+                StrokeShape="RoundRectangle 30"
+                HeightRequest="60" WidthRequest="60"
+                BackgroundColor="#FF5722"
+                Stroke="White" StrokeThickness="3"
+                HorizontalOptions="Center"
+                VerticalOptions="Start"
+                Margin="0,-15,0,0">
+            <Border.Shadow>
+                <Shadow Brush="Black" Offset="0,4" Radius="8" Opacity="0.3"/>
+            </Border.Shadow>
+            <Label Text="＋" FontSize="30" TextColor="White"
+                   HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+            <Border.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnScanTapped"/>
+            </Border.GestureRecognizers>
+        </Border>
+
+        <!-- Tab 2: Hồ sơ -->
+        <VerticalStackLayout Grid.Column="3" VerticalOptions="Center" HorizontalOptions="Center" Spacing="2">
+            <Label x:Name="IconProfile" Text="👤" FontSize="22" HorizontalTextAlignment="Center"/>
+            <Label x:Name="LabelProfile" Text="Hồ sơ" FontSize="10" HorizontalTextAlignment="Center" TextColor="Gray"/>
+            <VerticalStackLayout.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnProfileTapped"/>
+            </VerticalStackLayout.GestureRecognizers>
+        </VerticalStackLayout>
+
+    </Grid>
+
+</ContentView>
