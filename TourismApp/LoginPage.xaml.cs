@@ -57,10 +57,7 @@ public partial class LoginPage : ContentPage
             // Điều hướng sang trang chủ (Reset luồng để hiện Flyout Menu)
             if (result.Role == "Restaurant")
             {
-                if (result.HasRestaurant)
-                    await Shell.Current.GoToAsync("//RestaurantManagerPage");
-                else
-                    await Shell.Current.GoToAsync("//RegisterRestaurantPage");
+                await Shell.Current.GoToAsync("//RestaurantManagerPage");
             }
             else
             {

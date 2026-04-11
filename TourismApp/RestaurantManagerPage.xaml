@@ -13,87 +13,114 @@
                 <Label Text="QUẢN TRỊ NHÀ HÀNG" FontSize="26" FontAttributes="Bold" TextColor="#2D3436"/>
             </VerticalStackLayout>
 
-            <Grid ColumnDefinitions="*,*" 
-      RowDefinitions="Auto,Auto,Auto" 
-      ColumnSpacing="15" 
-      RowSpacing="15">
-
-                <Frame Grid.Row="0" Grid.Column="0" Padding="15" CornerRadius="15" HasShadow="True" BorderColor="Transparent">
-                    <Frame.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="GoDashboard"/>
-                    </Frame.GestureRecognizers>
-                    <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
-                        <Label Text="📊" FontSize="35" HorizontalOptions="Center"/>
-                        <Label Text="Thống kê" FontAttributes="Bold" HorizontalOptions="Center" TextColor="#34495E"/>
+            <!-- NO RESTAURANT SECTION -->
+            <VerticalStackLayout x:Name="noRestaurantSection" IsVisible="False" Spacing="20">
+                <Frame BackgroundColor="#FFF3E0" CornerRadius="15" Padding="25" HasShadow="True" BorderColor="Transparent">
+                    <VerticalStackLayout Spacing="15" HorizontalOptions="Center">
+                        <Label Text="🏪" FontSize="60" HorizontalOptions="Center"/>
+                        <Label Text="Bạn chưa đăng ký nhà hàng" FontSize="20" FontAttributes="Bold" HorizontalOptions="Center" TextColor="#E65100"/>
+                        <Label Text="Hãy đăng ký nhà hàng để bắt đầu quản lý kinh doanh trên hệ thống" FontSize="14" TextColor="#7F8C8D" HorizontalOptions="Center" HorizontalTextAlignment="Center"/>
                     </VerticalStackLayout>
                 </Frame>
 
-                <Frame Grid.Row="0" Grid.Column="1" Padding="15" CornerRadius="15" HasShadow="True" BorderColor="Transparent">
-                    <Frame.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="GoAddDish"/>
-                    </Frame.GestureRecognizers>
-                    <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
-                        <Label Text="➕" FontSize="35" HorizontalOptions="Center"/>
-                        <Label Text="Thêm món" FontAttributes="Bold" HorizontalOptions="Center" TextColor="#34495E"/>
-                    </VerticalStackLayout>
-                </Frame>
+                <Entry x:Name="txtCreateName" Placeholder="Tên nhà hàng *" FontSize="15"/>
+                <Entry x:Name="txtCreateAddress" Placeholder="Địa chỉ *" FontSize="15"/>
+                <Entry x:Name="txtCreatePhone" Placeholder="Số điện thoại" FontSize="15" Keyboard="Telephone"/>
+                <Editor x:Name="txtCreateDescription" Placeholder="Mô tả nhà hàng" FontSize="15" HeightRequest="80"/>
 
-                <Frame Grid.Row="1" Grid.Column="0" Padding="15" CornerRadius="15" HasShadow="True" BorderColor="Transparent">
-                    <Frame.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="GoListDish"/>
-                    </Frame.GestureRecognizers>
-                    <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
-                        <Label Text="🍱" FontSize="35" HorizontalOptions="Center"/>
-                        <Label Text="Thực đơn" FontAttributes="Bold" HorizontalOptions="Center" TextColor="#34495E"/>
-                    </VerticalStackLayout>
-                </Frame>
+                <Button Text="🏪 Đăng ký nhà hàng"
+                        BackgroundColor="#FF6D00"
+                        TextColor="White"
+                        FontAttributes="Bold"
+                        CornerRadius="12"
+                        HeightRequest="50"
+                        Clicked="OnCreateRestaurantClicked"/>
+            </VerticalStackLayout>
 
-                <Frame Grid.Row="1" Grid.Column="1" Padding="15" CornerRadius="15" HasShadow="True" BorderColor="Transparent">
-                    <Frame.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="GoEditRestaurant"/>
-                    </Frame.GestureRecognizers>
-                    <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
-                        <Label Text="📝" FontSize="35" HorizontalOptions="Center"/>
-                        <Label Text="Cập nhật" FontAttributes="Bold" HorizontalOptions="Center" TextColor="#34495E"/>
-                    </VerticalStackLayout>
-                </Frame>
+            <!-- MANAGEMENT SECTION -->
+            <VerticalStackLayout x:Name="managementSection" IsVisible="False" Spacing="15">
+                <Grid ColumnDefinitions="*,*" 
+                      RowDefinitions="Auto,Auto,Auto" 
+                      ColumnSpacing="15" 
+                      RowSpacing="15">
 
-                <Frame Grid.Row="2" Grid.Column="0" Padding="15" CornerRadius="15" HasShadow="True" BorderColor="Transparent">
-                    <Frame.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="GoMyAudios"/>
-                    </Frame.GestureRecognizers>
-                    <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
-                        <Label Text="🎧" FontSize="35" HorizontalOptions="Center"/>
-                        <Label Text="Thuyết minh" FontAttributes="Bold" HorizontalOptions="Center" TextColor="#34495E"/>
-                    </VerticalStackLayout>
-                </Frame>
+                    <Frame Grid.Row="0" Grid.Column="0" Padding="15" CornerRadius="15" HasShadow="True" BorderColor="Transparent">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="GoDashboard"/>
+                        </Frame.GestureRecognizers>
+                        <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
+                            <Label Text="📊" FontSize="35" HorizontalOptions="Center"/>
+                            <Label Text="Thống kê" FontAttributes="Bold" HorizontalOptions="Center" TextColor="#34495E"/>
+                        </VerticalStackLayout>
+                    </Frame>
 
-                <Frame Grid.Row="2" Grid.Column="1" Padding="15" CornerRadius="15" HasShadow="True" BorderColor="Transparent">
-                    <Frame.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="GoUpgradePremium"/>
-                    </Frame.GestureRecognizers>
-                    <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
-                        <Label Text="💎" FontSize="35" HorizontalOptions="Center"/>
-                        <Label Text="Nâng cấp" FontAttributes="Bold" HorizontalOptions="Center" TextColor="#34495E"/>
-                    </VerticalStackLayout>
-                </Frame>
+                    <Frame Grid.Row="0" Grid.Column="1" Padding="15" CornerRadius="15" HasShadow="True" BorderColor="Transparent">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="GoAddDish"/>
+                        </Frame.GestureRecognizers>
+                        <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
+                            <Label Text="➕" FontSize="35" HorizontalOptions="Center"/>
+                            <Label Text="Thêm món" FontAttributes="Bold" HorizontalOptions="Center" TextColor="#34495E"/>
+                        </VerticalStackLayout>
+                    </Frame>
+
+                    <Frame Grid.Row="1" Grid.Column="0" Padding="15" CornerRadius="15" HasShadow="True" BorderColor="Transparent">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="GoListDish"/>
+                        </Frame.GestureRecognizers>
+                        <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
+                            <Label Text="🍱" FontSize="35" HorizontalOptions="Center"/>
+                            <Label Text="Thực đơn" FontAttributes="Bold" HorizontalOptions="Center" TextColor="#34495E"/>
+                        </VerticalStackLayout>
+                    </Frame>
+
+                    <Frame Grid.Row="1" Grid.Column="1" Padding="15" CornerRadius="15" HasShadow="True" BorderColor="Transparent">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="GoEditRestaurant"/>
+                        </Frame.GestureRecognizers>
+                        <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
+                            <Label Text="📝" FontSize="35" HorizontalOptions="Center"/>
+                            <Label Text="Cập nhật" FontAttributes="Bold" HorizontalOptions="Center" TextColor="#34495E"/>
+                        </VerticalStackLayout>
+                    </Frame>
+
+                    <Frame Grid.Row="2" Grid.Column="0" Padding="15" CornerRadius="15" HasShadow="True" BorderColor="Transparent">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="GoMyAudios"/>
+                        </Frame.GestureRecognizers>
+                        <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
+                            <Label Text="🎧" FontSize="35" HorizontalOptions="Center"/>
+                            <Label Text="Thuyết minh" FontAttributes="Bold" HorizontalOptions="Center" TextColor="#34495E"/>
+                        </VerticalStackLayout>
+                    </Frame>
+
+                    <Frame Grid.Row="2" Grid.Column="1" Padding="15" CornerRadius="15" HasShadow="True" BorderColor="Transparent">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="GoUpgradePremium"/>
+                        </Frame.GestureRecognizers>
+                        <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
+                            <Label Text="💎" FontSize="35" HorizontalOptions="Center"/>
+                            <Label Text="Nâng cấp" FontAttributes="Bold" HorizontalOptions="Center" TextColor="#34495E"/>
+                        </VerticalStackLayout>
+                    </Frame>
                 </Grid>
 
                 <Frame BackgroundColor="#2196F3" CornerRadius="20" Padding="20" HasShadow="True" BorderColor="Transparent">
-                <Grid ColumnDefinitions="*, Auto">
-                    <VerticalStackLayout Spacing="5" VerticalOptions="Center">
-                        <Label Text="Trạng thái hiện tại" TextColor="White" Opacity="0.8" FontSize="13"/>
-                        <Label x:Name="lblStatusText" Text="Đang tải..." TextColor="White" FontAttributes="Bold" FontSize="20"/>
-                    </VerticalStackLayout>
+                    <Grid ColumnDefinitions="*, Auto">
+                        <VerticalStackLayout Spacing="5" VerticalOptions="Center">
+                            <Label Text="Trạng thái hiện tại" TextColor="White" Opacity="0.8" FontSize="13"/>
+                            <Label x:Name="lblStatusText" Text="Đang tải..." TextColor="White" FontAttributes="Bold" FontSize="20"/>
+                        </VerticalStackLayout>
 
-                    <Switch x:Name="swStatus" 
-                            Grid.Column="1"
-                            ThumbColor="White" 
-                            OnColor="#4CAF50"
-                            VerticalOptions="Center"
-                            Toggled="OnStatusToggled"/>
-                </Grid>
-            </Frame>
+                        <Switch x:Name="swStatus" 
+                                Grid.Column="1"
+                                ThumbColor="White" 
+                                OnColor="#4CAF50"
+                                VerticalOptions="Center"
+                                Toggled="OnStatusToggled"/>
+                    </Grid>
+                </Frame>
+            </VerticalStackLayout>
 
         </VerticalStackLayout>
     </ScrollView>

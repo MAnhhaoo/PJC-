@@ -3,6 +3,7 @@
 @using BlazorApp1.Models
 @using Microsoft.AspNetCore.Components.Forms
 @using MudBlazor
+@implements IDisposable
 @inject ApiService ApiService
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
@@ -73,8 +74,20 @@
     private List<NarrationAdminDto> _narrations = new();
     private bool _loading = true;
     private int? _playingId;
+    private DotNetObjectReference<ManageNarrations> _dotNetRef;
 
-    protected override async Task OnInitializedAsync() => await LoadData();
+    protected override async Task OnInitializedAsync()
+    {
+        _dotNetRef = DotNetObjectReference.Create(this);
+        await LoadData();
+    }
+
+    [JSInvokable]
+    public void OnAudioEnded()
+    {
+        _playingId = null;
+        StateHasChanged();
+    }
 
     private async Task LoadData()
     {
@@ -96,43 +109,81 @@
 
     private async Task OpenTranslateDialog(NarrationAdminDto item)
     {
-        var parameters = new DialogParameters { ["SourceText"] = item.TextContent };
-        var dialog = await DialogService.ShowAsync<TranslateDialog>("Dịch thuật", parameters);
-        var result = await dialog.Result;
-        if (!result.Canceled && result.Data != null)
+        try
         {
-            dynamic data = result.Data;
-            var newNarration = new { 
-                DishId = item.DishId > 0 ? (int?)item.DishId : null, 
-                RestaurantId = item.RestaurantId, 
-                TextContent = (string)data.Text, 
-                LanguageCode = (string)data.Lang 
-            };
-            await ApiService.PostAsync("api/narrations/create-translated", newNarration);
-            await LoadData();
+            var parameters = new DialogParameters { ["SourceText"] = item.TextContent };
+            var dialog = await DialogService.ShowAsync<TranslateDialog>("Dịch thuật", parameters);
+            var result = await dialog.Result;
+            if (!result.Canceled && result.Data != null)
+            {
+                dynamic data = result.Data;
+                var newNarration = new { 
+                    DishId = item.DishId > 0 ? (int?)item.DishId : null, 
+                    RestaurantId = item.RestaurantId, 
+                    TextContent = (string)data.Text, 
+                    LanguageCode = (string)data.Lang 
+                };
+                await ApiService.PostAsync("api/narrations/create-translated", newNarration);
+                await LoadData();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Lỗi dịch thuật: " + ex.Message, Severity.Error);
         }
     }
 
     private async Task UploadAudio(int id, InputFileChangeEventArgs e)
     {
-        var success = await ApiService.PostFileAsync("api/restaurants/admin/update-audio", id, e.File);
-        if (success) { Snackbar.Add("Thành công!", Severity.Success); await LoadData(); }
+        try
+        {
+            var success = await ApiService.PostFileAsync("api/restaurants/admin/update-audio", id, e.File);
+            if (success) { Snackbar.Add("Thành công!", Severity.Success); await LoadData(); }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Lỗi upload: " + ex.Message, Severity.Error);
+        }
     }
 
     private async Task PlayAudio(int id, string url)
     {
         if (string.IsNullOrEmpty(url)) return;
-        string fileName = url.Replace("audios/", "").TrimStart('/');
-        string fullUrl = $"https://localhost:7111/audios/{fileName}"; // Kiểm tra lại cổng Backend
-        _playingId = id;
-        await JSRuntime.InvokeVoidAsync("playAudio", fullUrl);
+        try
+        {
+            string audioUrl = url.StartsWith("http") ? url : $"/audios/{url.Replace("audios/", "").TrimStart('/')}";
+            _playingId = id;
+            StateHasChanged();
+            await JSRuntime.InvokeVoidAsync("playAudio", audioUrl, _dotNetRef);
+        }
+        catch (Exception ex)
+        {
+            _playingId = null;
+            StateHasChanged();
+            Snackbar.Add("Lỗi phát audio: " + ex.Message, Severity.Error);
+        }
     }
 
-    private async Task StopAudio() { _playingId = null; await JSRuntime.InvokeVoidAsync("stopAudio"); }
+    private async Task StopAudio()
+    {
+        _playingId = null;
+        StateHasChanged();
+        try { await JSRuntime.InvokeVoidAsync("stopAudio"); }
+        catch { /* ignore */ }
+    }
+
+    public void Dispose() => _dotNetRef?.Dispose();
 
     private async Task DeleteNarration(int id)
     {
-        var response = await ApiService.PostAsync($"api/restaurants/admin/delete-narration/{id}", new { });
-        if (response.IsSuccessStatusCode) { Snackbar.Add("Đã xóa!", Severity.Success); await LoadData(); }
+        try
+        {
+            var response = await ApiService.PostAsync($"api/restaurants/admin/delete-narration/{id}", new { });
+            if (response.IsSuccessStatusCode) { Snackbar.Add("Đã xóa!", Severity.Success); await LoadData(); }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Lỗi xóa: " + ex.Message, Severity.Error);
+        }
     }
 }

@@ -76,6 +76,9 @@ public partial class RestaurantDetailPage : ContentPage
         StopAudio();
     }
 
+    private static bool IsValidCoordinates(double lat, double lng)
+        => lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180 && (lat != 0 || lng != 0);
+
     private async Task LoadUserLocationAndDistance()
     {
         try
@@ -88,6 +91,12 @@ public partial class RestaurantDetailPage : ContentPage
 
             if (_userLocation == null)
                 return;
+
+            if (!IsValidCoordinates(_restaurant.Latitude, _restaurant.Longitude))
+            {
+                DistanceLabel.Text = "📍 Nhà hàng chưa cập nhật tọa độ";
+                return;
+            }
 
             double distance = Location.CalculateDistance(
                 _userLocation.Latitude,
@@ -107,7 +116,15 @@ public partial class RestaurantDetailPage : ContentPage
     private async Task LoadMapWithRoute()
     {
         if (_restaurant == null) return;
-        if (_restaurant.Latitude == 0 && _restaurant.Longitude == 0) return;
+        if (!IsValidCoordinates(_restaurant.Latitude, _restaurant.Longitude))
+        {
+            MapSection.IsVisible = false;
+            NoLocationFrame.IsVisible = true;
+            return;
+        }
+
+        MapSection.IsVisible = true;
+        NoLocationFrame.IsVisible = false;
 
         var restaurantLocation = new Location(_restaurant.Latitude, _restaurant.Longitude);
 
@@ -306,7 +323,7 @@ public partial class RestaurantDetailPage : ContentPage
         if (_restaurant == null || _userLocation == null)
             return;
 
-        if (_restaurant.Latitude == 0 && _restaurant.Longitude == 0)
+        if (!IsValidCoordinates(_restaurant.Latitude, _restaurant.Longitude))
         {
             await DisplayAlert("Lỗi", "Nhà hàng chưa có tọa độ. Chủ nhà hàng cần cập nhật vị trí GPS.", "OK");
             return;

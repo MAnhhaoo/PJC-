@@ -129,7 +129,8 @@ public partial class CustomerHomePage : ContentPage
             var fileName = string.IsNullOrEmpty(matched.AudioUrl) ? string.Empty : Path.GetFileName(matched.AudioUrl);
             if (string.IsNullOrEmpty(fileName)) return;
 
-            var host = DeviceInfo.DeviceType == DeviceType.Virtual ? "10.0.2.2" : "192.168.1.14";
+            var savedIp = Preferences.Default.Get("server_ip", "192.168.1.12");
+            var host = DeviceInfo.DeviceType == DeviceType.Virtual ? "10.0.2.2" : savedIp;
             string audioUrl = $"http://{host}:5216/audios/{fileName}";
 
             // 3. Thực hiện tải và khởi tạo Player hoàn toàn ở luồng phụ (Fix NetworkOnMainThread)
@@ -166,8 +167,10 @@ public partial class CustomerHomePage : ContentPage
         {
             // Nếu lỗi (404, mất mạng...), reset ngay trạng thái UI
             MainThread.BeginInvokeOnMainThread(() => StopCurrentAudio());
-            string linkCheck = matched != null ? matched.AudioUrl : "null";
-            await DisplayAlert("Lỗi phát", $"File: {linkCheck}\nChi tiết: {ex.Message}", "OK");
+            var savedIp2 = Preferences.Default.Get("server_ip", "192.168.1.12");
+            var host2 = DeviceInfo.DeviceType == DeviceType.Virtual ? "10.0.2.2" : savedIp2;
+            var fn = matched != null && !string.IsNullOrEmpty(matched.AudioUrl) ? Path.GetFileName(matched.AudioUrl) : "null";
+            await DisplayAlert("Lỗi phát", $"File: http://{host2}:5216/audios/{fn}\nChi tiết: {ex.Message}", "OK");
         }
     }
     private void StopCurrentAudio()

@@ -3,42 +3,70 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     x:Class="TourismApp.RestaurantDashboardPage"
-    Title="Restaurant Dashboard">
+    Title="Quản lý nhà hàng"
+    BackgroundColor="#F5F5F5">
 
     <ScrollView>
-        <VerticalStackLayout Padding="20" Spacing="15">
+        <VerticalStackLayout Padding="15" Spacing="12">
 
-            <Image Source="{Binding Image}"
-                   HeightRequest="200"
-                   Aspect="AspectFill"/>
+            <Border StrokeShape="RoundRectangle 16" HeightRequest="200" StrokeThickness="0">
+                <Image Source="{Binding Image}" Aspect="AspectFill"/>
+            </Border>
 
-            <Label Text="{Binding Name}"
-                   FontSize="22"
-                   FontAttributes="Bold"/>
+            <Label Text="{Binding Name}" FontSize="22" FontAttributes="Bold" TextColor="#333"/>
+            <Label Text="{Binding Address}" TextColor="Gray" FontSize="14"/>
+            <Label Text="{Binding Description}" LineBreakMode="WordWrap" FontSize="14" TextColor="#555"/>
 
-            <Label Text="{Binding Address}"
-                   TextColor="Gray"/>
+            <Frame CornerRadius="10" Padding="10" BackgroundColor="#FFF8E1" HasShadow="False" BorderColor="#FFB300">
+                <Label Text="{Binding PremiumText}" TextColor="#E65100" FontAttributes="Bold" FontSize="14"
+                       HorizontalTextAlignment="Center"/>
+            </Frame>
 
-            <Label Text="{Binding Description}"
-                   LineBreakMode="WordWrap"/>
+            <!-- Management Buttons -->
+            <Label Text="Quản lý" FontSize="18" FontAttributes="Bold" TextColor="#333" Margin="0,8,0,0"/>
 
-            <Label Text="{Binding PremiumText}"
-                   TextColor="Orange"
-                   FontAttributes="Bold"/>
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="10">
 
-            <Button Text="Upgrade Premium"
-                    BackgroundColor="Gold"
-                    Clicked="OnUpgradeClicked"/>
+                <Button Text="✏️ Chỉnh sửa nhà hàng"
+                        BackgroundColor="#2196F3" TextColor="White" CornerRadius="12"
+                        HeightRequest="50" FontSize="13"
+                        Clicked="OnEditRestaurantClicked"/>
 
-            <Label Text="Dishes"
-                   FontSize="18"
-                   FontAttributes="Bold"/>
+                <Button Grid.Column="1"
+                        Text="🔊 Thuyết minh"
+                        BackgroundColor="#FF9800" TextColor="White" CornerRadius="12"
+                        HeightRequest="50" FontSize="13"
+                        Clicked="OnManageNarrationsClicked"/>
 
-            <CollectionView ItemsSource="{Binding Dishes}">
+                <Button Grid.Row="1"
+                        Text="🍽 Danh sách món"
+                        BackgroundColor="#4CAF50" TextColor="White" CornerRadius="12"
+                        HeightRequest="50" FontSize="13"
+                        Clicked="OnDishListClicked"/>
+
+                <Button Grid.Row="1" Grid.Column="1"
+                        Text="➕ Thêm món mới"
+                        BackgroundColor="#009688" TextColor="White" CornerRadius="12"
+                        HeightRequest="50" FontSize="13"
+                        Clicked="OnAddDishClicked"/>
+
+                <Button Grid.Row="2"
+                        Text="⭐ Nâng cấp Premium"
+                        BackgroundColor="#FFB300" TextColor="White" CornerRadius="12"
+                        HeightRequest="50" FontSize="13"
+                        Clicked="OnUpgradeClicked"/>
+
+            </Grid>
+
+            <!-- Dish Preview -->
+            <Label Text="Món ăn" FontSize="18" FontAttributes="Bold" TextColor="#333" Margin="0,8,0,0"/>
+
+            <CollectionView ItemsSource="{Binding Dishes}" HeightRequest="200">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Frame Margin="0,5">
-                            <Label Text="{Binding Name}"/>
+                        <Frame Margin="0,4" Padding="10" CornerRadius="10"
+                               BackgroundColor="White" HasShadow="True" BorderColor="Transparent">
+                            <Label Text="{Binding Name}" FontSize="15"/>
                         </Frame>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>

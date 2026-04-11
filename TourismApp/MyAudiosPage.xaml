@@ -1,11 +1,63 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="TourismApp.MyAudiosPage"
-             Title="Thuyết minh của tôi">
-    <Grid RowDefinitions="Auto, *">
-        <Label Grid.Row="0" Text="Danh sách thuyết minh" Margin="20" FontAttributes="Bold" FontSize="18"/>
+             Title="Thuyết minh của tôi"
+             BackgroundColor="#F5F5F5">
 
-        <CollectionView Grid.Row="1" x:Name="listAudios" Margin="10">
+    <Grid RowDefinitions="Auto, *" Padding="15" RowSpacing="10">
+
+        <VerticalStackLayout Grid.Row="0" Spacing="8">
+            <Label Text="🔊 Danh sách thuyết minh" FontAttributes="Bold" FontSize="20" TextColor="#333"/>
+            <Label Text="Nhấn ▶ để nghe, ⏹ để dừng, 🗑 để xóa. Thêm mới trong trang Chỉnh sửa nhà hàng." FontSize="12" TextColor="Gray"/>
+        </VerticalStackLayout>
+
+        <CollectionView Grid.Row="1" x:Name="listAudios"
+                        EmptyView="Chưa có thuyết minh nào. Vào Chỉnh sửa nhà hàng để thêm.">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Border Margin="0,5" Padding="14" StrokeShape="RoundRectangle 14"
+                            BackgroundColor="White" Stroke="#E0E0E0" StrokeThickness="1"
+                            Shadow="{Shadow Brush=#20000000, Offset='0,2', Radius=6}">
+                        <Grid ColumnDefinitions="*, Auto, Auto" RowDefinitions="Auto, Auto, Auto" 
+                              ColumnSpacing="12" RowSpacing="6">
+
+                            <!-- Language badge -->
+                            <Border StrokeShape="RoundRectangle 8" BackgroundColor="#E3F2FD" 
+                                    Stroke="Transparent" Padding="10,4" HorizontalOptions="Start">
+                                <Label Text="{Binding LanguageName}" FontAttributes="Bold" 
+                                       FontSize="14" TextColor="#1565C0"/>
+                            </Border>
+
+                            <!-- Text content -->
+                            <Label Grid.Row="1" Text="{Binding TextContent}"
+                                   FontSize="13" TextColor="#666"
+                                   MaxLines="3" LineBreakMode="TailTruncation"/>
+
+                            <!-- Language code hint -->
+                            <Label Grid.Row="2" Text="{Binding LanguageCode, StringFormat='🌐 {0}'}" 
+                                   FontSize="11" TextColor="#999"/>
+
+                            <!-- Play/Stop button -->
+                            <Button Grid.Column="1" Grid.RowSpan="3"
+                                    Text="{Binding PlayButtonText}" FontSize="20"
+                                    BackgroundColor="{Binding PlayButtonBackground}" 
+                                    TextColor="{Binding PlayButtonTextColor}"
+                                    CornerRadius="24" WidthRequest="48" HeightRequest="48"
+                                    Clicked="OnPlayStopClicked" CommandParameter="{Binding .}"
+                                    VerticalOptions="Center"/>
+
+                            <!-- Delete button -->
+                            <Button Grid.Column="2" Grid.RowSpan="3"
+                                    Text="🗑" FontSize="18"
+                                    BackgroundColor="#FFEBEE" TextColor="#D32F2F"
+                                    CornerRadius="24" WidthRequest="48" HeightRequest="48"
+                                    Clicked="OnDeleteClicked" CommandParameter="{Binding .}"
+                                    VerticalOptions="Center"/>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
         </CollectionView>
+
     </Grid>
 </ContentPage>

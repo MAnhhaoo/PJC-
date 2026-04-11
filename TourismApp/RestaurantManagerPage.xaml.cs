@@ -10,10 +10,9 @@ public partial class RestaurantManagerPage : ContentPage
 {
     private readonly HttpClient _httpClient;
     private readonly IAudioManager _audioManager;
-    private readonly AuthService _authService; // Khai báo biến này để hết lỗi đỏ
+    private readonly AuthService _authService;
     private bool _isBusy = false;
 
-    // Constructor nhận 2 tham số để Dependency Injection hoạt động đúng
     public RestaurantManagerPage(HttpClient httpClient, AuthService authService , IAudioManager audioManager)
     {
         InitializeComponent();
@@ -33,7 +32,17 @@ public partial class RestaurantManagerPage : ContentPage
         try
         {
             _isBusy = true;
+            await _authService.SetAuthHeaderAsync();
             var response = await _httpClient.GetAsync("api/restaurants/my");
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                // User has no restaurant yet
+                noRestaurantSection.IsVisible = true;
+                managementSection.IsVisible = false;
+                return;
+            }
+
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync();
@@ -42,13 +51,57 @@ public partial class RestaurantManagerPage : ContentPage
 
                 swStatus.IsToggled = isActive;
                 lblStatusText.Text = isActive ? "Đang hoạt động" : "Đã đóng cửa";
+
+                noRestaurantSection.IsVisible = false;
+                managementSection.IsVisible = true;
             }
         }
         catch (Exception ex)
         {
             lblStatusText.Text = "Lỗi tải dữ liệu";
+            noRestaurantSection.IsVisible = false;
+            managementSection.IsVisible = true;
         }
         finally { _isBusy = false; }
+    }
+
+    private async void OnCreateRestaurantClicked(object sender, EventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(txtCreateName.Text) || string.IsNullOrWhiteSpace(txtCreateAddress.Text))
+        {
+            await DisplayAlert("Lỗi", "Vui lòng nhập tên và địa chỉ nhà hàng", "OK");
+            return;
+        }
+
+        try
+        {
+            await _authService.SetAuthHeaderAsync();
+            var data = new
+            {
+                Name = txtCreateName.Text.Trim(),
+                Address = txtCreateAddress.Text.Trim(),
+                Phone = txtCreatePhone.Text?.Trim() ?? "",
+                Description = txtCreateDescription.Text?.Trim() ?? "",
+                Latitude = 0.0,
+                Longitude = 0.0
+            };
+
+            var response = await _httpClient.PostAsJsonAsync("api/restaurants", data);
+            if (response.IsSuccessStatusCode)
+            {
+                await DisplayAlert("Thành công", "Đăng ký nhà hàng thành công! Vui lòng chờ Admin duyệt.", "OK");
+                await LoadRestaurantStatus();
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                await DisplayAlert("Lỗi", error, "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Lỗi", "Không thể tạo nhà hàng: " + ex.Message, "OK");
+        }
     }
 
     private async void OnStatusToggled(object sender, ToggledEventArgs e)
