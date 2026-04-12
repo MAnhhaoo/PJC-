@@ -1,0 +1,442 @@
+/* Import Google Font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+:root {
+    /* Bảng màu Blue theo yêu cầu */
+    --cornflower-blue: #6495ED;  /* (100,149,237) */
+    --royal-blue: #4169E1;       /* (65,105,225) */
+    --pure-blue: #0000FF;        /* (0,0,255) */
+    --medium-blue: #0000CD;      /* (0,0,205) */
+    --dark-blue: #00008B;        /* (0,0,139) */
+    
+    --primary-color: var(--royal-blue);
+    --bg-light: #f8fafc;
+    --text-dark: #0f172a;
+    --white: #ffffff;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+    color: var(--text-dark);
+    background-color: var(--bg-light); /* Đổi từ hồng sang xám xanh nhạt cho chuyên nghiệp */
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+/* --- Navbar --- */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(62, 104, 230, 0.9); /* Royal Blue với độ trong suốt */
+    backdrop-filter: blur(10px);
+    padding: 1rem 10%;
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: white;
+}
+
+.navlinks {
+    list-style: none;
+    display: flex;
+    gap: 30px;
+}
+
+.navlinks a {
+    text-decoration: none;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: var(--transition);
+}
+
+.navlinks a:hover {
+    color: rgb(27, 26, 26);
+    text-shadow: 0 0 10px rgb(255, 255, 255);
+}
+
+/* --- Banner --- */
+.banner {
+    padding: 160px 10% 120px;
+    text-align: center; 
+    color: white;
+    /* Gradient từ Royal Blue sang Dark Blue */
+    background: radial-gradient(circle at top left, var(--royal-blue), var(--dark-blue));
+    clip-path: ellipse(150% 100% at 50% 0%);
+}
+
+.banner h1 {
+    font-size: 3.5rem;
+    font-weight: 800;
+    margin-bottom: 24px;
+    line-height: 1.2;
+}
+
+.banner p {
+    max-width: 800px;
+    margin: 0 auto 40px;
+    font-size: 15px;
+    opacity: 0.9;
+}
+
+.tags span {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(5px);
+    padding: 8px 18px;
+    border-radius: 50px;
+    margin: 5px;
+    display: inline-block;
+    border: 1px solid rgba(255,255,255,0.3);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: white;
+}
+
+/* --- Sections --- */
+.chapter {
+    padding: 80px 10%;
+}
+
+.chapter-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.chapter-tag {
+    background: var(--cornflower-blue);
+    padding: 5px 15px;
+    border-radius: 6px;
+    font-weight: 700;
+    color: rgb(7, 7, 7);
+    font-size: 1.1rem;
+}
+
+.chapter h2 {
+    font-size: 2rem;
+    color: var(--dark-blue);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+ 
+.chapter h3 {
+    font-size: 20px;
+    color: rgb(49, 49, 178);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.chapter-desc {
+    font-size: 1.0rem;
+    color: #000000;
+    margin-bottom: 40px;
+}
+
+
+/* --- Grid & Cards --- */
+.module-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+}
+
+.module-card {
+    background: white;
+    padding: 40px 30px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    transition: var(--transition);
+    border: 1px solid rgba(0,0,0,0.03);
+}
+
+.module-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgb(153, 166, 246);
+}
+
+.module-card .icon {
+    font-size: 45px;
+    margin-bottom: 20px;
+    display: block;
+}
+
+.module-card h3 {
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    font-size: 1.25rem;
+}
+
+/* --- Tables --- */
+.db-section {
+    padding: 60px 10%;
+    /* background: #fb6161; */
+    background: radial-gradient(circle at bottom right, var(--royal-blue), var(--dark-blue));
+    /* clip-path: ellipse(150% 100% at 50% 0%); Tạo đường cong nhẹ ở đáy */
+}
+.db-section h2 {
+    margin-bottom: 20px;
+    color: rgb(255, 255, 255);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.db-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 25px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px;
+}
+
+.db-table thead {
+    background: var(--royal-blue);
+    color: rgb(255, 255, 255);
+}
+
+.db-table th {
+    padding: 18px;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+}
+.db-table tbody {
+  color: rgb(0, 0, 0);
+}
+.db-table td {
+    padding: 16px;
+    border-bottom: 1px solid #ffffff;
+    background:#9eaeff;
+}
+
+.db-table tr:last-child td { border: none; }
+
+.tag {
+    background: #c4d8f2;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    color: #000000;
+}
+
+/* --- Sub-headers & Chips --- */
+.sub-header {
+    margin-top: 60px;
+    border-left: 4px solid rgb(49, 49, 178);
+    padding-left: 15px;
+}
+
+.sub-tag {
+    background: rgb(49, 49, 178);
+    color: rgb(255, 255, 255);
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-weight: 800;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .banner h1 { font-size: 2.2rem; }
+    .navlinks { display: none; } /* Có thể làm menu hamburger sau */
+    .chapter { padding: 40px 5%; }
+}
+
+/* Container chính cho Timeline */
+.timeline-container {
+    position: relative;
+    max-width: 900px;
+    margin: 40px auto;
+    padding-left: 40px;
+}
+
+/* Đường kẻ dọc nối các điểm */
+.timeline-container::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 5px;
+    bottom: 5px;
+    width: 3px;
+    background: linear-gradient(to bottom, var(--royal-blue), var(--dark-blue));
+    border-radius: 10px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 50px;
+}
+
+/* Các chấm tròn trên đường kẻ */
+.timeline-dot {
+    position: absolute;
+    left: -41px;
+    top: 5px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: white;
+    border: 4px solid var(--royal-blue);
+    z-index: 2;
+}
+
+.dot-store { border-color: var(--dark-blue); }
+
+/* Nội dung bên phải */
+.timeline-title {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+.sub-tag {
+    background: rgb(49, 49, 178);
+    color: rgb(255, 255, 255);
+    padding: 4px 12px;
+    border-radius: 10px;
+    font-weight: 800;
+}
+
+.badge {
+    padding: 4px 12px;
+    border-radius: 10px;
+    font-weight: 800;
+    /* font-size: 13px; */
+    color: rgb(255, 255, 255);
+}
+
+.badge-user { background: rgb(49, 49, 178); }
+.badge-store { background: rgb(49, 49, 178); }
+
+/* Nhóm các thẻ nhỏ */
+.card-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.mini-card {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    border: 1px solid var(--royal-blue);
+    transition: 0.3s;
+}
+
+.mini-card:hover {
+    transform: translateX(10px);
+    border-left: 5px solid var(--royal-blue);
+}
+
+.mini-card.vip:hover { border-left-color: var(--royal-blue); }
+.mini-card.premium:hover { border-left-color: var(--dark-blue); }
+
+.mini-card strong {
+    display: block;
+    font-size: 16px;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.mini-card p {
+    font-size: 14px;
+    color: #666;
+    margin: 0;
+}
+
+.mini-card .icon {
+    font-size: 24px;
+    margin-bottom: 10px;
+    display: block;
+}
+
+/* Hiệu ứng VIP & Premium đặc biệt */
+.vip { background: linear-gradient(to right, #ffffff, #b9bbff); }
+.premium { background: linear-gradient(to right, #ffffff, #b9bbff); }
+
+
+/* Container cho các thẻ chồng */
+.sticky-container {
+    position: relative;
+    padding-bottom: 50px;
+}
+
+/* Thiết lập cho từng thẻ Card */
+.step-card {
+    position: sticky;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 350px;
+    margin-bottom: 100px; /* Khoảng cách để thấy hiệu ứng chồng */
+    padding: 50px;
+    border-radius: 30px;
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.05);
+    transition: transform 0.3s ease;
+}
+
+/* Khoảng cách "dính" của mỗi thẻ (càng về sau càng cao) */
+.card-1 { top: 10px; background: #7979ff; color: rgb(255, 255, 255); }
+.card-2 { top: 140px; background: #7979ff; color: rgb(255, 255, 255); }
+.card-3 { top: 180px; background: #7979ff; color: rgb(255, 255, 255); }
+
+.step-content {
+    flex: 1;
+    max-width: 60%;
+}
+
+.step-no {
+    font-size: 4rem;
+    font-weight: 900;
+    opacity: 0.5;
+    position: absolute;
+    top: 20px;
+    left: 50px;
+}
+
+.step-content h3 {
+    font-size: 3rem;
+    margin-top: 25px;
+    color: #ffffff;
+}
+
+.card-3 .step-content h3 { color: #ffffff; }
+
+.step-visual {
+    font-size: 8rem;
+    filter: drop-shadow(10px 10px 20px rgba(0,0,0,0.1));
+}
+
+.tech-stack-mini {
+    margin-top: 20px;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    color: var(--cornflower-blue);
+}
+
+/* Hiệu ứng mờ dần cho các thẻ nằm dưới */
+/* .step-card:not(:last-child) {
+    filter: brightness(0.95);
+} */

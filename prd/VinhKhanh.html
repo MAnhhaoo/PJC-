@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vĩnh Khánh Food Street</title>
-    <link rel="stylesheet" href="VinhKhanhoff.css" />
+    <link rel="stylesheet" href="VinhKhanh.css" />
   </head>
   <body>
     <nav class="navbar">
@@ -244,7 +244,61 @@
   </div>
 </section>
 
-    
+    <!-- Features -->
+    <!-- <section id="features" class="chapter">
+  <div class="chapter-header">
+    <span class="chapter-tag">03</span>
+    <h2>CHỨC NĂNG HỆ THỐNG</h2>
+  </div>
+  <p class="chapter-desc">Các chức năng của hệ thống được xây dựng theo kiến trúc module, đảm bảo khả năng mở rộng và bảo trì trong tương lai. 
+      <br>Ứng dụng di động tập trung vào trải nghiệm người dùng và định vị theo thời gian thực, trong khi dashboard quản trị cung cấp công cụ quản lý dữ liệu, phê duyệt và thống kê toàn bộ hoạt động của hệ thống.</p> -->
+
+    <!-- 3.1 Mobile -->
+  <!-- <div class="sub-header">
+    <span class="sub-tag">3.1</span>
+    <h3>MOBILE APPLICATION</h3>
+  </div>
+
+  <div class="module-grid">
+    <div class="module-card">
+      <div class="icon">🎧</div>
+      <h3>AUDIO TTS</h3>
+      <p>Phát thuyết minh đa ngôn ngữ cho từng nhà hàng.</p>
+    </div>
+
+    <div class="module-card">
+      <div class="icon">🗺️</div>
+      <h3>MAP & NAVIGATION</h3>
+      <p>Hiển thị vị trí và chỉ đường tới nhà hàng.</p>
+    </div>
+
+    <div class="module-card">
+      <div class="icon">🔐</div>
+      <h3>AUTHENTICATION</h3>
+      <p>Đăng nhập và phân quyền bằng JWT.</p>
+    </div>
+  </div> -->
+
+  <!-- 3.2 Admin -->
+  <!-- <div class="sub-header">
+    <span class="sub-tag">3.2</span>
+    <h3>ADMIN DASHBOARD</h3>
+  </div>
+
+  <div class="module-grid">
+    <div class="module-card">
+      <div class="icon">📊</div>
+      <h3>STATISTICS</h3>
+      <p>Thống kê người dùng, nhà hàng và doanh thu.</p>
+    </div>
+
+    <div class="module-card">
+      <div class="icon">✔️</div>
+      <h3>APPROVAL SYSTEM</h3>
+      <p>Phê duyệt nhà hàng trước khi hiển thị trên ứng dụng.</p>
+    </div>
+  </div>
+</section> -->
 
 <section id="features" class="chapter">
   <div class="chapter-header">
@@ -298,204 +352,51 @@
       <div class="arch-grid">
         <div class="arch-card large">
           <div class="arch-info">
-            <h3>Sequence Diagram: Luồng thuyết minh tự động </h3>
+            <h3>Sequence Diagram: Luồng Thuyết Minh Tự Động (P.1)</h3>
             <p>Mô tả tương tác khởi tạo và kiểm tra quyền truy cập vị trí giữa App và GPS.</p>
           </div>
           <div class="img-wrapper">
-            <img src="PRD.image/Sequence/LuồngTMTĐ.jpg" alt="Sequence Diagram">
+            <img src="PRD.image/Sequence.1.jpg" alt="Sequence Diagram 1">
           </div>
         </div>
 
         <div class="arch-card large">
           <div class="arch-info">
-            <h3>Sequence Diagram:  Admin quản lý & mobile đồng bộ</h3>
-            <p>Quy trình cập nhật nội dung và SignalR đồng bộ</p>
+            <h3>Sequence Diagram: Luồng Thuyết Minh Tự Động (P.2)</h3>
+            <p>Quy trình gửi tọa độ về Backend và nhận diện nhà hàng trong bán kính Geofence.</p>
           </div>
           <div class="img-wrapper">
-            <img src="PRD.image/Sequence/AdminQL.jpg" alt="Sequence Admin Diagram">
-          </div>
-        </div>
-
-       <div class="arch-card large">
-          <div class="arch-info">
-            <h3>Sequence Diagram: Luồng khách hàng đặt món</h3>
-    <p>Quy trình khách hàng tra cứu thực đơn từ SQLite offline, chọn món và khởi tạo đơn hàng thông qua API.</p>
-  </div>
-          </div>
-          <div class="img-wrapper">
-            <img src="PRD.image/Sequence/User.jpg" alt="Sequence User Diagram">
+            <img src="PRD.image/Sequence.2.jpg" alt="Sequence Diagram 2">
           </div>
         </div>
 
         <div class="arch-card large">
           <div class="arch-info">
-           <h3>Sequence Diagram: Nhà hàng nhận & xử lý đơn</h3>
-    <p>Quy trình hệ thống CMS nhận thông báo đơn hàng mới và cập nhật trạng thái chế biến thời gian thực.</p>
+            <h3>Sequence Diagram: Luồng Thuyết Minh Tự Động (P.3)</h3>
+            <p>Luồng tải tệp âm thanh đa ngôn ngữ và thực thi phát Audio cho khách du lịch.</p>
           </div>
           <div class="img-wrapper">
-            <img src="PRD.image/Sequence/Restaurant.jpg" alt="Sequence Restaurant Diagram">
+            <img src="PRD.image/Sequence.3.jpg" alt="Sequence Diagram 3">
           </div>
         </div>
-
-        <div class="arch-card large">
-          <div class="arch-info">
-            <h3>Sequence Diagram: Luồng thanh toán trực tuyến</h3>
-    <p>Tương tác giữa App, Cổng thanh toán (VNPAY/MoMo) và xác nhận trạng thái đơn hàng sau khi giao dịch thành công.</p>
-          </div>
-          <div class="img-wrapper">
-            <img src="PRD.image/Sequence/Payment.jpg" alt="Sequence Payment Diagram">
-          </div>
-        </div>
-
-        <div class="arch-card large">
-          <div class="arch-info">
-            <h3>Sequence Diagram: Đăng ký tài khoản mới</h3>
-    <p>Quy trình kiểm tra dữ liệu đầu vào, khởi tạo tài khoản trên Central DB và thiết lập cấu hình mặc định.</p>
-          </div>
-          <div class="img-wrapper">
-            <img src="PRD.image/Sequence/Register.jpg" alt="Sequence Register Diagram">
-          </div>
-        </div>
-
-
-        <div class="arch-card large">
-          <div class="arch-info">
-            <h3>Sequence Diagram: Xác thực đăng nhập</h3>
-    <p>Quy trình gửi thông tin định danh, nhận JWT Token từ Server và đồng bộ thông tin người dùng cơ bản.</p>
-  </div>
-          </div>
-          <div class="img-wrapper">
-            <img src="PRD.image/Sequence/Login.jpg" alt="Sequence Login Diagram">
-          </div>
-        </div>
-
-
-        <div class="arch-card large">
-          <div class="arch-info">
-            <h3>Sequence Diagram: Quản lý danh mục món ăn</h3>
-    <p>Luồng Admin thêm món mới, tải ảnh lên Storage và lưu thông tin vào cơ sở dữ liệu trung tâm.</p>
-          </div>
-          <div class="img-wrapper">
-            <img src="PRD.image/Sequence/Add-dishes.jpg" alt="Sequence Add-dishes Diagram">
-          </div>
-        </div>
-
-        <div class="arch-card large">
-          <div class="arch-info">
-            <h3>Sequence Diagram: Kích hoạt nhanh qua QR</h3>
-    <p>Quy trình quét mã tại điểm dừng để truy vấn nhanh dữ liệu POI/Món ăn mà không cần đợi tín hiệu GPS.</p>
-          </div>
-          <div class="img-wrapper">
-            <img src="PRD.image/Sequence/QR.jpg" alt="Sequence QR Diagram">
-          </div>
-        </div>
-
-
-        <!-- loại 2, chưa chỉnh nội dung -->
-         <div class="arch-card large">
-          <div class="arch-info">
-            <h3>Sequence Diagram: Kích hoạt nhanh qua QR</h3>
-    <p>Quy trình quét mã tại điểm dừng để truy vấn nhanh dữ liệu POI/Món ăn mà không cần đợi tín hiệu GPS.</p>
-          </div>
-          <div class="img-wrapper">
-            <img src="/Login.png" alt="Sequence QR Diagram">
-          </div>
-        </div>
-
-           <div class="arch-card large">
-          <div class="arch-info">
-            <h3>Sequence Diagram: Kích hoạt nhanh qua QR</h3>
-    <p>Quy trình quét mã tại điểm dừng để truy vấn nhanh dữ liệu POI/Món ăn mà không cần đợi tín hiệu GPS.</p>
-          </div>
-          <div class="img-wrapper">
-            <img src="/View restaurant details.png" alt="Sequence QR Diagram">
-          </div>
-        </div>
-
-           <div class="arch-card large">
-          <div class="arch-info">
-            <h3>Sequence Diagram: Kích hoạt nhanh qua QR</h3>
-    <p>Quy trình quét mã tại điểm dừng để truy vấn nhanh dữ liệu POI/Món ăn mà không cần đợi tín hiệu GPS.</p>
-          </div>
-          <div class="img-wrapper">
-            <img src="/Register.png" alt="Sequence QR Diagram">
-          </div>
-        </div>
-
-           <div class="arch-card large">
-          <div class="arch-info">
-            <h3>Sequence Diagram: Kích hoạt nhanh qua QR</h3>
-    <p>Quy trình quét mã tại điểm dừng để truy vấn nhanh dữ liệu POI/Món ăn mà không cần đợi tín hiệu GPS.</p>
-          </div>
-          <div class="img-wrapper">
-            <img src="/Play audio.png" alt="Sequence QR Diagram">
-          </div>
-        </div>
-
-           <div class="arch-card large">
-          <div class="arch-info">
-            <h3>Sequence Diagram: Kích hoạt nhanh qua QR</h3>
-    <p>Quy trình quét mã tại điểm dừng để truy vấn nhanh dữ liệu POI/Món ăn mà không cần đợi tín hiệu GPS.</p>
-          </div>
-          <div class="img-wrapper">
-            <img src="/Open map.png" alt="Sequence QR Diagram">
-          </div>
-        </div>
-
-           <div class="arch-card large">
-          <div class="arch-info">
-            <h3>Sequence Diagram: Kích hoạt nhanh qua QR</h3>
-    <p>Quy trình quét mã tại điểm dừng để truy vấn nhanh dữ liệu POI/Món ăn mà không cần đợi tín hiệu GPS.</p>
-          </div>
-          <div class="img-wrapper">
-            <img src="/Browser restaurant.png" alt="Sequence QR Diagram">
-          </div>
-        </div>
-
-
-
-        
-
 
         <div class="arch-card">
           <div class="arch-info">
-            <h3>Activity Diagram: Logic xử lý vị trí & âm thanh</h3>
-    <p>Mô tả quy trình kiểm tra tọa độ liên tục (Background Service) và kích hoạt thuyết minh dựa trên khoảng cách (Geofencing).</p>
+            <h3>Activity Diagram</h3>
+            <p>Quy trình kiểm tra tọa độ liên tục và logic phát âm thanh trong Background Service.</p>
           </div>
           <div class="img-wrapper">
             <img src="PRD.image/Activity.jpg" alt="Activity Diagram">
           </div>
         </div>
 
-        
-
         <div class="arch-card">
           <div class="arch-info">
-            <h3>Class Diagram: Kiến trúc Hệ thống tổng thể</h3>
-    <p>Sơ đồ lớp thể hiện mối quan hệ giữa các thành phần Core Engine, Service định vị và các đối tượng quản lý dữ liệu (POI, Dishes, User).</p>
+            <h3>Class Diagram</h3>
+            <p>Cấu trúc các thực thể chính: POI, GeofenceEngine, NarrationEngine và User.</p>
           </div>
           <div class="img-wrapper">
-            <img src="PRD.image/ClassDiagram.jpg" alt="Class Diagram">
-          </div>
-        </div>
-
-        <div class="arch-card">
-          <div class="arch-info">
-            <h3>State Diagram: Trạng thái đồng bộ dữ liệu</h3>
-    <p>Mô tả các trạng thái chuyển đổi của dữ liệu từ khi Admin cập nhật trên CMS đến khi được SignalR đẩy xuống thiết bị di động (Real-time Sync).</p>
-          </div>
-          <div class="img-wrapper">
-            <img src="PRD.image/StateDiagramAdmin.jpg" alt="State Diagram">
-          </div>
-        </div>
-
-        <div class="arch-card">
-          <div class="arch-info">
-            <h3>State Diagram: Trình điều khiển thuyết minh</h3>
-    <p>Phân tích các trạng thái vận hành của bộ phát âm thanh: Từ chờ lệnh (Idle), đang tải (Loading) đến đang phát (Playing) và xử lý ngắt quãng.</p>
-          </div>
-          <div class="img-wrapper">
-            <img src="PRD.image/StateDiagramTMTĐ.jpg" alt="State Diagram">
+            <img src="image_490da2.jpg" alt="Class Diagram">
           </div>
         </div>
       </div>
@@ -611,7 +512,7 @@
 
     <div class="footer-col contact">
       <small>GET IN TOUCH</small>
-      <a href="mailto:group16@student.edu.vn">group16@student.edu.vn</a>
+      <a style="color: white;" href="mailto:group16@student.edu.vn">group16@student.edu.vn</a>
     </div>
 
     <div class="footer-col team">
