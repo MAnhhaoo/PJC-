@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="VKSq.css">
+</head>
+<body>
+    <div class="seq-container">
+  <div class="participants">
+    <div class="participant user">👤<br>User</div>
+    <div class="participant">App</div>
+    <div class="participant">GPS</div>
+    <div class="participant">Backend</div>
+    <div class="participant">AudioService</div>
+  </div>
+
+  <div class="diagram-body" style="height: 950px;"> <div class="line line-1"></div>
+    <div class="line line-2"></div>
+    <div class="line line-3"></div>
+    <div class="line line-4"></div>
+    <div class="line line-5"></div>
+
+    <div class="msg to-right from-1 to-2" style="top: 20px;"><span>Mở app</span></div>
+    <div class="msg to-right from-2 to-3" style="top: 60px;"><span>Lấy vị trí</span></div>
+    <div class="msg to-left dashed from-3 to-2" style="top: 100px;"><span>Trả tọa độ</span></div>
+    <div class="msg to-right from-2 to-4" style="top: 140px;"><span>GET /poi/nearby</span></div>
+    <div class="msg to-left dashed from-4 to-2" style="top: 180px;"><span>Danh sách POI</span></div>
+<div class="box loop" style="top: 230px; height: 450px;">
+  <div class="box-label">loop [Di chuyển liên tục]</div>
+  
+  <div class="msg to-right from-2 to-3" style="top: 40px;"><span>Cập nhật vị trí</span></div>
+  <div class="msg to-left dashed from-3 to-2" style="top: 80px;"><span>Tọa độ mới</span></div>
+  
+  <div class="msg self-call" style="top: 120px;">
+    <span class="self-label">Check geofence</span>
+  </div>
+
+  <div class="box alt" style="top: 190px; height: 230px; left: 15px; right: 15px;">
+    <div class="box-label" style="background: #555;">alt</div>
+    <div class="msg to-right from-2 to-5" style="top: 40px;"><span>Phát audio</span></div>
+    <div class="msg to-left dashed from-5 to-1" style="top: 90px;"><span>Nghe thuyết minh</span></div>
+    
+    <div class="alt-divider" style="top: 140px;">[Không vào vùng]</div>
+    
+    <div class="msg self-call" style="top: 170px;">
+      <span class="self-label">Không làm gì</span>
+    </div>
+  </div>
+</div>
+
+<div class="msg to-right from-1 to-2" style="top: 720px;"><span>Đánh giá POI</span></div>
+<div class="msg to-right from-2 to-4" style="top: 770px;"><span>POST /review</span></div>
+<div class="msg to-left dashed from-4 to-2" style="top: 810px;"><span>OK</span></div>
+  </div>
+</div>
+</body>
+</html>
