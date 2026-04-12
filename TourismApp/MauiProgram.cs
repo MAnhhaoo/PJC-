@@ -65,6 +65,8 @@ namespace TourismApp
             builder.Services.AddTransient<UpgradePremiumPage>();
             builder.Services.AddSingleton<LanguageService>(); // Đăng ký dạng Singleton để lưu app state
             builder.Services.AddTransient<QRScannerPage>();
+            builder.Services.AddTransient<SettingsPage>();
+            builder.Services.AddTransient<RestaurantQRPage>();
 
 
 

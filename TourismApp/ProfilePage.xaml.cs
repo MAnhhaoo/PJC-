@@ -39,20 +39,21 @@ public partial class ProfilePage : ContentPage
         {
             await DisplayAlert("Lỗi", "Không thể tải thông tin", "OK");
         }
-    }
 
-    private async void OnEditClicked(object sender, EventArgs e)
-    {
-        await Shell.Current.GoToAsync(nameof(EditProfilePage));
-    }
+            }
 
-    private async void OnLogoutClicked(object sender, EventArgs e)
-    {
-        bool confirm = await DisplayAlert("Xác nhận", "Bạn có chắc chắn muốn đăng xuất?", "Đăng xuất", "Hủy");
-        if (confirm)
-        {
-            Preferences.Default.Remove("jwt_token");
-            await Shell.Current.GoToAsync("//LoginPage");
+            private async void OnEditClicked(object sender, EventArgs e)
+            {
+                await Shell.Current.GoToAsync(nameof(EditProfilePage));
+            }
+
+            private async void OnLogoutClicked(object sender, EventArgs e)
+            {
+                bool confirm = await DisplayAlert("Xác nhận", "Bạn có chắc chắn muốn đăng xuất?", "Đăng xuất", "Hủy");
+                if (confirm)
+                {
+                    Preferences.Default.Remove("jwt_token");
+                    await Shell.Current.GoToAsync("//LoginPage");
+                }
+            }
         }
-    }
-}

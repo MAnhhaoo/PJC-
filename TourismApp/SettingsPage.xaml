@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:TourismApp.Controls"
+             x:Class="TourismApp.SettingsPage"
+             Shell.TabBarIsVisible="False"
+             Title="Cài đặt"
+             BackgroundColor="#F5F6FA">
+
+    <Grid RowDefinitions="*,Auto">
+        <!-- Main content -->
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Padding="20" Spacing="15">
+
+                <Label Text="⚙️ Cài đặt" FontSize="24" FontAttributes="Bold" TextColor="#2C3E50" Margin="0,10,0,5"/>
+
+                <!-- GPS Settings -->
+                <Label Text="📡 Cài đặt GPS" FontSize="18" FontAttributes="Bold" TextColor="#2C3E50" Margin="0,10,0,5"/>
+
+                <Border StrokeShape="RoundRectangle 15" BackgroundColor="White" Padding="20" StrokeThickness="0">
+                    <VerticalStackLayout Spacing="12">
+                        <!-- Geofence Radius -->
+                        <Label Text="📡 Bán kính phát hiện" FontSize="14" TextColor="#2C3E50" FontAttributes="Bold"/>
+                        <Label Text="Khoảng cách tối đa để tự động phát thuyết minh khi đến gần địa điểm." FontSize="12" TextColor="Gray"/>
+                        <Grid ColumnDefinitions="*,60">
+                            <Slider x:Name="sliderRadius" Minimum="3" Maximum="50" Value="5"
+                                    MinimumTrackColor="#1976D2" MaximumTrackColor="#E0E0E0"
+                                    ThumbColor="#1976D2"
+                                    ValueChanged="OnRadiusChanged"/>
+                            <Label x:Name="lblRadius" Grid.Column="1" Text="5 m"
+                                   FontSize="14" FontAttributes="Bold" TextColor="#1976D2"
+                                   VerticalOptions="Center" HorizontalOptions="End"/>
+                        </Grid>
+
+                        <BoxView HeightRequest="1" Color="#F0F0F0"/>
+
+                        <!-- Movement Threshold -->
+                        <Label Text="🚶 Khoảng cách di chuyển" FontSize="14" TextColor="#2C3E50" FontAttributes="Bold"/>
+                        <Label Text="Bạn cần đi ít nhất bao xa để kích hoạt thuyết minh tiếp theo." FontSize="12" TextColor="Gray"/>
+                        <Grid ColumnDefinitions="*,60">
+                            <Slider x:Name="sliderMovement" Minimum="1" Maximum="10" Value="3"
+                                    MinimumTrackColor="#FF9800" MaximumTrackColor="#E0E0E0"
+                                    ThumbColor="#FF9800"
+                                    ValueChanged="OnMovementChanged"/>
+                            <Label x:Name="lblMovement" Grid.Column="1" Text="3 m"
+                                   FontSize="14" FontAttributes="Bold" TextColor="#FF9800"
+                                   VerticalOptions="Center" HorizontalOptions="End"/>
+                        </Grid>
+
+                        <!-- Reset Button -->
+                        <Button Text="🔄 Đặt lại mặc định" 
+                                Clicked="OnResetGpsSettings"
+                                BackgroundColor="#F5F5F5" TextColor="#666"
+                                CornerRadius="8" HeightRequest="40" FontSize="13"
+                                Margin="0,5,0,0"/>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Server Settings -->
+                <Label Text="🌐 Kết nối máy chủ" FontSize="18" FontAttributes="Bold" TextColor="#2C3E50" Margin="0,10,0,5"/>
+
+                <Border StrokeShape="RoundRectangle 15" BackgroundColor="White" Padding="20" StrokeThickness="0">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Địa chỉ IP máy chủ" FontSize="14" TextColor="#2C3E50" FontAttributes="Bold"/>
+                        <Label Text="Dùng cho thiết bị thật kết nối qua WiFi." FontSize="12" TextColor="Gray"/>
+                        <Entry x:Name="entryServerIp" Placeholder="192.168.1.12" 
+                               Keyboard="Url" FontSize="14"
+                               TextChanged="OnServerIpChanged"/>
+                    </VerticalStackLayout>
+                </Border>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Custom bottom bar -->
+        <controls:CustomBottomBar Grid.Row="1" ActiveTab="3"/>
+    </Grid>
+</ContentPage>
