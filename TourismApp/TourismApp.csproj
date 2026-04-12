@@ -120,6 +120,12 @@
 	  <MauiXaml Update="RestaurantMapPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
+	  <MauiXaml Update="RestaurantQRPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="SettingsPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="UpgradePremiumPage.xaml">
 		<Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>

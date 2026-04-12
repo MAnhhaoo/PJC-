@@ -37,6 +37,7 @@ public partial class CustomBottomBar : ContentView
         LabelHome.TextColor = index == 0 ? activeColor : inactiveColor;
         LabelExplore.TextColor = index == 1 ? activeColor : inactiveColor;
         LabelProfile.TextColor = index == 2 ? activeColor : inactiveColor;
+        LabelSettings.TextColor = index == 3 ? activeColor : inactiveColor;
     }
 
     async void OnHomeTapped(object sender, EventArgs e)
@@ -52,6 +53,11 @@ public partial class CustomBottomBar : ContentView
     async void OnProfileTapped(object sender, EventArgs e)
     {
         SwitchTab(2);
+    }
+
+    async void OnSettingsTapped(object sender, EventArgs e)
+    {
+        SwitchTab(3);
     }
 
     async void OnScanTapped(object sender, EventArgs e)

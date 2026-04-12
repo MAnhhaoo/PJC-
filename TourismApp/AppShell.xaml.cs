@@ -22,6 +22,7 @@
 
             Routing.RegisterRoute(nameof(MyAudiosPage), typeof(MyAudiosPage));
             Routing.RegisterRoute(nameof(QRScannerPage), typeof(QRScannerPage));
+            Routing.RegisterRoute(nameof(RestaurantQRPage), typeof(RestaurantQRPage));
         }
 
         public void UpdateMenu(string role)

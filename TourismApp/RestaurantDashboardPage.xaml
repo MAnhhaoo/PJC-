@@ -25,7 +25,7 @@
             <!-- Management Buttons -->
             <Label Text="Quản lý" FontSize="18" FontAttributes="Bold" TextColor="#333" Margin="0,8,0,0"/>
 
-            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="10">
 
                 <Button Text="✏️ Chỉnh sửa nhà hàng"
                         BackgroundColor="#2196F3" TextColor="White" CornerRadius="12"
@@ -51,6 +51,12 @@
                         Clicked="OnAddDishClicked"/>
 
                 <Button Grid.Row="2"
+                        Text="📱 Mã QR nhà hàng"
+                        BackgroundColor="#7B1FA2" TextColor="White" CornerRadius="12"
+                        HeightRequest="50" FontSize="13"
+                        Clicked="OnQRCodeClicked"/>
+
+                <Button Grid.Row="2" Grid.Column="1"
                         Text="⭐ Nâng cấp Premium"
                         BackgroundColor="#FFB300" TextColor="White" CornerRadius="12"
                         HeightRequest="50" FontSize="13"

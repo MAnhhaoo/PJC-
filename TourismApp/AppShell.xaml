@@ -18,6 +18,10 @@
         <Tab Title="Hồ sơ" Icon="tab_profile.png">
             <ShellContent Title="Hồ sơ" ContentTemplate="{DataTemplate local:ProfilePage}" />
         </Tab>
+
+        <Tab Title="Cài đặt" Icon="tab_profile.png">
+            <ShellContent Title="Cài đặt" ContentTemplate="{DataTemplate local:SettingsPage}" />
+        </Tab>
     </TabBar>
 
     <!-- Login page (navigated to on logout, no tab bar) -->

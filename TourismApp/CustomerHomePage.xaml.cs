@@ -18,6 +18,11 @@ public partial class CustomerHomePage : ContentPage
     private Restaurant _currentPlayingRestaurant;
     private bool _isMonitoring = false;
     private readonly HashSet<int> _playedRestaurantIds = new();
+    private bool _isSpeaking = false;
+    private CancellationTokenSource _ttsCts;
+    private double GeofenceRadiusMeters => Preferences.Default.Get("geofence_radius", 5.0);
+    private double MinMovementMeters => Preferences.Default.Get("min_movement", 3.0);
+    private Location _lastTriggerLocation;
 
     public LanguageService LangService { get; }
     public ObservableCollection<Restaurant> Restaurants { get; set; } = new();
@@ -39,6 +44,7 @@ public partial class CustomerHomePage : ContentPage
     {
         base.OnAppearing();
         await LoadData();
+        StartGpsMonitoring();
     }
 
     private async Task LoadData()
@@ -77,24 +83,41 @@ public partial class CustomerHomePage : ContentPage
                 if (loc != null)
                 {
                     foreach (var res in Restaurants)
-                    {
                         res.Distance = _gpsService.CalculateDistance(loc.Latitude, loc.Longitude, res.Latitude, res.Longitude);
-                        if (res.Distance <= 0.1 && !_playedRestaurantIds.Contains(res.RestaurantId))
+
+                    // Geofence Engine: find nearest unplayed restaurant within radius, auto-play if idle
+                    if (_activePlayer == null && _currentPlayingRestaurant == null && !_isSpeaking)
+                    {
+                        var nearest = Restaurants
+                            .Where(r => r.Distance <= GeofenceRadiusMeters && !_playedRestaurantIds.Contains(r.RestaurantId))
+                            .OrderBy(r => r.Distance)
+                            .FirstOrDefault();
+
+                        if (nearest != null)
                         {
-                            _playedRestaurantIds.Add(res.RestaurantId);
-                            await PlayRestaurantAudio(res);
-                            break;
+                            // Only trigger if user has moved since last narration (actually walked to this restaurant)
+                            bool shouldTrigger = _lastTriggerLocation == null
+                                || _gpsService.CalculateDistance(loc.Latitude, loc.Longitude,
+                                    _lastTriggerLocation.Latitude, _lastTriggerLocation.Longitude) >= MinMovementMeters;
+
+                            if (shouldTrigger)
+                            {
+                                _lastTriggerLocation = loc;
+                                _playedRestaurantIds.Add(nearest.RestaurantId);
+                                await PlayRestaurantAudio(nearest);
+                            }
                         }
                     }
                 }
             }
             catch { }
-            await Task.Delay(10000);
+            await Task.Delay(5000);
         }
     }
 
     private async Task PlayRestaurantAudio(Restaurant restaurant)
     {
+        _playedRestaurantIds.Add(restaurant.RestaurantId);
         Narration matched = null;
         try
         {
@@ -116,11 +139,23 @@ public partial class CustomerHomePage : ContentPage
             {
                 if (!string.IsNullOrEmpty(matched.TextContent))
                 {
+                    _isSpeaking = true;
+                    _currentPlayingRestaurant = restaurant;
+                    restaurant.IsPlaying = true;
+                    _ttsCts?.Cancel();
+                    _ttsCts = new CancellationTokenSource();
                     try
                     {
-                        await TextToSpeech.Default.SpeakAsync(matched.TextContent);
+                        await TextToSpeech.Default.SpeakAsync(matched.TextContent, cancelToken: _ttsCts.Token);
                     }
+                    catch (OperationCanceledException) { }
                     catch { }
+                    finally
+                    {
+                        _isSpeaking = false;
+                        restaurant.IsPlaying = false;
+                        _currentPlayingRestaurant = null;
+                    }
                 }
                 return;
             }
@@ -153,7 +188,6 @@ public partial class CustomerHomePage : ContentPage
                     _currentPlayingRestaurant = restaurant;
                     _currentPlayingRestaurant.IsPlaying = true;
 
-                    // FIX ĐỨNG IM: Khi phát hết nhạc, phải gọi StopCurrentAudio trên luồng chính
                     _activePlayer.PlaybackEnded += (s, e) =>
                     {
                         MainThread.BeginInvokeOnMainThread(() => StopCurrentAudio());
@@ -178,7 +212,7 @@ public partial class CustomerHomePage : ContentPage
         try
         {
             // 1. Dừng TextToSpeech nếu đang nói
-            TextToSpeech.Default.SpeakAsync(string.Empty);
+            _ttsCts?.Cancel();
 
             // 2. Xử lý Player an toàn
             if (_activePlayer != null)
@@ -214,6 +248,7 @@ public partial class CustomerHomePage : ContentPage
             System.Diagnostics.Debug.WriteLine($"Lỗi dừng nhạc: {ex.Message}");
         }
     }
+
     private async void OnSelectLanguageClicked(object sender, EventArgs e)
     {
         // Danh sách hiển thị có lá cờ
@@ -260,6 +295,8 @@ public partial class CustomerHomePage : ContentPage
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
+        _isMonitoring = false;
+        _lastTriggerLocation = null;
         StopCurrentAudio();
     }
 }

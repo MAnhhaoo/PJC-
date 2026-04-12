@@ -6,6 +6,8 @@ public partial class RestaurantDashboardPage : ContentPage
 {
     private readonly RestaurantService _restaurantService;
     private readonly DishService _dishService;
+    private int _restaurantId;
+    private string _restaurantName = "";
 
     public RestaurantDashboardPage(
         RestaurantService restaurantService,
@@ -27,6 +29,9 @@ public partial class RestaurantDashboardPage : ContentPage
             await DisplayAlert("Lỗi", "Bạn chưa đăng ký nhà hàng", "OK");
             return;
         }
+
+        _restaurantId = data.RestaurantId;
+        _restaurantName = data.Name ?? "";
 
         var dishes = await _dishService.GetDishesByRestaurantAsync(data.RestaurantId);
 
@@ -66,5 +71,16 @@ public partial class RestaurantDashboardPage : ContentPage
     private async void OnUpgradeClicked(object sender, EventArgs e)
     {
         await Shell.Current.GoToAsync(nameof(UpgradePremiumPage));
+    }
+
+    private async void OnQRCodeClicked(object sender, EventArgs e)
+    {
+        if (_restaurantId <= 0)
+        {
+            await DisplayAlert("Lỗi", "Không tìm thấy thông tin nhà hàng", "OK");
+            return;
+        }
+        var encodedName = Uri.EscapeDataString(_restaurantName);
+        await Shell.Current.GoToAsync($"{nameof(RestaurantQRPage)}?restaurantId={_restaurantId}&restaurantName={encodedName}");
     }
 }
