@@ -17,6 +17,7 @@ public partial class POIMapPage : ContentPage
     private readonly RestaurantService _restaurantService;
     private readonly GpsService _gpsService;
     private readonly IAudioManager _audioManager;
+    private readonly AnalyticsService _analyticsService;
     private CancellationTokenSource _cts;
     private Location _userLocation;
     private IAudioPlayer _currentPlayer;
@@ -25,12 +26,13 @@ public partial class POIMapPage : ContentPage
 
     public ObservableCollection<Restaurant> Restaurants { get; set; } = new();
 
-    public POIMapPage(RestaurantService restaurantService, GpsService gpsService, IAudioManager audioManager)
+    public POIMapPage(RestaurantService restaurantService, GpsService gpsService, IAudioManager audioManager, AnalyticsService analyticsService)
     {
         InitializeComponent();
         _restaurantService = restaurantService;
         _gpsService = gpsService;
         _audioManager = audioManager;
+        _analyticsService = analyticsService;
         this.BindingContext = this;
     }
 
@@ -276,6 +278,10 @@ public partial class POIMapPage : ContentPage
             var lang = "vi";
             var matched = restaurant.Narrations.FirstOrDefault(n => n.Language != null && n.Language.Code == lang) ?? restaurant.Narrations.FirstOrDefault();
             if (matched == null) return;
+
+            _ = _analyticsService.LogNarrationPlayAsync(
+                restaurant.RestaurantId, null, matched.NarrationId,
+                matched.Language?.Code ?? lang, restaurant.Latitude, restaurant.Longitude);
 
             var fileName = string.IsNullOrEmpty(matched.AudioUrl) ? string.Empty : Path.GetFileName(matched.AudioUrl);
             if (string.IsNullOrEmpty(fileName))

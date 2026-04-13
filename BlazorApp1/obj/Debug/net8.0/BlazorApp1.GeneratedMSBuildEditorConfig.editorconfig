@@ -41,6 +41,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5QYXltZW50cy5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/vscode/WebApplication2/BlazorApp1/Pages/Admin/Analytics.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cQW5hbHl0aWNzLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/vscode/WebApplication2/BlazorApp1/Pages/Admin/CreateNarrationDialog.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cQ3JlYXRlTmFycmF0aW9uRGlhbG9nLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
@@ -55,6 +59,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [D:/vscode/WebApplication2/BlazorApp1/Pages/Admin/ManageRestaurants.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cTWFuYWdlUmVzdGF1cmFudHMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/vscode/WebApplication2/BlazorApp1/Pages/Admin/ManageTours.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cTWFuYWdlVG91cnMucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
 [D:/vscode/WebApplication2/BlazorApp1/Pages/Admin/TranslateDialog.razor]

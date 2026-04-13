@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:maps="http://schemas.microsoft.com/dotnet/2021/maui/maps"
+             x:Class="TourismApp.TourDetailPage"
+             Title="Hành trình Tour"
+             BackgroundColor="#F5F5F5">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- Header with tour info -->
+        <VerticalStackLayout Grid.Row="0" Padding="16,12" BackgroundColor="White" Spacing="4">
+            <Label x:Name="lblTourName" FontSize="20" FontAttributes="Bold" TextColor="#1565C0"/>
+            <Label x:Name="lblTourDesc" FontSize="13" TextColor="#666" MaxLines="2"/>
+            <HorizontalStackLayout Spacing="8" Margin="0,4,0,0">
+                <Label x:Name="lblPOICount" FontSize="12" TextColor="#888"/>
+                <Label x:Name="lblCurrentPOI" FontSize="12" TextColor="#1565C0" FontAttributes="Bold"/>
+            </HorizontalStackLayout>
+
+            <!-- Navigation buttons -->
+            <Grid ColumnDefinitions="*,Auto,Auto,*" ColumnSpacing="10" Margin="0,8,0,0">
+                <Button x:Name="btnPrev" Grid.Column="1" Text="⬅ Trước" FontSize="13"
+                        BackgroundColor="#E3F2FD" TextColor="#1565C0" CornerRadius="10"
+                        HeightRequest="38" Clicked="OnPrevClicked"/>
+                <Button x:Name="btnNext" Grid.Column="2" Text="Tiếp ➡" FontSize="13"
+                        BackgroundColor="#1565C0" TextColor="White" CornerRadius="10"
+                        HeightRequest="38" Clicked="OnNextClicked"/>
+            </Grid>
+        </VerticalStackLayout>
+
+        <!-- Main content: Map + POI card -->
+        <Grid Grid.Row="1" RowDefinitions="*,Auto">
+            <!-- Map -->
+            <maps:Map x:Name="TourMap" Grid.Row="0" IsShowingUser="True"/>
+
+            <!-- Current POI info card -->
+            <Frame x:Name="poiCard" Grid.Row="1" Margin="12,0,12,12" Padding="14"
+                   CornerRadius="16" BackgroundColor="White" HasShadow="True" BorderColor="Transparent">
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="12" RowSpacing="6">
+                    <Frame Grid.RowSpan="4" Grid.Column="0" CornerRadius="10" Padding="0" HasShadow="False"
+                           WidthRequest="70" HeightRequest="70" IsClippedToBounds="True">
+                        <Image x:Name="imgPOI" Aspect="AspectFill"/>
+                    </Frame>
+
+                    <Label x:Name="lblPOIOrder" Grid.Row="0" Grid.Column="1" FontSize="11" TextColor="#1565C0" FontAttributes="Bold"/>
+                    <Label x:Name="lblPOIName" Grid.Row="1" Grid.Column="1" FontSize="16" FontAttributes="Bold" TextColor="Black"/>
+                    <Label x:Name="lblPOIAddress" Grid.Row="2" Grid.Column="1" FontSize="12" TextColor="#888" MaxLines="1"/>
+
+                    <HorizontalStackLayout Grid.Row="3" Grid.Column="1" Spacing="8">
+                        <Button x:Name="btnPlay" Text="🔊 Nghe" FontSize="12"
+                                BackgroundColor="#E8F5E9" TextColor="#2E7D32" CornerRadius="8"
+                                HeightRequest="32" Clicked="OnPlayNarration"/>
+                        <Button x:Name="btnStop" Text="⏹ Dừng" FontSize="12" IsVisible="False"
+                                BackgroundColor="#FFEBEE" TextColor="#C62828" CornerRadius="8"
+                                HeightRequest="32" Clicked="OnStopNarration"/>
+                        <Button x:Name="btnNavigate" Text="🧭 Dẫn đường" FontSize="12"
+                                BackgroundColor="#E3F2FD" TextColor="#1565C0" CornerRadius="8"
+                                HeightRequest="32" Clicked="OnNavigateClicked"/>
+                    </HorizontalStackLayout>
+                </Grid>
+            </Frame>
+        </Grid>
+    </Grid>
+</ContentPage>

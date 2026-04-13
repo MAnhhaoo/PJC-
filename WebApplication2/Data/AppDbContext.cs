@@ -20,6 +20,10 @@ namespace WebApplication2.Data
         public DbSet<Payment> Payments { get; set; }
         public DbSet<Review> Reviews { get; set; }
         public DbSet<SystemLog> SystemLogs { get; set; }
+        public DbSet<Tour> Tours { get; set; }
+        public DbSet<TourPOI> TourPOIs { get; set; }
+        public DbSet<NarrationPlayLog> NarrationPlayLogs { get; set; }
+        public DbSet<TourTrackPoint> TourTrackPoints { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -66,6 +70,45 @@ namespace WebApplication2.Data
                 .HasOne(r => r.Restaurant)
                 .WithMany(res => res.Reviews)
                 .HasForeignKey(r => r.RestaurantId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // ===== Tour =====
+            modelBuilder.Entity<TourPOI>()
+                .HasOne(tp => tp.Tour)
+                .WithMany(t => t.TourPOIs)
+                .HasForeignKey(tp => tp.TourId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<TourPOI>()
+                .HasOne(tp => tp.Restaurant)
+                .WithMany()
+                .HasForeignKey(tp => tp.RestaurantId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // ===== NarrationPlayLog =====
+            modelBuilder.Entity<NarrationPlayLog>()
+                .HasOne(n => n.User)
+                .WithMany()
+                .HasForeignKey(n => n.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<NarrationPlayLog>()
+                .HasOne(n => n.Restaurant)
+                .WithMany()
+                .HasForeignKey(n => n.RestaurantId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // ===== TourTrackPoint =====
+            modelBuilder.Entity<TourTrackPoint>()
+                .HasOne(t => t.User)
+                .WithMany()
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<TourTrackPoint>()
+                .HasOne(t => t.Tour)
+                .WithMany()
+                .HasForeignKey(t => t.TourId)
                 .OnDelete(DeleteBehavior.NoAction);
 
             base.OnModelCreating(modelBuilder);

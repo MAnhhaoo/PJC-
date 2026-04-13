@@ -612,6 +612,8 @@ public class RestaurantsController : ControllerBase
                 r.Address,
                 r.Phone,
                 r.Description,
+                r.Latitude,
+                r.Longitude,
                 r.IsApproved,
                 r.IsActive,
                 r.IsPremium,
