@@ -98,6 +98,33 @@ a, .btn-link {
         content: var(--blazor-load-percentage-text, "Loading");
     }
 
+/* Leaflet inside MudBlazor dialog fix */
+.mud-overlay .leaflet-pane,
+.mud-dialog-container .leaflet-pane {
+    z-index: auto !important;
+}
+#tourMapContainer {
+    z-index: 0;
+    position: relative;
+}
+#tourMapContainer .leaflet-control-container .leaflet-top,
+#tourMapContainer .leaflet-control-container .leaflet-bottom {
+    z-index: 1000;
+}
+
+/* Analytics map */
+#analyticsHeatmap,
+#analyticsJourneyMap {
+    z-index: 0;
+    position: relative;
+}
+#analyticsHeatmap .leaflet-control-container .leaflet-top,
+#analyticsHeatmap .leaflet-control-container .leaflet-bottom,
+#analyticsJourneyMap .leaflet-control-container .leaflet-top,
+#analyticsJourneyMap .leaflet-control-container .leaflet-bottom {
+    z-index: 1000;
+}
+
 code {
     color: #c02d76;
 }

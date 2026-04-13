@@ -15,6 +15,7 @@ public partial class RestaurantDetailPage : ContentPage
     private readonly DishService _dishService;
     private readonly RestaurantService _restaurantService;
     private readonly IAudioManager _audioManager;
+    private readonly AnalyticsService _analyticsService;
 
     private int _restaurantId;
 
@@ -32,13 +33,15 @@ public partial class RestaurantDetailPage : ContentPage
     public RestaurantDetailPage(
         DishService dishService,
         RestaurantService restaurantService,
-        IAudioManager audioManager)
+        IAudioManager audioManager,
+        AnalyticsService analyticsService)
     {
         InitializeComponent();
 
         _dishService = dishService;
         _restaurantService = restaurantService;
         _audioManager = audioManager;
+        _analyticsService = analyticsService;
     }
 
     protected override async void OnAppearing()
@@ -246,6 +249,10 @@ public partial class RestaurantDetailPage : ContentPage
             var matched = _restaurant.Narrations.FirstOrDefault(n => n.Language != null && n.Language.Code == lang)
                           ?? _restaurant.Narrations.FirstOrDefault();
             if (matched == null) return;
+
+            _ = _analyticsService.LogNarrationPlayAsync(
+                _restaurant.RestaurantId, null, matched.NarrationId,
+                matched.Language?.Code ?? lang, _restaurant.Latitude, _restaurant.Longitude);
 
             var fileName = string.IsNullOrEmpty(matched.AudioUrl) ? string.Empty : Path.GetFileName(matched.AudioUrl);
 

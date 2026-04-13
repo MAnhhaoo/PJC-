@@ -54,4 +54,9 @@ public partial class SettingsPage : ContentPage
             Preferences.Default.Set("server_ip", e.NewTextValue.Trim());
         }
     }
+
+    private async void OnViewProfile(object sender, EventArgs e)
+    {
+        await Shell.Current.GoToAsync(nameof(ProfilePage));
+    }
 }

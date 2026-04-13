@@ -38,6 +38,7 @@ namespace TourismApp
             // Thêm dòng này vào cụm Services trong MauiProgram.cs
             builder.Services.AddSingleton<GpsService>();
             builder.Services.AddSingleton<AuthService>();
+            builder.Services.AddSingleton<AnalyticsService>();
 
 
 
@@ -67,6 +68,8 @@ namespace TourismApp
             builder.Services.AddTransient<QRScannerPage>();
             builder.Services.AddTransient<SettingsPage>();
             builder.Services.AddTransient<RestaurantQRPage>();
+            builder.Services.AddTransient<TourListPage>();
+            builder.Services.AddTransient<TourDetailPage>();
 
 
 

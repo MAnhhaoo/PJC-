@@ -1,0 +1,507 @@
+@page "/admin/analytics"
+@layout BlazorApp1.Shared.AdminLayout
+@using MudBlazor
+@using System.Text.Json
+@inject HttpClient Http
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+@inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<MudText Typo="Typo.h4" Class="mb-4">📊 Báo cáo & Analytics</MudText>
+
+<!-- Period Filter -->
+<MudPaper Class="pa-3 mb-4" Elevation="1">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+        <MudSelect T="int" Label="Khoảng thời gian" @bind-Value="_selectedDays" Variant="Variant.Outlined" Dense="true" Style="max-width:200px;">
+            <MudSelectItem Value="7">7 ngày qua</MudSelectItem>
+            <MudSelectItem Value="14">14 ngày qua</MudSelectItem>
+            <MudSelectItem Value="30">30 ngày qua</MudSelectItem>
+            <MudSelectItem Value="90">90 ngày qua</MudSelectItem>
+            <MudSelectItem Value="365">1 năm qua</MudSelectItem>
+        </MudSelect>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh"
+                   OnClick="LoadAllData">Cập nhật</MudButton>
+    </MudStack>
+</MudPaper>
+
+<!-- Overview Cards -->
+<MudGrid Class="mb-4">
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4 d-flex flex-column align-center" Elevation="2">
+            <MudIcon Icon="@Icons.Material.Filled.PlayCircle" Color="Color.Primary" Size="Size.Large" />
+            <MudText Typo="Typo.h4" Class="mt-2">@_overview.TotalPlays</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Lượt phát thuyết minh</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4 d-flex flex-column align-center" Elevation="2">
+            <MudIcon Icon="@Icons.Material.Filled.People" Color="Color.Success" Size="Size.Large" />
+            <MudText Typo="Typo.h4" Class="mt-2">@_overview.UniqueVisitors</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Khách riêng biệt</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4 d-flex flex-column align-center" Elevation="2">
+            <MudIcon Icon="@Icons.Material.Filled.Route" Color="Color.Warning" Size="Size.Large" />
+            <MudText Typo="Typo.h4" Class="mt-2">@_overview.TotalSessions</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Phiên tour đã đi</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4 d-flex flex-column align-center" Elevation="2">
+            <MudIcon Icon="@Icons.Material.Filled.Place" Color="Color.Error" Size="Size.Large" />
+            <MudText Typo="Typo.h4" Class="mt-2">@_overview.TotalPOIsVisited</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Điểm POI đã ghé</MudText>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+<!-- Daily Plays Chart -->
+@if (_overview.DailyLabels.Length > 0)
+{
+    <MudPaper Class="pa-4 mb-4" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-3">📈 Lượt phát theo ngày</MudText>
+        <MudChart ChartType="ChartType.Line" ChartSeries="@_dailySeries" XAxisLabels="@_overview.DailyLabels"
+                  Width="100%" Height="300px" ChartOptions="@_chartOptions" />
+    </MudPaper>
+}
+
+<!-- Tabs: Heatmap / Top POIs / Journeys -->
+<MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4"
+         ActivePanelIndexChanged="OnTabChanged">
+
+    <!-- TAB 1: Heatmap -->
+    <MudTabPanel Text="🗺️ Heatmap mật độ khách" Icon="@Icons.Material.Filled.Map">
+        <MudText Typo="Typo.body2" Class="mb-2" Color="Color.Secondary">
+            Bản đồ nhiệt hiển thị mật độ khách du lịch tại các điểm POI trong @_selectedDays ngày qua.
+        </MudText>
+        <div id="analyticsHeatmap" style="height:500px; width:100%; border-radius:8px; border:1px solid #e0e0e0;"></div>
+
+        @if (_heatmapData != null && _heatmapData.Count > 0)
+        {
+            <MudTable Items="@_heatmapData" Dense="true" Hover="true" Class="mt-3" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Nhà hàng / Điểm</MudTh>
+                    <MudTh>Lượt ghé</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.Name</MudTd>
+                    <MudTd>
+                        <MudChip T="string" Color="Color.Primary" Size="Size.Small">@context.Count</MudChip>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudTabPanel>
+
+    <!-- TAB 2: Top POIs -->
+    <MudTabPanel Text="🏆 POI nghe nhiều nhất" Icon="@Icons.Material.Filled.EmojiEvents">
+        <MudText Typo="Typo.body2" Class="mb-3" Color="Color.Secondary">
+            Top điểm POI được nghe thuyết minh nhiều nhất trong @_selectedDays ngày qua.
+        </MudText>
+
+        @if (_topPOIs != null && _topPOIs.Count > 0)
+        {
+            <MudChart ChartType="ChartType.Bar" ChartSeries="@_topPOISeries" XAxisLabels="@_topPOILabels"
+                      Width="100%" Height="350px" ChartOptions="@_chartOptions" />
+
+            <MudTable Items="@_topPOIs" Dense="true" Hover="true" Class="mt-3" Elevation="0">
+                <HeaderContent>
+                    <MudTh>#</MudTh>
+                    <MudTh>Nhà hàng / Điểm</MudTh>
+                    <MudTh>Địa chỉ</MudTh>
+                    <MudTh>Lượt phát</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>
+                        @{
+                            var rank = _topPOIs.IndexOf(context) + 1;
+                            var medal = rank switch { 1 => "🥇", 2 => "🥈", 3 => "🥉", _ => rank.ToString() };
+                        }
+                        @medal
+                    </MudTd>
+                    <MudTd><strong>@context.Name</strong></MudTd>
+                    <MudTd>@context.Address</MudTd>
+                    <MudTd>
+                        <MudChip T="string" Color="Color.Success" Size="Size.Small">@context.PlayCount lượt</MudChip>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+        else
+        {
+            <MudAlert Severity="Severity.Info">Chưa có dữ liệu phát thuyết minh trong khoảng thời gian này.</MudAlert>
+        }
+    </MudTabPanel>
+
+    <!-- TAB 3: Journeys -->
+    <MudTabPanel Text="🚶 Hành trình khách" Icon="@Icons.Material.Filled.Timeline">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3" Class="mb-3">
+            <MudSelect T="int" Label="Lọc theo Tour" @bind-Value="_journeyTourFilter" Variant="Variant.Outlined" Dense="true" Style="max-width:300px;">
+                <MudSelectItem Value="0">Tất cả tour</MudSelectItem>
+                @if (_tourList != null)
+                {
+                    @foreach (var t in _tourList)
+                    {
+                        <MudSelectItem Value="@t.TourId">@t.Name</MudSelectItem>
+                    }
+                }
+            </MudSelect>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="LoadJourneys"
+                       StartIcon="@Icons.Material.Filled.Search" Size="Size.Small">Xem hành trình</MudButton>
+        </MudStack>
+
+        <div id="analyticsJourneyMap" style="height:500px; width:100%; border-radius:8px; border:1px solid #e0e0e0;"></div>
+
+        @if (_journeys != null && _journeys.Count > 0)
+        {
+            <MudTable Items="@_journeys" Dense="true" Hover="true" Class="mt-3" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Session</MudTh>
+                    <MudTh>Tour</MudTh>
+                    <MudTh>Điểm GPS</MudTh>
+                    <MudTh>Bắt đầu</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd><code>@context.SessionId[..Math.Min(8, context.SessionId.Length)]...</code></MudTd>
+                    <MudTd>@context.TourName</MudTd>
+                    <MudTd>@context.PointCount</MudTd>
+                    <MudTd>@context.StartTime.ToString("dd/MM/yyyy HH:mm")</MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+        else
+        {
+            <MudAlert Severity="Severity.Info">Chưa có dữ liệu hành trình trong khoảng thời gian này.</MudAlert>
+        }
+    </MudTabPanel>
+</MudTabs>
+
+@code {
+    private int _selectedDays = 30;
+    private bool _loading;
+    private OverviewData _overview = new();
+    private List<ChartSeries<double>> _dailySeries = new();
+    private ChartOptions _chartOptions = new();
+
+    // Heatmap
+    private List<HeatmapItem>? _heatmapData;
+
+    // Top POIs
+    private List<TopPOIItem>? _topPOIs;
+    private List<ChartSeries<double>> _topPOISeries = new();
+    private string[] _topPOILabels = Array.Empty<string>();
+
+    // Journeys
+    private List<JourneyItem>? _journeys;
+    private List<TourSimple>? _tourList;
+    private int _journeyTourFilter = 0;
+
+    private bool _heatmapInited;
+    private bool _journeyMapInited;
+
+    private int _activeTabIndex = 0;
+
+    private async void OnTabChanged(int index)
+    {
+        Console.WriteLine($"[Analytics] OnTabChanged: {index}, _heatmapInited={_heatmapInited}, _journeyMapInited={_journeyMapInited}");
+        _activeTabIndex = index;
+        if (index == 0)
+        {
+            await Task.Delay(300);
+            _heatmapInited = false;
+            await InitHeatmap();
+        }
+        else if (index == 2)
+        {
+            await Task.Delay(300);
+            _journeyMapInited = false;
+            await InitJourneyMap();
+        }
+    }
+
+    private bool _firstRenderDone;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAllData();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _firstRenderDone = true;
+            Console.WriteLine($"[Analytics] OnAfterRenderAsync firstRender, _heatmapData={_heatmapData?.Count}, _heatmapInited={_heatmapInited}");
+            // If data already loaded before first render, init heatmap now
+            if (_heatmapData != null && !_heatmapInited && _activeTabIndex == 0)
+            {
+                await Task.Delay(200);
+                await InitHeatmap();
+            }
+        }
+    }
+
+    private async Task LoadAllData()
+    {
+        _loading = true;
+        StateHasChanged();
+
+        try
+        {
+            await LoadOverview();
+            await LoadHeatmap();
+            await LoadTopPOIs();
+            await LoadTourList();
+            await LoadJourneys();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Lỗi tải dữ liệu: " + ex.Message, Severity.Error);
+        }
+
+        _loading = false;
+        StateHasChanged();
+
+        // Re-init or update heatmap after data reload if DOM is already rendered
+        if (_firstRenderDone && _activeTabIndex == 0)
+        {
+            await Task.Delay(300);
+            await InitHeatmap();
+        }
+    }
+
+    private async Task LoadOverview()
+    {
+        try
+        {
+            var json = await Http.GetStringAsync($"api/analytics/overview?days={_selectedDays}");
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            _overview.TotalPlays = root.GetProperty("totalPlays").GetInt32();
+            _overview.UniqueVisitors = root.GetProperty("uniqueVisitors").GetInt32();
+            _overview.TotalSessions = root.GetProperty("totalSessions").GetInt32();
+            _overview.TotalPOIsVisited = root.GetProperty("totalPOIsVisited").GetInt32();
+
+            var daily = root.GetProperty("dailyPlays");
+            var labels = new List<string>();
+            var values = new List<double>();
+            foreach (var item in daily.EnumerateArray())
+            {
+                labels.Add(item.GetProperty("date").GetString() ?? "");
+                values.Add(item.GetProperty("count").GetInt32());
+            }
+            _overview.DailyLabels = labels.ToArray();
+            _dailySeries = new List<ChartSeries<double>>
+            {
+                new ChartSeries<double> { Name = "Lượt phát", Data = values.ToArray() }
+            };
+        }
+        catch { }
+    }
+
+    private async Task LoadHeatmap()
+    {
+        try
+        {
+            var json = await Http.GetStringAsync($"api/analytics/heatmap?days={_selectedDays}");
+            _heatmapData = JsonSerializer.Deserialize<List<HeatmapItem>>(json,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+        }
+        catch { _heatmapData = new(); }
+    }
+
+    private async Task LoadTopPOIs()
+    {
+        try
+        {
+            var json = await Http.GetStringAsync($"api/analytics/top-pois?days={_selectedDays}&top=10");
+            _topPOIs = JsonSerializer.Deserialize<List<TopPOIItem>>(json,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+
+            _topPOILabels = _topPOIs.Select(p => p.Name.Length > 15 ? p.Name[..15] + "…" : p.Name).ToArray();
+            _topPOISeries = new List<ChartSeries<double>>
+            {
+                new ChartSeries<double> { Name = "Lượt phát", Data = _topPOIs.Select(p => (double)p.PlayCount).ToArray() }
+            };
+        }
+        catch { _topPOIs = new(); }
+    }
+
+    private async Task LoadTourList()
+    {
+        try
+        {
+            var json = await Http.GetStringAsync("api/analytics/tours");
+            _tourList = JsonSerializer.Deserialize<List<TourSimple>>(json,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+        }
+        catch { _tourList = new(); }
+    }
+
+    private async Task LoadJourneys()
+    {
+        try
+        {
+            var url = $"api/analytics/journeys?days={_selectedDays}";
+            if (_journeyTourFilter > 0)
+                url += $"&tourId={_journeyTourFilter}";
+
+            var json = await Http.GetStringAsync(url);
+            _journeys = JsonSerializer.Deserialize<List<JourneyItem>>(json,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+        }
+        catch { _journeys = new(); }
+
+        StateHasChanged();
+
+        // Only update map if it's already initialized (journey tab is visible)
+        if (_journeyMapInited)
+        {
+            await ShowJourneysOnMap();
+        }
+    }
+
+    private async Task InitHeatmap()
+    {
+        try
+        {
+            Console.WriteLine($"[Heatmap] InitHeatmap called, _heatmapInited={_heatmapInited}, data count={_heatmapData?.Count}");
+            if (!_heatmapInited)
+            {
+                bool created = false;
+                for (int i = 0; i < 15; i++)
+                {
+                    created = await JSRuntime.InvokeAsync<bool>("initAnalyticsHeatmap", "analyticsHeatmap");
+                    if (created) break;
+                    await Task.Delay(300);
+                }
+                if (!created) { Console.WriteLine("[Heatmap] Failed to create map after 15 retries"); return; }
+                _heatmapInited = true;
+                await Task.Delay(200);
+            }
+
+            if (_heatmapData != null && _heatmapData.Count > 0)
+            {
+                Console.WriteLine($"[Heatmap] Calling updateHeatmap with {_heatmapData.Count} items, first: lat={_heatmapData[0].Lat}, lng={_heatmapData[0].Lng}");
+                await JSRuntime.InvokeVoidAsync("updateHeatmap", (object)_heatmapData.Select(h => new
+                {
+                    lat = h.Lat,
+                    lng = h.Lng,
+                    name = h.Name,
+                    count = h.Count
+                }).ToArray());
+            }
+            else
+            {
+                Console.WriteLine($"[Heatmap] No data to show, _heatmapData is {(_heatmapData == null ? "null" : "empty")}");
+            }
+        }
+        catch (Exception ex) { Console.WriteLine($"[Heatmap] Error: {ex}"); }
+    }
+
+    private async Task InitJourneyMap()
+    {
+        try
+        {
+            Console.WriteLine($"[Journey] InitJourneyMap called, _journeyMapInited={_journeyMapInited}");
+            bool created = false;
+            for (int i = 0; i < 15; i++)
+            {
+                created = await JSRuntime.InvokeAsync<bool>("initJourneyMap", "analyticsJourneyMap");
+                if (created) break;
+                await Task.Delay(300);
+            }
+            if (!created) { Console.WriteLine("[Journey] Failed to create map after 15 retries"); return; }
+            _journeyMapInited = true;
+            await Task.Delay(300);
+            await ShowJourneysOnMap();
+        }
+        catch (Exception ex) { Console.WriteLine($"[Journey] InitJourneyMap error: {ex}"); }
+    }
+
+    private async Task ShowJourneysOnMap()
+    {
+        try
+        {
+            if (_journeys != null && _journeys.Count > 0)
+            {
+                Console.WriteLine($"[Journey] ShowJourneysOnMap: {_journeys.Count} sessions, first has {_journeys[0].Points?.Count} points");
+                await JSRuntime.InvokeVoidAsync("showJourneys", (object)_journeys.Select(j => new
+                {
+                    sessionId = j.SessionId,
+                    tourId = j.TourId,
+                    tourName = j.TourName,
+                    userId = j.UserId,
+                    startTime = j.StartTime,
+                    pointCount = j.PointCount,
+                    points = j.Points?.Select(p => new { lat = p.Lat, lng = p.Lng, time = p.Time }).ToArray()
+                }).ToArray());
+            }
+            else
+            {
+                Console.WriteLine($"[Journey] No journey data to show");
+            }
+        }
+        catch (Exception ex) { Console.WriteLine($"[Journey] ShowJourneysOnMap error: {ex}"); }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try { await JSRuntime.InvokeVoidAsync("destroyAnalyticsMap"); } catch { }
+    }
+
+    // DTOs
+    class OverviewData
+    {
+        public int TotalPlays { get; set; }
+        public int UniqueVisitors { get; set; }
+        public int TotalSessions { get; set; }
+        public int TotalPOIsVisited { get; set; }
+        public string[] DailyLabels { get; set; } = Array.Empty<string>();
+    }
+
+    class HeatmapItem
+    {
+        public double Lat { get; set; }
+        public double Lng { get; set; }
+        public string Name { get; set; } = "";
+        public int Count { get; set; }
+    }
+
+    class TopPOIItem
+    {
+        public int RestaurantId { get; set; }
+        public string Name { get; set; } = "";
+        public string Address { get; set; } = "";
+        public double Lat { get; set; }
+        public double Lng { get; set; }
+        public int PlayCount { get; set; }
+    }
+
+    class TourSimple
+    {
+        public int TourId { get; set; }
+        public string Name { get; set; } = "";
+    }
+
+    class JourneyItem
+    {
+        public string SessionId { get; set; } = "";
+        public int TourId { get; set; }
+        public string TourName { get; set; } = "";
+        public int? UserId { get; set; }
+        public DateTime StartTime { get; set; }
+        public int PointCount { get; set; }
+        public List<TrackPointDto>? Points { get; set; }
+    }
+
+    class TrackPointDto
+    {
+        public double Lat { get; set; }
+        public double Lng { get; set; }
+        public DateTime Time { get; set; }
+    }
+}

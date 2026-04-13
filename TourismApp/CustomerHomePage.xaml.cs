@@ -14,6 +14,7 @@ public partial class CustomerHomePage : ContentPage
     private readonly RestaurantService _restaurantService;
     private readonly IAudioManager _audioManager;
     private readonly GpsService _gpsService;
+    private readonly AnalyticsService _analyticsService;
     private IAudioPlayer _activePlayer;
     private Restaurant _currentPlayingRestaurant;
     private bool _isMonitoring = false;
@@ -27,12 +28,13 @@ public partial class CustomerHomePage : ContentPage
     public LanguageService LangService { get; }
     public ObservableCollection<Restaurant> Restaurants { get; set; } = new();
 
-    public CustomerHomePage(RestaurantService restaurantService, UserService userService, IAudioManager audioManager, GpsService gpsService, LanguageService languageService)
+    public CustomerHomePage(RestaurantService restaurantService, UserService userService, IAudioManager audioManager, GpsService gpsService, LanguageService languageService, AnalyticsService analyticsService)
     {
         InitializeComponent();
         _restaurantService = restaurantService;
         _audioManager = audioManager;
         _gpsService = gpsService;
+        _analyticsService = analyticsService;
         LangService = languageService;
 
         this.BindingContext = this;
@@ -133,6 +135,10 @@ public partial class CustomerHomePage : ContentPage
 
             if (matched == null)
                 return;
+
+            _ = _analyticsService.LogNarrationPlayAsync(
+                restaurant.RestaurantId, null, matched.NarrationId,
+                matched.Language?.Code ?? selectedLang, restaurant.Latitude, restaurant.Longitude);
 
             // If no audio file, fallback to TTS (speak text) so button still works
             if (string.IsNullOrEmpty(matched.AudioUrl))
