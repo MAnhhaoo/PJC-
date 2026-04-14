@@ -15,7 +15,7 @@
                        HorizontalOptions="Center"
                        Margin="0,0,0,10"/>
 
-                <Label Text="Chào mừng quay lại với phố ẩm thực !"
+                <Label x:Name="lblWelcome" Text="Chào mừng quay lại với phố ẩm thực !"
                        FontSize="26"
                        FontAttributes="Bold"
                        HorizontalOptions="Center"
@@ -49,8 +49,8 @@
                         HeightRequest="55"/>
 
                 <HorizontalStackLayout HorizontalOptions="Center" Spacing="5">
-                    <Label Text="Chưa có tài khoản?" VerticalOptions="Center"/>
-                    <Button Text="Đăng ký ngay"
+                    <Label x:Name="lblNoAccount" Text="Chưa có tài khoản?" VerticalOptions="Center"/>
+                    <Button x:Name="btnRegisterNow" Text="Đăng ký ngay"
                             Clicked="OnGoToRegister"
                             BackgroundColor="Transparent"
                             TextColor="#3498DB"
@@ -58,7 +58,7 @@
                             Padding="0"/>
                 </HorizontalStackLayout>
 
-                <Label Text="⚙ Cài đặt IP máy chủ"
+                <Label x:Name="lblServerSettings" Text="⚙ Cài đặt IP máy chủ"
                        TextColor="#95A5A6"
                        FontSize="12"
                        HorizontalOptions="Center"
@@ -76,7 +76,7 @@
                      BackgroundColor="#80000000">
             <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="15">
                 <ActivityIndicator IsRunning="True" Color="White" Scale="2"/>
-                <Label Text="Đang xác thực..." TextColor="White" FontAttributes="Bold"/>
+                <Label x:Name="lblAuthenticating" Text="Đang xác thực..." TextColor="White" FontAttributes="Bold"/>
             </VerticalStackLayout>
         </ContentView>
     </Grid>

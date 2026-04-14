@@ -3,6 +3,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:maps="http://schemas.microsoft.com/dotnet/2021/maui/maps"
     x:Class="TourismApp.RestaurantDetailPage"
+    x:Name="thisPage"
     Title="Chi tiết nhà hàng"
     BackgroundColor="#F5F5F5">
 
@@ -66,7 +67,7 @@
 
                 <!-- 🗺️ Embedded Map with route -->
                 <VerticalStackLayout x:Name="MapSection" Spacing="8">
-                    <Label Text="Bản đồ chỉ đường"
+                    <Label x:Name="lblMapDirection" Text="Bản đồ chỉ đường"
                            FontSize="18"
                            FontAttributes="Bold"
                            TextColor="Black"/>
@@ -82,7 +83,7 @@
                     </Frame>
 
                     <!-- Map Button -->
-                    <Button
+                    <Button x:Name="btnOpenMaps"
                         Text="🧭 Mở Google Maps chỉ đường"
                         BackgroundColor="Orange"
                         TextColor="White"
@@ -94,7 +95,7 @@
                        Padding="15" CornerRadius="12"
                        BackgroundColor="#FFF3E0" HasShadow="False"
                        BorderColor="#FFE0B2">
-                    <Label Text="📍 Nhà hàng chưa cập nhật tọa độ trên bản đồ. Chủ nhà hàng cần cập nhật vị trí GPS."
+                    <Label x:Name="lblNoLocation" Text="📍 Nhà hàng chưa cập nhật tọa độ trên bản đồ."
                            FontSize="14" TextColor="#E65100"
                            HorizontalTextAlignment="Center"/>
                 </Frame>
@@ -102,7 +103,7 @@
             </VerticalStackLayout>
 
             <!-- Dish Title -->
-            <Label Text="Danh sách món ăn"
+            <Label x:Name="lblDishList" Text="Danh sách món ăn"
                    FontSize="20"
                    FontAttributes="Bold"
                    Margin="15,0"/>

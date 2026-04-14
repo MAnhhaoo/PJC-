@@ -68,12 +68,14 @@ public class RestaurantsController : ControllerBase
                 Narrations = r.Narrations.Select(n => new NarrationDto
                 {
                     NarrationId = n.NarrationId,
+                    LanguageId = n.LanguageId,
                     TextContent = n.TextContent,
                     // Trả về đường dẫn tương đối (client tự ghép IP)
                     AudioUrl = string.IsNullOrEmpty(n.AudioUrl) ? "" :
                                n.AudioUrl.Replace("audios/", "").TrimStart('/'),
                     Language = new LanguageDto
                     {
+                        LanguageId = n.Language.LanguageId,
                         Code = n.Language.Code,
                         Name = n.Language.Name
                     }
@@ -224,7 +226,7 @@ public class RestaurantsController : ControllerBase
         _context.Restaurants.Add(restaurant);
         _context.SaveChanges();
 
-        return Ok("Đăng ký nhà hàng thành công, chờ duyệt");
+        return Ok(new { restaurant.RestaurantId, Message = "Đăng ký nhà hàng thành công, chờ thanh toán" });
     }
 
     // 🔥 PUT: api/restaurants/{id}
@@ -612,6 +614,8 @@ public class RestaurantsController : ControllerBase
                 r.Address,
                 r.Phone,
                 r.Description,
+                r.Latitude,
+                r.Longitude,
                 r.IsApproved,
                 r.IsActive,
                 r.IsPremium,

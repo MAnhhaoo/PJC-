@@ -10,7 +10,7 @@
 
         <!-- Tab 0: Trang chủ -->
         <VerticalStackLayout Grid.Column="0" VerticalOptions="Center" HorizontalOptions="Center" Spacing="2">
-            <Label x:Name="IconHome" Text="🏠" FontSize="22" HorizontalTextAlignment="Center"/>
+            <Image x:Name="IconHome" Source="tab_home.png" HeightRequest="24" WidthRequest="24" HorizontalOptions="Center"/>
             <Label x:Name="LabelHome" Text="Trang chủ" FontSize="9" HorizontalTextAlignment="Center" TextColor="Gray"/>
             <VerticalStackLayout.GestureRecognizers>
                 <TapGestureRecognizer Tapped="OnHomeTapped"/>
@@ -19,7 +19,7 @@
 
         <!-- Tab 1: Khám phá -->
         <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" HorizontalOptions="Center" Spacing="2">
-            <Label x:Name="IconExplore" Text="🔍" FontSize="22" HorizontalTextAlignment="Center"/>
+            <Image x:Name="IconExplore" Source="tab_explore.png" HeightRequest="24" WidthRequest="24" HorizontalOptions="Center"/>
             <Label x:Name="LabelExplore" Text="Khám phá" FontSize="9" HorizontalTextAlignment="Center" TextColor="Gray"/>
             <VerticalStackLayout.GestureRecognizers>
                 <TapGestureRecognizer Tapped="OnExploreTapped"/>
@@ -41,24 +41,24 @@
                        HorizontalTextAlignment="Center" VerticalTextAlignment="Center"
                        Margin="0,-2,0,0"/>
             </Border>
-            <Label Text="Quét QR" FontSize="9" HorizontalTextAlignment="Center" TextColor="Gray"/>
+            <Label x:Name="LabelScanQR" Text="Quét QR" FontSize="9" HorizontalTextAlignment="Center" TextColor="Gray"/>
             <VerticalStackLayout.GestureRecognizers>
                 <TapGestureRecognizer Tapped="OnScanTapped"/>
             </VerticalStackLayout.GestureRecognizers>
         </VerticalStackLayout>
 
-        <!-- Tab 2: Hồ sơ -->
+        <!-- Tab 2: Tour -->
         <VerticalStackLayout Grid.Column="3" VerticalOptions="Center" HorizontalOptions="Center" Spacing="2">
-            <Label x:Name="IconProfile" Text="👤" FontSize="22" HorizontalTextAlignment="Center"/>
-            <Label x:Name="LabelProfile" Text="Hồ sơ" FontSize="9" HorizontalTextAlignment="Center" TextColor="Gray"/>
+            <Image x:Name="IconTour" Source="tab_tour.png" HeightRequest="24" WidthRequest="24" HorizontalOptions="Center"/>
+            <Label x:Name="LabelTour" Text="Tour" FontSize="9" HorizontalTextAlignment="Center" TextColor="Gray"/>
             <VerticalStackLayout.GestureRecognizers>
-                <TapGestureRecognizer Tapped="OnProfileTapped"/>
+                <TapGestureRecognizer Tapped="OnTourTapped"/>
             </VerticalStackLayout.GestureRecognizers>
         </VerticalStackLayout>
 
         <!-- Tab 3: Cài đặt -->
         <VerticalStackLayout Grid.Column="4" VerticalOptions="Center" HorizontalOptions="Center" Spacing="2">
-            <Label x:Name="IconSettings" Text="⚙️" FontSize="22" HorizontalTextAlignment="Center"/>
+            <Image x:Name="IconSettings" Source="tab_settings.png" HeightRequest="24" WidthRequest="24" HorizontalOptions="Center"/>
             <Label x:Name="LabelSettings" Text="Cài đặt" FontSize="9" HorizontalTextAlignment="Center" TextColor="Gray"/>
             <VerticalStackLayout.GestureRecognizers>
                 <TapGestureRecognizer Tapped="OnSettingsTapped"/>

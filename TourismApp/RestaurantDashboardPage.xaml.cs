@@ -1,3 +1,5 @@
+using System.Net.Http.Json;
+using System.Text.Json;
 using TourismApp.Services;
 
 namespace TourismApp;
@@ -6,16 +8,23 @@ public partial class RestaurantDashboardPage : ContentPage
 {
     private readonly RestaurantService _restaurantService;
     private readonly DishService _dishService;
+    private readonly HttpClient _httpClient;
+    private readonly AuthService _authService;
     private int _restaurantId;
     private string _restaurantName = "";
+    private bool _isPremium;
 
     public RestaurantDashboardPage(
         RestaurantService restaurantService,
-        DishService dishService)
+        DishService dishService,
+        HttpClient httpClient,
+        AuthService authService)
     {
         InitializeComponent();
         _restaurantService = restaurantService;
         _dishService = dishService;
+        _httpClient = httpClient;
+        _authService = authService;
     }
 
     protected override async void OnAppearing()
@@ -32,6 +41,7 @@ public partial class RestaurantDashboardPage : ContentPage
 
         _restaurantId = data.RestaurantId;
         _restaurantName = data.Name ?? "";
+        _isPremium = data.IsPremium;
 
         var dishes = await _dishService.GetDishesByRestaurantAsync(data.RestaurantId);
 
@@ -46,6 +56,27 @@ public partial class RestaurantDashboardPage : ContentPage
                 : "Tài khoản thường",
             Dishes = dishes
         };
+
+        // Show dish limit info
+        var dishCount = dishes?.Count ?? 0;
+        if (!data.IsPremium)
+        {
+            frameDishLimit.IsVisible = true;
+            frameDishLimit.BackgroundColor = dishCount >= 8
+                ? Color.FromArgb("#FFEBEE")
+                : Color.FromArgb("#E3F2FD");
+            lblDishLimit.TextColor = dishCount >= 8
+                ? Color.FromArgb("#C62828")
+                : Color.FromArgb("#1565C0");
+            lblDishLimit.Text = $"🍽 Món ăn: {dishCount}/8 — Nâng cấp Premium để không giới hạn";
+        }
+        else
+        {
+            frameDishLimit.IsVisible = true;
+            frameDishLimit.BackgroundColor = Color.FromArgb("#E8F5E9");
+            lblDishLimit.TextColor = Color.FromArgb("#2E7D32");
+            lblDishLimit.Text = $"⭐ Premium — {dishCount} món (không giới hạn)";
+        }
     }
 
     private async void OnEditRestaurantClicked(object sender, EventArgs e)
@@ -65,6 +96,34 @@ public partial class RestaurantDashboardPage : ContentPage
 
     private async void OnAddDishClicked(object sender, EventArgs e)
     {
+        // Check dish limit for non-premium restaurants
+        if (!_isPremium)
+        {
+            try
+            {
+                await _authService.SetAuthHeaderAsync();
+                var response = await _httpClient.GetAsync($"api/payments/restaurant-dish-limit/{_restaurantId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync();
+                    using var doc = JsonDocument.Parse(json);
+                    var canAdd = doc.RootElement.GetProperty("canAddMore").GetBoolean();
+                    var current = doc.RootElement.GetProperty("currentCount").GetInt32();
+
+                    if (!canAdd)
+                    {
+                        var upgrade = await DisplayAlert("Giới hạn món ăn",
+                            $"Nhà hàng thường chỉ được tối đa 8 món ({current}/8).\n\nNâng cấp Premium để thêm không giới hạn!",
+                            "⭐ Nâng cấp", "Đóng");
+                        if (upgrade)
+                            await Shell.Current.GoToAsync(nameof(UpgradePremiumPage));
+                        return;
+                    }
+                }
+            }
+            catch { }
+        }
+
         await Shell.Current.GoToAsync(nameof(AddDishPage));
     }
 

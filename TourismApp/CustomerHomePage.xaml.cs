@@ -14,6 +14,9 @@ public partial class CustomerHomePage : ContentPage
     private readonly RestaurantService _restaurantService;
     private readonly IAudioManager _audioManager;
     private readonly GpsService _gpsService;
+    private readonly AnalyticsService _analyticsService;
+    private readonly OfflineSyncService _offlineSyncService;
+    private readonly TranslationService _translationService;
     private IAudioPlayer _activePlayer;
     private Restaurant _currentPlayingRestaurant;
     private bool _isMonitoring = false;
@@ -27,12 +30,15 @@ public partial class CustomerHomePage : ContentPage
     public LanguageService LangService { get; }
     public ObservableCollection<Restaurant> Restaurants { get; set; } = new();
 
-    public CustomerHomePage(RestaurantService restaurantService, UserService userService, IAudioManager audioManager, GpsService gpsService, LanguageService languageService)
+    public CustomerHomePage(RestaurantService restaurantService, UserService userService, IAudioManager audioManager, GpsService gpsService, LanguageService languageService, AnalyticsService analyticsService, OfflineSyncService offlineSyncService, TranslationService translationService)
     {
         InitializeComponent();
         _restaurantService = restaurantService;
         _audioManager = audioManager;
         _gpsService = gpsService;
+        _analyticsService = analyticsService;
+        _offlineSyncService = offlineSyncService;
+        _translationService = translationService;
         LangService = languageService;
 
         this.BindingContext = this;
@@ -51,8 +57,27 @@ public partial class CustomerHomePage : ContentPage
     {
         try
         {
-            var allRestaurants = await _restaurantService.GetRestaurantsAsync();
-            if (allRestaurants == null) return;
+            List<TourismApp.Models.Restaurant> allRestaurants;
+
+            if (Connectivity.Current.NetworkAccess == NetworkAccess.Internet)
+            {
+                try
+                {
+                    await _offlineSyncService.SyncRestaurantsAsync();
+                    await _offlineSyncService.DownloadAudioFilesAsync();
+                    allRestaurants = await _offlineSyncService.GetRestaurantsOfflineAsync();
+                }
+                catch
+                {
+                    allRestaurants = await _offlineSyncService.GetRestaurantsOfflineAsync();
+                }
+            }
+            else
+            {
+                allRestaurants = await _offlineSyncService.GetRestaurantsOfflineAsync();
+            }
+
+            if (allRestaurants == null || allRestaurants.Count == 0) return;
 
             var filtered = allRestaurants.Where(r => r.IsApproved).ToList();
             var userLocation = await _gpsService.GetCurrentLocation();
@@ -64,6 +89,11 @@ public partial class CustomerHomePage : ContentPage
 
                 filtered = filtered.OrderBy(r => r.Distance).ToList();
             }
+
+            // Translate restaurant data if language is not Vietnamese
+            var lang = (LangService.CurrentLanguage ?? "vi").Trim().ToLower();
+            if (lang != "vi")
+                await _translationService.TranslateRestaurantsAsync(filtered, lang);
 
             Restaurants.Clear();
             foreach (var item in filtered) Restaurants.Add(item);
@@ -128,11 +158,18 @@ public partial class CustomerHomePage : ContentPage
 
             string selectedLang = (LangService.CurrentLanguage ?? "vi").Trim().ToLower();
             matched = restaurant.Narrations.FirstOrDefault(n =>
-                n.Language != null && n.Language.Code?.Trim().ToLower() == selectedLang)
-                ?? restaurant.Narrations.FirstOrDefault();
+                n.Language != null && n.Language.Code?.Trim().ToLower() == selectedLang);
 
             if (matched == null)
+            {
+                MainThread.BeginInvokeOnMainThread(async () =>
+                    await DisplayAlert(LangService["Notification"], LangService["NoNarrationLang"], LangService["OK"]));
                 return;
+            }
+
+            _ = _analyticsService.LogNarrationPlayAsync(
+                restaurant.RestaurantId, null, matched.NarrationId,
+                matched.Language?.Code ?? selectedLang, restaurant.Latitude, restaurant.Longitude);
 
             // If no audio file, fallback to TTS (speak text) so button still works
             if (string.IsNullOrEmpty(matched.AudioUrl))
@@ -163,6 +200,25 @@ public partial class CustomerHomePage : ContentPage
             // 2. Lấy filename an toàn (loại bỏ bất kỳ đường dẫn nào) để tránh 'audios/audios/...'
             var fileName = string.IsNullOrEmpty(matched.AudioUrl) ? string.Empty : Path.GetFileName(matched.AudioUrl);
             if (string.IsNullOrEmpty(fileName)) return;
+
+            // Ưu tiên phát file offline nếu đã tải
+            if (!string.IsNullOrEmpty(matched.LocalAudioPath) && File.Exists(matched.LocalAudioPath))
+            {
+                var localStream = File.OpenRead(matched.LocalAudioPath);
+                var localPlayer = _audioManager.CreatePlayer(localStream);
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    _activePlayer = localPlayer;
+                    _currentPlayingRestaurant = restaurant;
+                    _currentPlayingRestaurant.IsPlaying = true;
+                    _activePlayer.PlaybackEnded += (s, e) =>
+                    {
+                        MainThread.BeginInvokeOnMainThread(() => StopCurrentAudio());
+                    };
+                    _activePlayer.Play();
+                });
+                return;
+            }
 
             var savedIp = Preferences.Default.Get("server_ip", "192.168.1.12");
             var host = DeviceInfo.DeviceType == DeviceType.Virtual ? "10.0.2.2" : savedIp;
@@ -251,24 +307,16 @@ public partial class CustomerHomePage : ContentPage
 
     private async void OnSelectLanguageClicked(object sender, EventArgs e)
     {
-        // Danh sách hiển thị có lá cờ
-        var langItems = new Dictionary<string, string> {
-            { "🇻🇳 Tiếng Việt", "vi" },
-            { "🇺🇸 English", "en" },
-            { "🇯🇵 Japanese", "ja" },
-            { "🇫🇷 French", "fr" },
-            { "🇰🇷 Korean", "ko" },
-            { "🇨🇳 Chinese", "zh" }
-        };
+        var langItems = LangService.AvailableLanguages;
 
         var action = await DisplayActionSheet(LangService["SelectLang"], LangService["Cancel"], null, langItems.Keys.ToArray());
 
-        if (action != null && action != LangService["Cancel"])
+        if (action != null && action != LangService["Cancel"] && langItems.ContainsKey(action))
         {
             var code = langItems[action];
             LangService.CurrentLanguage = code;
             Preferences.Default.Set("UserLanguage", code);
-            await LoadData(); // Load lại để cập nhật
+            await LoadData();
         }
     }
 

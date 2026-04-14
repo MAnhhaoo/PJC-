@@ -15,11 +15,11 @@
             <ShellContent Title="Khám phá" ContentTemplate="{DataTemplate local:POIMapPage}" />
         </Tab>
 
-        <Tab Title="Hồ sơ" Icon="tab_profile.png">
-            <ShellContent Title="Hồ sơ" ContentTemplate="{DataTemplate local:ProfilePage}" />
+        <Tab Title="Tour" Icon="tab_tour.png">
+            <ShellContent Title="Tour" ContentTemplate="{DataTemplate local:TourListPage}" />
         </Tab>
 
-        <Tab Title="Cài đặt" Icon="tab_profile.png">
+        <Tab Title="Cài đặt" Icon="tab_settings.png">
             <ShellContent Title="Cài đặt" ContentTemplate="{DataTemplate local:SettingsPage}" />
         </Tab>
     </TabBar>

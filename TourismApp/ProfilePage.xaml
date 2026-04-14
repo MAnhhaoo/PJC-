@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:controls="clr-namespace:TourismApp.Controls"
              x:Class="TourismApp.ProfilePage"
              Shell.TabBarIsVisible="False"
              Title="Hồ sơ cá nhân"
              BackgroundColor="#F5F6FA">
 
-    <Grid RowDefinitions="*,Auto">
+    <Grid RowDefinitions="*">
         <!-- Main content -->
         <ScrollView Grid.Row="0">
             <VerticalStackLayout Spacing="0">
@@ -40,7 +39,7 @@
                             <Grid ColumnDefinitions="40, *">
                                 <Label Text="✉️" FontSize="18" VerticalOptions="Center"/>
                                 <VerticalStackLayout Grid.Column="1">
-                                    <Label Text="Email" FontSize="12" TextColor="Gray"/>
+                                    <Label x:Name="lblEmailLabel" Text="Email" FontSize="12" TextColor="Gray"/>
                                     <Label x:Name="lblEmail" FontSize="16" TextColor="#2C3E50" FontAttributes="Bold"/>
                                 </VerticalStackLayout>
                             </Grid>
@@ -50,7 +49,7 @@
                             <Grid ColumnDefinitions="40, *">
                                 <Label Text="📞" FontSize="18" VerticalOptions="Center"/>
                                 <VerticalStackLayout Grid.Column="1">
-                                    <Label Text="Số điện thoại" FontSize="12" TextColor="Gray"/>
+                                    <Label x:Name="lblPhoneLabel" Text="Số điện thoại" FontSize="12" TextColor="Gray"/>
                                     <Label x:Name="lblPhone" FontSize="16" TextColor="#2C3E50" FontAttributes="Bold"/>
                                 </VerticalStackLayout>
                             </Grid>
@@ -60,20 +59,20 @@
                             <Grid ColumnDefinitions="40, *">
                                 <Label Text="📍" FontSize="18" VerticalOptions="Center"/>
                                 <VerticalStackLayout Grid.Column="1">
-                                    <Label Text="Địa chỉ" FontSize="12" TextColor="Gray"/>
+                                    <Label x:Name="lblAddressLabel" Text="Địa chỉ" FontSize="12" TextColor="Gray"/>
                                     <Label x:Name="lblAddress" FontSize="16" TextColor="#2C3E50" FontAttributes="Bold"/>
                                 </VerticalStackLayout>
                             </Grid>
                         </VerticalStackLayout>
                     </Border>
 
-                    <Button Text="✏️ Chỉnh sửa hồ sơ" 
+                    <Button x:Name="btnEditProfile" Text="✏️ Chỉnh sửa hồ sơ" 
                             Clicked="OnEditClicked"
                             BackgroundColor="#1976D2" TextColor="White"
                             CornerRadius="12" HeightRequest="48" FontAttributes="Bold"
                             Margin="0,10,0,0"/>
 
-                    <Button Text="🚪 Đăng xuất" 
+                    <Button x:Name="btnLogout" Text="🚪 Đăng xuất"
                             Clicked="OnLogoutClicked"
                             BackgroundColor="#E53935" TextColor="White"
                             CornerRadius="12" HeightRequest="48" FontAttributes="Bold"
@@ -82,8 +81,5 @@
                 </VerticalStackLayout>
             </VerticalStackLayout>
         </ScrollView>
-
-        <!-- Custom bottom bar -->
-        <controls:CustomBottomBar Grid.Row="1" ActiveTab="2"/>
     </Grid>
 </ContentPage>

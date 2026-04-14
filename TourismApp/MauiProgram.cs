@@ -22,7 +22,7 @@ namespace TourismApp
      });
 
             // 🔥 Auto-detect: máy ảo dùng 10.0.2.2, điện thoại thật dùng IP WiFi (lưu trong Preferences)
-            var savedIp = Preferences.Default.Get("server_ip", "192.168.1.12");
+            var savedIp = Preferences.Default.Get("server_ip", "192.168.1.8");
             var baseUrl = DeviceInfo.DeviceType == DeviceType.Virtual
                 ? "http://10.0.2.2:5216/"
                 : $"http://{savedIp}:5216/";
@@ -64,9 +64,16 @@ namespace TourismApp
             builder.Services.AddTransient<MyAudiosPage>(); // Đăng ký trang Audio
             builder.Services.AddTransient<UpgradePremiumPage>();
             builder.Services.AddSingleton<LanguageService>(); // Đăng ký dạng Singleton để lưu app state
+            builder.Services.AddSingleton<TranslationService>();
             builder.Services.AddTransient<QRScannerPage>();
             builder.Services.AddTransient<SettingsPage>();
             builder.Services.AddTransient<RestaurantQRPage>();
+            builder.Services.AddTransient<TourListPage>();
+            builder.Services.AddTransient<TourDetailPage>();
+            builder.Services.AddTransient<TourPaymentPage>();
+            builder.Services.AddTransient<RestaurantPaymentPage>();
+            builder.Services.AddSingleton<OfflineSyncService>();
+            builder.Services.AddSingleton<AnalyticsService>();
 
 
 

@@ -60,17 +60,24 @@ namespace WebApplication2.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RestaurantId"));
 
                     b.Property<string>("Address")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Image")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsApproved")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPremium")
                         .HasColumnType("bit");
 
                     b.Property<double>("Latitude")
@@ -80,10 +87,18 @@ namespace WebApplication2.Migrations
                         .HasColumnType("float");
 
                     b.Property<string>("Name")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("OwnerId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Phone")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("PremiumExpireDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("PremiumLevel")
                         .HasColumnType("int");
 
                     b.HasKey("RestaurantId");
@@ -188,10 +203,13 @@ namespace WebApplication2.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("DishId")
+                    b.Property<int?>("DishId")
                         .HasColumnType("int");
 
                     b.Property<int>("LanguageId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("RestaurantId")
                         .HasColumnType("int");
 
                     b.Property<string>("TextContent")
@@ -204,7 +222,53 @@ namespace WebApplication2.Migrations
 
                     b.HasIndex("LanguageId");
 
+                    b.HasIndex("RestaurantId");
+
                     b.ToTable("Narrations");
+                });
+
+            modelBuilder.Entity("WebApplication2.Models.NarrationPlayLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("GuestLabel")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LanguageCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("Latitude")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Longitude")
+                        .HasColumnType("float");
+
+                    b.Property<int?>("NarrationId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("PlayedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("RestaurantId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TourId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RestaurantId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("NarrationPlayLogs");
                 });
 
             modelBuilder.Entity("WebApplication2.Models.Payment", b =>
@@ -240,6 +304,9 @@ namespace WebApplication2.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("TourId")
+                        .HasColumnType("int");
+
                     b.Property<string>("TransactionId")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -250,6 +317,8 @@ namespace WebApplication2.Migrations
                     b.HasKey("PaymentId");
 
                     b.HasIndex("RestaurantId");
+
+                    b.HasIndex("TourId");
 
                     b.HasIndex("UserId");
 
@@ -314,6 +383,104 @@ namespace WebApplication2.Migrations
                     b.ToTable("SystemLogs");
                 });
 
+            modelBuilder.Entity("WebApplication2.Models.Tour", b =>
+                {
+                    b.Property<int>("TourId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TourId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Image")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("TourId");
+
+                    b.ToTable("Tours");
+                });
+
+            modelBuilder.Entity("WebApplication2.Models.TourPOI", b =>
+                {
+                    b.Property<int>("TourPOIId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TourPOIId"));
+
+                    b.Property<int>("OrderIndex")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RestaurantId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TourId")
+                        .HasColumnType("int");
+
+                    b.HasKey("TourPOIId");
+
+                    b.HasIndex("RestaurantId");
+
+                    b.HasIndex("TourId");
+
+                    b.ToTable("TourPOIs");
+                });
+
+            modelBuilder.Entity("WebApplication2.Models.TourTrackPoint", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("GuestLabel")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("Latitude")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Longitude")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime>("RecordedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SessionId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TourId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TourId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("TourTrackPoints");
+                });
+
             modelBuilder.Entity("WebApplication2.Models.User", b =>
                 {
                     b.Property<int>("UserId")
@@ -323,6 +490,9 @@ namespace WebApplication2.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserId"));
 
                     b.Property<string>("Address")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Avatar")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
@@ -431,9 +601,7 @@ namespace WebApplication2.Migrations
                 {
                     b.HasOne("Dish", "Dish")
                         .WithMany("Narrations")
-                        .HasForeignKey("DishId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("DishId");
 
                     b.HasOne("WebApplication2.Models.Language", "Language")
                         .WithMany()
@@ -441,9 +609,33 @@ namespace WebApplication2.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Restaurant", "Restaurant")
+                        .WithMany("Narrations")
+                        .HasForeignKey("RestaurantId");
+
                     b.Navigation("Dish");
 
                     b.Navigation("Language");
+
+                    b.Navigation("Restaurant");
+                });
+
+            modelBuilder.Entity("WebApplication2.Models.NarrationPlayLog", b =>
+                {
+                    b.HasOne("Restaurant", "Restaurant")
+                        .WithMany()
+                        .HasForeignKey("RestaurantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("WebApplication2.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("Restaurant");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("WebApplication2.Models.Payment", b =>
@@ -452,6 +644,11 @@ namespace WebApplication2.Migrations
                         .WithMany()
                         .HasForeignKey("RestaurantId");
 
+                    b.HasOne("WebApplication2.Models.Tour", "Tour")
+                        .WithMany()
+                        .HasForeignKey("TourId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("WebApplication2.Models.User", "User")
                         .WithMany("Payments")
                         .HasForeignKey("UserId")
@@ -459,6 +656,8 @@ namespace WebApplication2.Migrations
                         .IsRequired();
 
                     b.Navigation("Restaurant");
+
+                    b.Navigation("Tour");
 
                     b.Navigation("User");
                 });
@@ -491,6 +690,43 @@ namespace WebApplication2.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("WebApplication2.Models.TourPOI", b =>
+                {
+                    b.HasOne("Restaurant", "Restaurant")
+                        .WithMany()
+                        .HasForeignKey("RestaurantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("WebApplication2.Models.Tour", "Tour")
+                        .WithMany("TourPOIs")
+                        .HasForeignKey("TourId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Restaurant");
+
+                    b.Navigation("Tour");
+                });
+
+            modelBuilder.Entity("WebApplication2.Models.TourTrackPoint", b =>
+                {
+                    b.HasOne("WebApplication2.Models.Tour", "Tour")
+                        .WithMany()
+                        .HasForeignKey("TourId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("WebApplication2.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("Tour");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Dish", b =>
                 {
                     b.Navigation("DishHistories");
@@ -504,7 +740,14 @@ namespace WebApplication2.Migrations
 
                     b.Navigation("LocationHistories");
 
+                    b.Navigation("Narrations");
+
                     b.Navigation("Reviews");
+                });
+
+            modelBuilder.Entity("WebApplication2.Models.Tour", b =>
+                {
+                    b.Navigation("TourPOIs");
                 });
 
             modelBuilder.Entity("WebApplication2.Models.User", b =>

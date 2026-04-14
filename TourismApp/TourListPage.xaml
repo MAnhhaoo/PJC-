@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:TourismApp.Controls"
+             x:Class="TourismApp.TourListPage"
+             Shell.TabBarIsVisible="False"
+             Title="Tour du lịch"
+             BackgroundColor="#F5F5F5">
+
+    <Grid RowDefinitions="*,Auto">
+        <Grid Grid.Row="0" RowDefinitions="Auto,*">
+
+            <!-- Header -->
+            <Grid Grid.Row="0" HeightRequest="140">
+                <BoxView BackgroundColor="#1565C0"/>
+                <VerticalStackLayout VerticalOptions="Center" Padding="20">
+                    <Label x:Name="lblTourListTitle" Text="🗺️ Tour du lịch" TextColor="White" FontSize="24" FontAttributes="Bold"/>
+                    <Label x:Name="lblChooseJourney" Text="Chọn hành trình khám phá ẩm thực" TextColor="#BBDEFB" FontSize="14" Margin="0,4,0,0"/>
+                </VerticalStackLayout>
+            </Grid>
+
+            <!-- Tour List -->
+            <CollectionView x:Name="TourCollection" Grid.Row="1" Margin="12,8">
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Padding="30">
+                        <Label Text="📭" FontSize="48" HorizontalTextAlignment="Center"/>
+                        <Label x:Name="lblNoTours" Text="Chưa có tour nào" FontSize="16" TextColor="Gray" HorizontalTextAlignment="Center"/>
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame CornerRadius="16" Margin="0,6" Padding="0" HasShadow="True"
+                               BackgroundColor="White" BorderColor="Transparent">
+                            <Frame.GestureRecognizers>
+                                <TapGestureRecognizer CommandParameter="{Binding TourId}" Tapped="OnTourTapped"/>
+                            </Frame.GestureRecognizers>
+
+                            <VerticalStackLayout>
+                                <!-- Tour color header -->
+                                <BoxView HeightRequest="6" BackgroundColor="#1565C0" CornerRadius="16,16,0,0"/>
+
+                                <VerticalStackLayout Padding="16" Spacing="8">
+                                    <Label Text="{Binding Name}" FontSize="18" FontAttributes="Bold" TextColor="#1565C0"/>
+                                    <Label Text="{Binding Description}" FontSize="13" TextColor="#666" MaxLines="2"/>
+
+                                    <!-- POI route preview -->
+                                    <HorizontalStackLayout Spacing="4" Margin="0,4,0,0">
+                                        <Label Text="📍" FontSize="14"/>
+                                        <Label Text="{Binding POIRoutePreview}" FontSize="12" TextColor="#888"
+                                               LineBreakMode="TailTruncation" MaxLines="1"/>
+                                    </HorizontalStackLayout>
+
+                                    <HorizontalStackLayout Spacing="8" Margin="0,4,0,0">
+                                        <Frame BackgroundColor="#E3F2FD" CornerRadius="8" Padding="6,3" HasShadow="False">
+                                            <Label Text="{Binding POICountText}" FontSize="11" TextColor="#1565C0"/>
+                                        </Frame>
+                                        <Frame BackgroundColor="{Binding PriceBgColor}" CornerRadius="8" Padding="6,3" HasShadow="False">
+                                            <Label Text="{Binding PriceText}" FontSize="11" TextColor="{Binding PriceTextColor}" FontAttributes="Bold"/>
+                                        </Frame>
+                                    </HorizontalStackLayout>
+                                </VerticalStackLayout>
+                            </VerticalStackLayout>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </Grid>
+
+        <!-- Loading -->
+        <ActivityIndicator x:Name="LoadingIndicator" Grid.Row="0" IsRunning="False" IsVisible="False"
+                           VerticalOptions="Center" HorizontalOptions="Center" Color="#1565C0"/>
+
+        <controls:CustomBottomBar Grid.Row="1" ActiveTab="2"/>
+    </Grid>
+</ContentPage>
