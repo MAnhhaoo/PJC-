@@ -23,6 +23,8 @@ namespace WebApplication2.Models
         public double Latitude { get; set; }
         public double Longitude { get; set; }
 
+        public string? GuestLabel { get; set; }
+
         public DateTime PlayedAt { get; set; } = DateTime.Now;
     }
 }

@@ -16,6 +16,9 @@ public partial class RestaurantDetailPage : ContentPage
     private readonly RestaurantService _restaurantService;
     private readonly IAudioManager _audioManager;
     private readonly AnalyticsService _analyticsService;
+    private readonly OfflineSyncService _offlineSyncService;
+    private readonly LanguageService _lang;
+    private readonly TranslationService _translationService;
 
     private int _restaurantId;
 
@@ -34,7 +37,10 @@ public partial class RestaurantDetailPage : ContentPage
         DishService dishService,
         RestaurantService restaurantService,
         IAudioManager audioManager,
-        AnalyticsService analyticsService)
+        AnalyticsService analyticsService,
+        OfflineSyncService offlineSyncService,
+        LanguageService languageService,
+        TranslationService translationService)
     {
         InitializeComponent();
 
@@ -42,18 +48,46 @@ public partial class RestaurantDetailPage : ContentPage
         _restaurantService = restaurantService;
         _audioManager = audioManager;
         _analyticsService = analyticsService;
+        _offlineSyncService = offlineSyncService;
+        _lang = languageService;
+        _translationService = translationService;
     }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        Title = _lang["RestaurantDetail"];
+        AudioButton.Text = _lang["PlayNarration"];
+        lblMapDirection.Text = _lang["MapDirection"];
+        btnOpenMaps.Text = _lang["OpenGoogleMaps"];
+        lblNoLocation.Text = _lang["NoLocation"];
+        lblDishList.Text = _lang["DishList"];
 
         try
         {
-            _restaurant = await _restaurantService.GetRestaurantByIdAsync(_restaurantId);
+            if (Connectivity.Current.NetworkAccess == NetworkAccess.Internet)
+            {
+                try
+                {
+                    _restaurant = await _restaurantService.GetRestaurantByIdAsync(_restaurantId);
+                }
+                catch
+                {
+                    _restaurant = await _offlineSyncService.GetRestaurantByIdOfflineAsync(_restaurantId);
+                }
+            }
+            else
+            {
+                _restaurant = await _offlineSyncService.GetRestaurantByIdOfflineAsync(_restaurantId);
+            }
 
             if (_restaurant == null)
                 return;
+
+            // Translate restaurant info if language is not Vietnamese
+            var currentLang = (_lang.CurrentLanguage ?? "vi").Trim().ToLower();
+            if (currentLang != "vi")
+                await _translationService.TranslateRestaurantAsync(_restaurant, currentLang);
 
             RestaurantName.Text = _restaurant.Name;
             RestaurantAddress.Text = _restaurant.Address;
@@ -69,7 +103,7 @@ public partial class RestaurantDetailPage : ContentPage
         }
         catch (Exception ex)
         {
-            await DisplayAlert("Lỗi", ex.Message, "OK");
+            await DisplayAlert(_lang["Error"], ex.Message, _lang["OK"]);
         }
     }
 
@@ -97,7 +131,7 @@ public partial class RestaurantDetailPage : ContentPage
 
             if (!IsValidCoordinates(_restaurant.Latitude, _restaurant.Longitude))
             {
-                DistanceLabel.Text = "📍 Nhà hàng chưa cập nhật tọa độ";
+                DistanceLabel.Text = _lang["NoCoordinate"];
                 return;
             }
 
@@ -108,7 +142,7 @@ public partial class RestaurantDetailPage : ContentPage
                 _restaurant.Longitude,
                 DistanceUnits.Kilometers);
 
-            DistanceLabel.Text = $"📍 {Math.Round(distance, 2)} km từ vị trí của bạn";
+            DistanceLabel.Text = string.Format(_lang["DistanceFormat"], Math.Round(distance, 2));
         }
         catch
         {
@@ -146,7 +180,7 @@ public partial class RestaurantDetailPage : ContentPage
         {
             DetailMap.Pins.Add(new Pin
             {
-                Label = "Bạn đang ở đây",
+                Label = _lang["YouAreHere"],
                 Location = _userLocation,
                 Type = PinType.Generic
             });
@@ -227,7 +261,7 @@ public partial class RestaurantDetailPage : ContentPage
         if (_isPlayingAudio)
         {
             StopAudio();
-            AudioButton.Text = "▶ Phát thuyết minh";
+            AudioButton.Text = _lang["PlayNarration"];
             AudioStatusLabel.Text = "";
             _isPlayingAudio = false;
         }
@@ -245,10 +279,13 @@ public partial class RestaurantDetailPage : ContentPage
 
             if (_restaurant?.Narrations == null || _restaurant.Narrations.Count == 0) return;
 
-            var lang = "vi";
-            var matched = _restaurant.Narrations.FirstOrDefault(n => n.Language != null && n.Language.Code == lang)
-                          ?? _restaurant.Narrations.FirstOrDefault();
-            if (matched == null) return;
+            var lang = (_lang.CurrentLanguage ?? "vi").Trim().ToLower();
+            var matched = _restaurant.Narrations.FirstOrDefault(n => n.Language != null && n.Language.Code?.Trim().ToLower() == lang);
+            if (matched == null)
+            {
+                await DisplayAlert(_lang["Notification"], _lang["NoNarrationLang"], _lang["OK"]);
+                return;
+            }
 
             _ = _analyticsService.LogNarrationPlayAsync(
                 _restaurant.RestaurantId, null, matched.NarrationId,
@@ -261,11 +298,11 @@ public partial class RestaurantDetailPage : ContentPage
                 if (!string.IsNullOrEmpty(matched.TextContent))
                 {
                     _isPlayingAudio = true;
-                    AudioButton.Text = "⏹ Dừng thuyết minh";
-                    AudioStatusLabel.Text = "Đang đọc...";
+                    AudioButton.Text = _lang["StopNarration"];
+                    AudioStatusLabel.Text = _lang["ReadingAloud"];
                     await TextToSpeech.Default.SpeakAsync(matched.TextContent);
                     _isPlayingAudio = false;
-                    AudioButton.Text = "▶ Phát thuyết minh";
+                    AudioButton.Text = _lang["PlayNarration"];
                     AudioStatusLabel.Text = "";
                 }
                 return;
@@ -273,30 +310,65 @@ public partial class RestaurantDetailPage : ContentPage
 
             var savedIp = Preferences.Default.Get("server_ip", "192.168.1.12");
             var host = DeviceInfo.DeviceType == DeviceType.Virtual ? "10.0.2.2" : savedIp;
+
+            // Ưu tiên phát file offline nếu đã tải
+            if (!string.IsNullOrEmpty(matched.LocalAudioPath) && File.Exists(matched.LocalAudioPath))
+            {
+                var localStream = File.OpenRead(matched.LocalAudioPath);
+                _currentPlayer = _audioManager.CreatePlayer(localStream);
+                _currentPlayer.PlaybackEnded += OnPlaybackEnded;
+                _currentPlayer.Play();
+                _isPlayingAudio = true;
+                AudioButton.Text = _lang["StopNarration"];
+                AudioStatusLabel.Text = _lang["PlayingOffline"];
+                return;
+            }
+
             var audioUrl = new Uri(new Uri($"http://{host}:5216/"), $"audios/{fileName}");
 
-            AudioButton.Text = "⏳ Đang tải...";
-            AudioStatusLabel.Text = "Đang tải audio...";
+            AudioButton.Text = _lang["LoadingAudio"];
+            AudioStatusLabel.Text = _lang["DownloadingAudio"];
 
-            var audioData = await Task.Run(async () =>
+            try
             {
-                using var http = new HttpClient();
-                return await http.GetByteArrayAsync(audioUrl);
-            });
+                var audioData = await Task.Run(async () =>
+                {
+                    using var http = new HttpClient();
+                    return await http.GetByteArrayAsync(audioUrl);
+                });
 
-            var stream = new MemoryStream(audioData);
-            _currentPlayer = _audioManager.CreatePlayer(stream);
-            _currentPlayer.PlaybackEnded += OnPlaybackEnded;
-            _currentPlayer.Play();
+                var stream = new MemoryStream(audioData);
+                _currentPlayer = _audioManager.CreatePlayer(stream);
+                _currentPlayer.PlaybackEnded += OnPlaybackEnded;
+                _currentPlayer.Play();
 
-            _isPlayingAudio = true;
-            AudioButton.Text = "⏹ Dừng thuyết minh";
-            AudioStatusLabel.Text = "Đang phát thuyết minh...";
+                _isPlayingAudio = true;
+                AudioButton.Text = _lang["StopNarration"];
+                AudioStatusLabel.Text = _lang["PlayingAudio"];
+            }
+            catch
+            {
+                // Audio file not found on server — fallback to TextToSpeech
+                if (!string.IsNullOrEmpty(matched.TextContent))
+                {
+                    _isPlayingAudio = true;
+                    AudioButton.Text = _lang["StopNarration"];
+                    AudioStatusLabel.Text = _lang["ReadingAloud"];
+                    await TextToSpeech.Default.SpeakAsync(matched.TextContent);
+                    _isPlayingAudio = false;
+                    AudioButton.Text = _lang["PlayNarration"];
+                    AudioStatusLabel.Text = "";
+                }
+                else
+                {
+                    AudioStatusLabel.Text = _lang["AudioError"];
+                }
+            }
         }
         catch (Exception ex)
         {
-            AudioStatusLabel.Text = "Lỗi phát audio";
-            await DisplayAlert("Lỗi phát", ex.Message, "OK");
+            AudioStatusLabel.Text = _lang["AudioError"];
+            await DisplayAlert(_lang["ErrorPlay"], ex.Message, _lang["OK"]);
         }
     }
 
@@ -305,7 +377,7 @@ public partial class RestaurantDetailPage : ContentPage
         MainThread.BeginInvokeOnMainThread(() =>
         {
             _isPlayingAudio = false;
-            AudioButton.Text = "▶ Phát thuyết minh";
+            AudioButton.Text = _lang["PlayNarration"];
             AudioStatusLabel.Text = "";
         });
     }
@@ -332,7 +404,7 @@ public partial class RestaurantDetailPage : ContentPage
 
         if (!IsValidCoordinates(_restaurant.Latitude, _restaurant.Longitude))
         {
-            await DisplayAlert("Lỗi", "Nhà hàng chưa có tọa độ. Chủ nhà hàng cần cập nhật vị trí GPS.", "OK");
+            await DisplayAlert(_lang["Error"], _lang["NoLocation"], _lang["OK"]);
             return;
         }
 

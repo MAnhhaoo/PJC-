@@ -67,6 +67,11 @@
             <!-- Dish Preview -->
             <Label Text="Món ăn" FontSize="18" FontAttributes="Bold" TextColor="#333" Margin="0,8,0,0"/>
 
+            <Frame x:Name="frameDishLimit" CornerRadius="10" Padding="10" HasShadow="False" BorderColor="#E0E0E0"
+                   BackgroundColor="#E3F2FD" IsVisible="False">
+                <Label x:Name="lblDishLimit" FontSize="13" TextColor="#1565C0" HorizontalTextAlignment="Center"/>
+            </Frame>
+
             <CollectionView ItemsSource="{Binding Dishes}" HeightRequest="200">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>

@@ -41,7 +41,7 @@
                        HorizontalTextAlignment="Center" VerticalTextAlignment="Center"
                        Margin="0,-2,0,0"/>
             </Border>
-            <Label Text="Quét QR" FontSize="9" HorizontalTextAlignment="Center" TextColor="Gray"/>
+            <Label x:Name="LabelScanQR" Text="Quét QR" FontSize="9" HorizontalTextAlignment="Center" TextColor="Gray"/>
             <VerticalStackLayout.GestureRecognizers>
                 <TapGestureRecognizer Tapped="OnScanTapped"/>
             </VerticalStackLayout.GestureRecognizers>

@@ -7,7 +7,7 @@
 
     <VerticalStackLayout Padding="30" Spacing="15">
 
-        <Label Text="ĐĂNG KÝ"
+        <Label x:Name="lblRegTitle" Text="ĐĂNG KÝ"
                FontSize="28"
                HorizontalOptions="Center"/>
 
@@ -29,10 +29,10 @@
             </Picker.Items>
         </Picker>
 
-        <Button Text="Đăng ký"
+        <Button x:Name="btnRegister" Text="Đăng ký"
                 Clicked="OnRegisterClicked"/>
 
-        <Button Text="Quay lại đăng nhập"
+        <Button x:Name="btnBackToLogin" Text="Quay lại đăng nhập"
                 Clicked="OnBackToLogin"/>
 
     </VerticalStackLayout>

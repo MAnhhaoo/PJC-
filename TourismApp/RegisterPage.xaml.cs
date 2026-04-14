@@ -1,17 +1,28 @@
 ﻿using System;
 using System.Net.Http;
 using System.Net.Http.Json;
+using TourismApp.Services;
 
 namespace TourismApp;
 
 public partial class RegisterPage : ContentPage
 {
     private readonly HttpClient _httpClient;
+    private readonly LanguageService _lang;
 
-    public RegisterPage(HttpClient httpClient)
+    public RegisterPage(HttpClient httpClient, LanguageService languageService)
     {
         InitializeComponent();
         _httpClient = httpClient;
+        _lang = languageService;
+        Title = _lang["RegisterTitle"];
+        lblRegTitle.Text = _lang["RegisterTitle"];
+        txtFullName.Placeholder = _lang["FullNamePlaceholder"];
+        txtEmail.Placeholder = _lang["Email"];
+        txtPassword.Placeholder = _lang["PasswordPlaceholder"];
+        rolePicker.Title = _lang["ChooseAccountType"];
+        btnRegister.Text = _lang["RegisterBtn"];
+        btnBackToLogin.Text = _lang["BackToLogin"];
     }
 
     private async void OnRegisterClicked(object sender, EventArgs e)
@@ -21,7 +32,7 @@ public partial class RegisterPage : ContentPage
             string.IsNullOrWhiteSpace(txtFullName.Text) ||
             rolePicker.SelectedItem == null)
         {
-            await DisplayAlert("Lỗi", "Vui lòng nhập đầy đủ thông tin", "OK");
+            await DisplayAlert(_lang["Error"], _lang["RegisterInputError"], _lang["OK"]);
             return;
         }
 
@@ -42,22 +53,22 @@ public partial class RegisterPage : ContentPage
             if (!response.IsSuccessStatusCode)
             {
                 var error = await response.Content.ReadAsStringAsync();
-                await DisplayAlert("Đăng ký thất bại", error, "OK");
+                await DisplayAlert(_lang["RegisterFailed"], error, _lang["OK"]);
                 return;
             }
 
-            await DisplayAlert("Thành công", "Đăng ký thành công", "OK");
+            await DisplayAlert(_lang["Success"], _lang["RegisterSuccess"], _lang["OK"]);
 
             // 🔁 quay về login
             await Shell.Current.GoToAsync("..");
         }
         catch (HttpRequestException)
         {
-            await DisplayAlert("Lỗi", "Không kết nối được tới server", "OK");
+            await DisplayAlert(_lang["Error"], _lang["NoServerConnection"], _lang["OK"]);
         }
         catch (Exception ex)
         {
-            await DisplayAlert("Lỗi", ex.Message, "OK");
+            await DisplayAlert(_lang["Error"], ex.Message, _lang["OK"]);
         }
     }
 

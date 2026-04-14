@@ -15,6 +15,8 @@ public partial class TourDetailPage : ContentPage
     private readonly IAudioManager _audioManager;
     private readonly GpsService _gpsService;
     private readonly LanguageService _langService;
+    private readonly OfflineSyncService _offlineSyncService;
+    private readonly TranslationService _translationService;
 
     private Tour? _tour;
     private int _currentIndex = 0;
@@ -25,6 +27,7 @@ public partial class TourDetailPage : ContentPage
     private bool _isMonitoring;
     private readonly HashSet<int> _autoPlayedPOIs = new();
     private readonly string _sessionId = Guid.NewGuid().ToString();
+    private bool _isPurchased;
 
     public string TourIdStr
     {
@@ -36,13 +39,15 @@ public partial class TourDetailPage : ContentPage
     }
     private int _tourId;
 
-    public TourDetailPage(HttpClient httpClient, IAudioManager audioManager, GpsService gpsService, LanguageService languageService)
+    public TourDetailPage(HttpClient httpClient, IAudioManager audioManager, GpsService gpsService, LanguageService languageService, OfflineSyncService offlineSyncService, TranslationService translationService)
     {
         InitializeComponent();
         _httpClient = httpClient;
         _audioManager = audioManager;
         _gpsService = gpsService;
         _langService = languageService;
+        _offlineSyncService = offlineSyncService;
+        _translationService = translationService;
     }
 
     protected override async void OnAppearing()
@@ -63,14 +68,43 @@ public partial class TourDetailPage : ContentPage
     {
         try
         {
-            _tour = await _httpClient.GetFromJsonAsync<Tour>($"api/tours/{_tourId}");
+            if (Connectivity.Current.NetworkAccess == NetworkAccess.Internet)
+            {
+                try
+                {
+                    _tour = await _httpClient.GetFromJsonAsync<Tour>($"api/tours/{_tourId}");
+                }
+                catch
+                {
+                    _tour = await _offlineSyncService.GetTourByIdOfflineAsync(_tourId);
+                }
+            }
+            else
+            {
+                _tour = await _offlineSyncService.GetTourByIdOfflineAsync(_tourId);
+            }
+
             if (_tour == null || !_tour.POIs.Any())
             {
-                await DisplayAlert("Lỗi", "Không tìm thấy tour hoặc tour chưa có điểm đến", "OK");
+                await DisplayAlert(_langService["Error"], _langService["TourNotFound"], _langService["OK"]);
                 return;
             }
 
             _tour.POIs = _tour.POIs.OrderBy(p => p.OrderIndex).ToList();
+
+            // Translate tour and POI data if language is not Vietnamese
+            var currentLang = (_langService.CurrentLanguage ?? "vi").Trim().ToLower();
+            if (currentLang != "vi")
+            {
+                _tour.Name = await _translationService.TranslateAsync(_tour.Name, currentLang);
+                _tour.Description = await _translationService.TranslateAsync(_tour.Description, currentLang);
+                foreach (var poi in _tour.POIs)
+                {
+                    poi.RestaurantName = await _translationService.TranslateAsync(poi.RestaurantName, currentLang);
+                    if (!string.IsNullOrEmpty(poi.RestaurantAddress))
+                        poi.RestaurantAddress = await _translationService.TranslateAsync(poi.RestaurantAddress, currentLang);
+                }
+            }
 
             // Resolve image URLs
             var savedIp = Preferences.Default.Get("server_ip", "192.168.1.12");
@@ -84,9 +118,30 @@ public partial class TourDetailPage : ContentPage
                 }
             }
 
+            Title = _langService["TourJourney"];
             lblTourName.Text = _tour.Name;
             lblTourDesc.Text = _tour.Description;
-            lblPOICount.Text = $"Tổng: {_tour.POIs.Count} điểm";
+            lblPOICount.Text = string.Format(_langService["TotalPoints"], _tour.POIs.Count);
+
+            // Show price
+            if (_tour.Price > 0)
+                lblTourPrice.Text = string.Format(_langService["PriceTag"], _tour.Price.ToString("N0"));
+            else
+                lblTourPrice.Text = _langService["FreeTag"];
+
+            // Check purchase status
+            _isPurchased = _tour.IsPurchased;
+            if (_tour.Price > 0 && !_isPurchased)
+            {
+                paymentBanner.IsVisible = true;
+                lblPaymentInfo.Text = string.Format(_langService["NeedPaymentPrice"], _tour.Price.ToString("N0"));
+                btnBuyTour.Text = string.Format(_langService["BuyTourPrice"], _tour.Price.ToString("N0"));
+                await CheckPaymentStatusAsync();
+            }
+            else
+            {
+                paymentBanner.IsVisible = false;
+            }
 
             _currentIndex = 0;
             ShowCurrentPOI();
@@ -95,7 +150,7 @@ public partial class TourDetailPage : ContentPage
         }
         catch (Exception ex)
         {
-            await DisplayAlert("Lỗi", "Không thể tải tour: " + ex.Message, "OK");
+            await DisplayAlert(_langService["Error"], string.Format(_langService["TourLoadError"], ex.Message), _langService["OK"]);
         }
     }
 
@@ -105,8 +160,8 @@ public partial class TourDetailPage : ContentPage
 
         var poi = _tour.POIs[_currentIndex];
 
-        lblCurrentPOI.Text = $"▶ Điểm {_currentIndex + 1}/{_tour.POIs.Count}";
-        lblPOIOrder.Text = $"ĐIỂM {poi.OrderIndex}";
+        lblCurrentPOI.Text = string.Format(_langService["PointOf"], _currentIndex + 1, _tour.POIs.Count);
+        lblPOIOrder.Text = string.Format(_langService["PointLabel"], poi.OrderIndex);
         lblPOIName.Text = poi.RestaurantName;
         lblPOIAddress.Text = poi.RestaurantAddress ?? "";
 
@@ -202,6 +257,16 @@ public partial class TourDetailPage : ContentPage
     private async void OnPlayNarration(object sender, EventArgs e)
     {
         if (_tour == null) return;
+
+        // Check if tour requires payment
+        if (_tour.Price > 0 && !_isPurchased)
+        {
+            await DisplayAlert(_langService["NeedPayment"],
+                string.Format(_langService["NeedPaymentMsg"], _tour.Price.ToString("N0")),
+                _langService["OK"]);
+            return;
+        }
+
         var poi = _tour.POIs[_currentIndex];
         await PlayPOINarration(poi);
     }
@@ -217,16 +282,19 @@ public partial class TourDetailPage : ContentPage
 
         if (poi.Narrations == null || !poi.Narrations.Any())
         {
-            await DisplayAlert("Thông báo", $"Chưa có thuyết minh cho {poi.RestaurantName}", "OK");
+            await DisplayAlert(_langService["Notification"], string.Format(_langService["NoNarrationPOI"], poi.RestaurantName), _langService["OK"]);
             return;
         }
 
         string selectedLang = (_langService.CurrentLanguage ?? "vi").Trim().ToLower();
         var matched = poi.Narrations.FirstOrDefault(n =>
-            n.Language != null && n.Language.Code?.Trim().ToLower() == selectedLang)
-            ?? poi.Narrations.FirstOrDefault();
+            n.Language != null && n.Language.Code?.Trim().ToLower() == selectedLang);
 
-        if (matched == null) return;
+        if (matched == null)
+        {
+            await DisplayAlert(_langService["Notification"], _langService["NoNarrationLang"], _langService["OK"]);
+            return;
+        }
 
         // Log narration play for analytics
         _ = LogNarrationPlayAsync(poi, matched);
@@ -261,6 +329,23 @@ public partial class TourDetailPage : ContentPage
         // Play audio file
         var fileName = Path.GetFileName(matched.AudioUrl);
         if (string.IsNullOrEmpty(fileName)) return;
+
+        // Ưu tiên phát file offline nếu đã tải
+        if (!string.IsNullOrEmpty(matched.LocalAudioPath) && File.Exists(matched.LocalAudioPath))
+        {
+            var localStream = File.OpenRead(matched.LocalAudioPath);
+            var localPlayer = _audioManager.CreatePlayer(localStream);
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                _activePlayer = localPlayer;
+                _activePlayer.PlaybackEnded += (s, e) =>
+                {
+                    MainThread.BeginInvokeOnMainThread(() => StopAudio());
+                };
+                _activePlayer.Play();
+            });
+            return;
+        }
 
         var savedIp = Preferences.Default.Get("server_ip", "192.168.1.12");
         var host = DeviceInfo.DeviceType == DeviceType.Virtual ? "10.0.2.2" : savedIp;
@@ -361,6 +446,44 @@ public partial class TourDetailPage : ContentPage
         }
     }
 
+    private async void OnBuyTourClicked(object sender, EventArgs e)
+    {
+        if (_tour == null) return;
+        await Shell.Current.GoToAsync($"{nameof(TourPaymentPage)}?tourId={_tour.TourId}&tourName={Uri.EscapeDataString(_tour.Name)}&price={_tour.Price}");
+    }
+
+    private async Task CheckPaymentStatusAsync()
+    {
+        try
+        {
+            if (Connectivity.Current.NetworkAccess != NetworkAccess.Internet) return;
+
+            var token = await SecureStorage.GetAsync("auth_token");
+            if (string.IsNullOrEmpty(token)) return;
+
+            var request = new HttpRequestMessage(HttpMethod.Get, $"api/payments/check-tour/{_tourId}");
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            var response = await _httpClient.SendAsync(request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+
+                var isPurchased = root.GetProperty("isPurchased").GetBoolean();
+                var status = root.GetProperty("status").GetString() ?? "";
+
+                if (isPurchased)
+                {
+                    _isPurchased = true;
+                    paymentBanner.IsVisible = false;
+                }
+            }
+        }
+        catch { }
+    }
+
     // GPS monitoring: auto-play narration when arriving at a POI
     private async void StartGpsMonitoring()
     {
@@ -379,7 +502,7 @@ public partial class TourDetailPage : ContentPage
                     // Log GPS track point for analytics
                     _ = LogTrackPointAsync(loc.Latitude, loc.Longitude);
 
-                    if (_activePlayer == null && !_isSpeaking)
+                    if (_activePlayer == null && !_isSpeaking && _isPurchased)
                     {
                         // Find the current POI the user is closest to
                         for (int i = 0; i < _tour.POIs.Count; i++)
@@ -411,8 +534,8 @@ public partial class TourDetailPage : ContentPage
     {
         try
         {
-            var userId = await GetUserIdFromToken();
-            await _httpClient.PostAsJsonAsync("api/analytics/narration-play", new
+            var (userId, guestLabel) = await AnalyticsService.GetIdentityAsync();
+            var response = await _httpClient.PostAsJsonAsync("api/analytics/narration-play", new
             {
                 userId,
                 restaurantId = poi.RestaurantId,
@@ -420,62 +543,42 @@ public partial class TourDetailPage : ContentPage
                 narrationId = narration.NarrationId,
                 languageCode = narration.Language?.Code ?? _langService.CurrentLanguage ?? "vi",
                 latitude = poi.Latitude,
-                longitude = poi.Longitude
+                longitude = poi.Longitude,
+                guestLabel
             });
+            System.Diagnostics.Debug.WriteLine($"[TourDetail] LogNarrationPlay: status={response.StatusCode}, poi={poi.RestaurantId}");
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                System.Diagnostics.Debug.WriteLine($"[TourDetail] LogNarrationPlay error: {body}");
+            }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[TourDetail] LogNarrationPlay exception: {ex.Message}");
+        }
     }
 
     private async Task LogTrackPointAsync(double lat, double lng)
     {
         try
         {
-            var userId = await GetUserIdFromToken();
-            await _httpClient.PostAsJsonAsync("api/analytics/track-point", new
+            var (userId, guestLabel) = await AnalyticsService.GetIdentityAsync();
+            var response = await _httpClient.PostAsJsonAsync("api/analytics/track-point", new
             {
                 userId,
                 tourId = _tourId,
                 sessionId = _sessionId,
                 latitude = lat,
-                longitude = lng
+                longitude = lng,
+                guestLabel
             });
+            System.Diagnostics.Debug.WriteLine($"[TourDetail] LogTrackPoint: status={response.StatusCode}");
         }
-        catch { }
-    }
-
-    private static async Task<int> GetUserIdFromToken()
-    {
-        try
+        catch (Exception ex)
         {
-            var token = await SecureStorage.GetAsync("auth_token");
-            if (string.IsNullOrEmpty(token)) return 0;
-
-            var parts = token.Split('.');
-            if (parts.Length < 2) return 0;
-
-            var payload = parts[1];
-            // Fix base64 padding
-            switch (payload.Length % 4)
-            {
-                case 2: payload += "=="; break;
-                case 3: payload += "="; break;
-            }
-            var json = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(payload));
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-
-            // Try common claim names for user id
-            foreach (var claimName in new[] { "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier", "sub", "nameid" })
-            {
-                if (root.TryGetProperty(claimName, out var val))
-                {
-                    var s = val.ToString();
-                    if (int.TryParse(s, out var id)) return id;
-                }
-            }
-            return 0;
+            System.Diagnostics.Debug.WriteLine($"[TourDetail] LogTrackPoint exception: {ex.Message}");
         }
-        catch { return 0; }
     }
 
     private static bool IsValidCoordinates(double lat, double lng)

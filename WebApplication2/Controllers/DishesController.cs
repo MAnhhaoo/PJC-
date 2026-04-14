@@ -40,6 +40,14 @@ public class DishesController : ControllerBase
         var restaurant = await _context.Restaurants.FirstOrDefaultAsync(r => r.OwnerId == userId);
         if (restaurant == null) return BadRequest("Bạn chưa có nhà hàng");
 
+        // Kiểm tra giới hạn món ăn cho nhà hàng thường (không phải Premium)
+        if (!restaurant.IsPremium)
+        {
+            var dishCount = await _context.Dishes.CountAsync(d => d.RestaurantId == restaurant.RestaurantId);
+            if (dishCount >= 8)
+                return BadRequest("Nhà hàng thường chỉ được tối đa 8 món ăn. Nâng cấp Premium để thêm không giới hạn!");
+        }
+
         if (image == null || image.Length == 0) return BadRequest("Vui lòng chọn ảnh món ăn");
 
         // Sử dụng Transaction để đảm bảo nếu lỗi Audio thì không lưu Dish (và ngược lại)

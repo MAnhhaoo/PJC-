@@ -235,6 +235,9 @@ namespace WebApplication2.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("GuestLabel")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("LanguageCode")
                         .HasColumnType("nvarchar(max)");
 
@@ -301,6 +304,9 @@ namespace WebApplication2.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("TourId")
+                        .HasColumnType("int");
+
                     b.Property<string>("TransactionId")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -311,6 +317,8 @@ namespace WebApplication2.Migrations
                     b.HasKey("PaymentId");
 
                     b.HasIndex("RestaurantId");
+
+                    b.HasIndex("TourId");
 
                     b.HasIndex("UserId");
 
@@ -399,6 +407,10 @@ namespace WebApplication2.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<decimal>("Price")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.HasKey("TourId");
 
                     b.ToTable("Tours");
@@ -437,6 +449,9 @@ namespace WebApplication2.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("GuestLabel")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<double>("Latitude")
                         .HasColumnType("float");
@@ -629,6 +644,11 @@ namespace WebApplication2.Migrations
                         .WithMany()
                         .HasForeignKey("RestaurantId");
 
+                    b.HasOne("WebApplication2.Models.Tour", "Tour")
+                        .WithMany()
+                        .HasForeignKey("TourId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("WebApplication2.Models.User", "User")
                         .WithMany("Payments")
                         .HasForeignKey("UserId")
@@ -636,6 +656,8 @@ namespace WebApplication2.Migrations
                         .IsRequired();
 
                     b.Navigation("Restaurant");
+
+                    b.Navigation("Tour");
 
                     b.Navigation("User");
                 });

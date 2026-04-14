@@ -91,17 +91,45 @@
             <MudTh>ID</MudTh>
             <MudTh>User</MudTh>
             <MudTh>Type</MudTh>
+            <MudTh>Tour / Nhà hàng</MudTh>
             <MudTh>Amount</MudTh>
+            <MudTh>Method</MudTh>
+            <MudTh>Mã CK</MudTh>
             <MudTh>Status</MudTh>
             <MudTh>Date</MudTh>
-            <MudTh></MudTh>
+            <MudTh>Actions</MudTh>
         </HeaderContent>
 
         <RowTemplate>
             <MudTd>@context.PaymentId</MudTd>
             <MudTd>@context.UserName</MudTd>
-            <MudTd>@context.PaymentType</MudTd>
+            <MudTd>
+                <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                         Color="@GetTypeColor(context.PaymentType)">
+                    @context.PaymentType
+                </MudChip>
+            </MudTd>
+            <MudTd>
+                @if (!string.IsNullOrEmpty(context.TourName))
+                {
+                    <MudText Typo="Typo.body2">🗺️ @context.TourName</MudText>
+                }
+                else if (!string.IsNullOrEmpty(context.RestaurantName))
+                {
+                    <MudText Typo="Typo.body2">🍽️ @context.RestaurantName</MudText>
+                }
+                else
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Default">—</MudText>
+                }
+            </MudTd>
             <MudTd>@context.Amount.ToString("N0") đ</MudTd>
+            <MudTd>@(context.PaymentMethod ?? "—")</MudTd>
+            <MudTd>
+                <MudText Typo="Typo.body2" Style="font-family:monospace">
+                    @(context.TransactionId ?? "—")
+                </MudText>
+            </MudTd>
             <MudTd>
                 <MudChip T="string" Color="@GetStatusColor(context.Status)"
                          Variant="Variant.Filled"
@@ -109,13 +137,24 @@
                     @context.Status
                 </MudChip>
             </MudTd>
-            <MudTd>@context.PaymentDate.ToString("dd/MM/yyyy")</MudTd>
+            <MudTd>@context.PaymentDate.ToString("dd/MM/yyyy HH:mm")</MudTd>
             <MudTd>
-                <MudButton Variant="Variant.Outlined"
-                           Size="Size.Small"
-                           OnClick="() => OpenDetail(context.PaymentId)">
-                    View
-                </MudButton>
+                <MudStack Row="true" Spacing="1">
+                    @if (context.Status == "Pending")
+                    {
+                        <MudButton Variant="Variant.Filled"
+                                   Size="Size.Small"
+                                   Color="Color.Success"
+                                   OnClick="() => ConfirmPayment(context.PaymentId)">
+                            ✅ Duyệt
+                        </MudButton>
+                    }
+                    <MudButton Variant="Variant.Outlined"
+                               Size="Size.Small"
+                               OnClick="() => OpenDetail(context.PaymentId)">
+                        Chi tiết
+                    </MudButton>
+                </MudStack>
             </MudTd>
         </RowTemplate>
 
@@ -205,9 +244,33 @@
             { "Payment", payment }
         };
 
-        await DialogService.ShowAsync<PaymentDetailDialog>(
+        var result = await DialogService.ShowAsync<PaymentDetailDialog>(
             "Payment Detail",
             parameters);
+
+        // Reload table after dialog closes (payment may have been confirmed)
+        await ReloadTable();
+    }
+
+    private async Task ConfirmPayment(int id)
+    {
+        var response = await Api.PostAsync($"api/payments/confirm/{id}", new { });
+        if (response.IsSuccessStatusCode)
+        {
+            await ReloadTable();
+        }
+    }
+
+    private Color GetTypeColor(string type)
+    {
+        return type switch
+        {
+            "TourPurchase" => Color.Info,
+            "UserUpgrade" => Color.Secondary,
+            "RestaurantRegistration" => Color.Tertiary,
+            "RestaurantPremium" => Color.Warning,
+            _ => Color.Default
+        };
     }
 
     private Color GetStatusColor(string status)
@@ -233,7 +296,8 @@
         public string? PaymentMethod { get; set; }
         public string? TransactionId { get; set; }
         public DateTime? ExpireDate { get; set; }
-    
+        public string? TourName { get; set; }
+        public string? RestaurantName { get; set; }
     }
 
     public class PagedResult

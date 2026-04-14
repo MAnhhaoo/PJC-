@@ -330,7 +330,9 @@ window.showJourneys = (sessions) => {
         }).addTo(window._journeyMap);
 
         const startTime = session.startTime ? new Date(session.startTime).toLocaleString('vi-VN') : '';
+        const userLabel = session.guestLabel ? '🕶️ ' + session.guestLabel : (session.userId ? 'User #' + session.userId : 'Không xác định');
         line.bindPopup('<b>' + (session.tourName || 'Tour #' + session.tourId) + '</b><br/>' +
+            'Người dùng: ' + userLabel + '<br/>' +
             'Session: ' + session.sessionId.substring(0, 8) + '...<br/>' +
             'Điểm GPS: ' + session.pointCount + '<br/>' +
             'Bắt đầu: ' + startTime);

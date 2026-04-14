@@ -18,6 +18,9 @@ public partial class POIMapPage : ContentPage
     private readonly GpsService _gpsService;
     private readonly IAudioManager _audioManager;
     private readonly AnalyticsService _analyticsService;
+    private readonly OfflineSyncService _offlineSyncService;
+    private readonly LanguageService _langService;
+    private readonly TranslationService _translationService;
     private CancellationTokenSource _cts;
     private Location _userLocation;
     private IAudioPlayer _currentPlayer;
@@ -26,13 +29,16 @@ public partial class POIMapPage : ContentPage
 
     public ObservableCollection<Restaurant> Restaurants { get; set; } = new();
 
-    public POIMapPage(RestaurantService restaurantService, GpsService gpsService, IAudioManager audioManager, AnalyticsService analyticsService)
+    public POIMapPage(RestaurantService restaurantService, GpsService gpsService, IAudioManager audioManager, AnalyticsService analyticsService, OfflineSyncService offlineSyncService, LanguageService languageService, TranslationService translationService)
     {
         InitializeComponent();
         _restaurantService = restaurantService;
         _gpsService = gpsService;
         _audioManager = audioManager;
         _analyticsService = analyticsService;
+        _offlineSyncService = offlineSyncService;
+        _langService = languageService;
+        _translationService = translationService;
         this.BindingContext = this;
     }
 
@@ -55,14 +61,30 @@ public partial class POIMapPage : ContentPage
     {
         try
         {
-            var list = await _restaurantService.GetRestaurantsAsync();
+            List<Restaurant> list;
+            if (Connectivity.Current.NetworkAccess == NetworkAccess.Internet)
+            {
+                await _offlineSyncService.SyncRestaurantsAsync();
+                await _offlineSyncService.DownloadAudioFilesAsync();
+                list = await _offlineSyncService.GetRestaurantsOfflineAsync();
+            }
+            else
+            {
+                list = await _offlineSyncService.GetRestaurantsOfflineAsync();
+            }
+            // Translate restaurant data if language is not Vietnamese
+            var lang = (_langService.CurrentLanguage ?? "vi").Trim().ToLower();
+            if (lang != "vi")
+                await _translationService.TranslateRestaurantsAsync(list, lang);
+
             Restaurants.Clear();
             foreach (var r in list) Restaurants.Add(r);
             RenderPins();
         }
         catch (Exception ex)
         {
-            await DisplayAlert("Lỗi", "Không thể tải POI: " + ex.Message, "OK");
+            var msg = ex.InnerException?.Message ?? ex.Message;
+            await DisplayAlert("Lỗi", "Không thể tải POI: " + msg, "OK");
         }
     }
 
@@ -194,34 +216,40 @@ public partial class POIMapPage : ContentPage
     {
         StopLocationUpdates();
         _cts = new CancellationTokenSource();
+        var token = _cts.Token;
         _ = Task.Run(async () =>
         {
-            while (!_cts.IsCancellationRequested)
+            try
             {
-                try
+                while (!token.IsCancellationRequested)
                 {
-                    var loc = await _gpsService.GetCurrentLocation();
-                    if (loc != null)
+                    try
                     {
-                        MainThread.BeginInvokeOnMainThread(() =>
+                        var loc = await _gpsService.GetCurrentLocation();
+                        if (loc != null)
                         {
-                            _userLocation = loc;
-                            UpdateDistances(loc);
-
-                            if (!_initialLocationSet)
+                            MainThread.BeginInvokeOnMainThread(() =>
                             {
-                                _initialLocationSet = true;
-                                map.MoveToRegion(MapSpan.FromCenterAndRadius(
-                                    new Location(loc.Latitude, loc.Longitude),
-                                    Distance.FromKilometers(2)));
-                            }
-                        });
+                                _userLocation = loc;
+                                UpdateDistances(loc);
+
+                                if (!_initialLocationSet)
+                                {
+                                    _initialLocationSet = true;
+                                    map.MoveToRegion(MapSpan.FromCenterAndRadius(
+                                        new Location(loc.Latitude, loc.Longitude),
+                                        Distance.FromKilometers(2)));
+                                }
+                            });
+                        }
                     }
+                    catch (OperationCanceledException) { break; }
+                    catch { }
+                    await Task.Delay(5000, token);
                 }
-                catch { }
-                await Task.Delay(5000, _cts.Token);
             }
-        }, _cts.Token);
+            catch (OperationCanceledException) { }
+        }, token);
     }
 
     private void StopLocationUpdates()
@@ -275,13 +303,26 @@ public partial class POIMapPage : ContentPage
             StopAudio();
 
             if (restaurant.Narrations == null || !restaurant.Narrations.Any()) return;
-            var lang = "vi";
-            var matched = restaurant.Narrations.FirstOrDefault(n => n.Language != null && n.Language.Code == lang) ?? restaurant.Narrations.FirstOrDefault();
-            if (matched == null) return;
+            var lang = (_langService.CurrentLanguage ?? "vi").Trim().ToLower();
+            var matched = restaurant.Narrations.FirstOrDefault(n => n.Language != null && n.Language.Code?.Trim().ToLower() == lang);
+            if (matched == null)
+            {
+                await DisplayAlert(_langService["Notification"], _langService["NoNarrationLang"], _langService["OK"]);
+                return;
+            }
 
             _ = _analyticsService.LogNarrationPlayAsync(
                 restaurant.RestaurantId, null, matched.NarrationId,
                 matched.Language?.Code ?? lang, restaurant.Latitude, restaurant.Longitude);
+
+            // Ưu tiên phát file offline nếu đã tải
+            if (!string.IsNullOrEmpty(matched.LocalAudioPath) && File.Exists(matched.LocalAudioPath))
+            {
+                var stream = File.OpenRead(matched.LocalAudioPath);
+                _currentPlayer = _audioManager.CreatePlayer(stream);
+                _currentPlayer.Play();
+                return;
+            }
 
             var fileName = string.IsNullOrEmpty(matched.AudioUrl) ? string.Empty : Path.GetFileName(matched.AudioUrl);
             if (string.IsNullOrEmpty(fileName))
@@ -298,15 +339,26 @@ public partial class POIMapPage : ContentPage
             var audioUrl = new Uri(new Uri($"http://{host}:5216/"), $"audios/{fileName}");
 
             // Download audio on background thread to avoid NetworkOnMainThreadException
-            var audioData = await Task.Run(async () =>
+            try
             {
-                using var http = new HttpClient();
-                return await http.GetByteArrayAsync(audioUrl);
-            });
+                var audioData = await Task.Run(async () =>
+                {
+                    using var http = new HttpClient();
+                    return await http.GetByteArrayAsync(audioUrl);
+                });
 
-            var stream = new MemoryStream(audioData);
-            _currentPlayer = _audioManager.CreatePlayer(stream);
-            _currentPlayer.Play();
+                var stream2 = new MemoryStream(audioData);
+                _currentPlayer = _audioManager.CreatePlayer(stream2);
+                _currentPlayer.Play();
+            }
+            catch
+            {
+                // Audio file not found on server — fallback to TextToSpeech
+                if (!string.IsNullOrEmpty(matched.TextContent))
+                {
+                    await TextToSpeech.Default.SpeakAsync(matched.TextContent);
+                }
+            }
         }
         catch (Exception ex)
         {
