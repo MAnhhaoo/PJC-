@@ -32,6 +32,12 @@ namespace WebApplication2.Models
         [ForeignKey(nameof(RestaurantId))]
         public Restaurant? Restaurant { get; set; }
 
+        // Nếu payment liên quan tới tour cụ thể
+        public int? TourId { get; set; }
+
+        [ForeignKey(nameof(TourId))]
+        public Tour? Tour { get; set; }
+
         // Momo / VNPAY / Stripe / Cash
         [MaxLength(50)]
         public string? PaymentMethod { get; set; }

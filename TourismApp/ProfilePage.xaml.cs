@@ -6,17 +6,27 @@ namespace TourismApp;
 public partial class ProfilePage : ContentPage
 {
     private readonly UserService _userService;
+    private readonly HttpClient _httpClient;
+    private readonly LanguageService _lang;
     private User _user;
 
-    public ProfilePage(UserService userService)
+    public ProfilePage(UserService userService, HttpClient httpClient, LanguageService languageService)
     {
         InitializeComponent();
         _userService = userService;
+        _httpClient = httpClient;
+        _lang = languageService;
     }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        Title = _lang["ProfileTitle"];
+        lblEmailLabel.Text = _lang["Email"];
+        lblPhoneLabel.Text = _lang["Phone"];
+        lblAddressLabel.Text = _lang["Address"];
+        btnEditProfile.Text = _lang["EditProfile"];
+        btnLogout.Text = _lang["Logout"];
 
         try
         {
@@ -26,18 +36,33 @@ public partial class ProfilePage : ContentPage
             {
                 lblEmail.Text = _user.Email;
                 lblFullNameHeader.Text = _user.FullName; // Hiển thị tên ở Header
-                lblPhone.Text = string.IsNullOrEmpty(_user.Phone) ? "Chưa cập nhật" : _user.Phone;
-                lblAddress.Text = string.IsNullOrEmpty(_user.Address) ? "Chưa cập nhật" : _user.Address;
+                lblPhone.Text = string.IsNullOrEmpty(_user.Phone) ? _lang["NotUpdated"] : _user.Phone;
+                lblAddress.Text = string.IsNullOrEmpty(_user.Address) ? _lang["NotUpdated"] : _user.Address;
 
                 if (!string.IsNullOrEmpty(_user.Avatar))
                 {
-                    imgAvatar.Source = _user.Avatar;
+                    // Resolve avatar URL to use the correct server address
+                    var avatarUrl = _user.Avatar;
+                    if (avatarUrl.StartsWith("http"))
+                    {
+                        try
+                        {
+                            var uri = new Uri(avatarUrl);
+                            avatarUrl = new Uri(_httpClient.BaseAddress!, uri.PathAndQuery).ToString();
+                        }
+                        catch { }
+                    }
+                    else
+                    {
+                        avatarUrl = new Uri(_httpClient.BaseAddress!, avatarUrl).ToString();
+                    }
+                    imgAvatar.Source = ImageSource.FromUri(new Uri(avatarUrl));
                 }
             }
         }
         catch (Exception ex)
         {
-            await DisplayAlert("Lỗi", "Không thể tải thông tin", "OK");
+            await DisplayAlert(_lang["Error"], _lang["ErrorLoadInfo"], _lang["OK"]);
         }
 
             }
@@ -49,7 +74,7 @@ public partial class ProfilePage : ContentPage
 
             private async void OnLogoutClicked(object sender, EventArgs e)
             {
-                bool confirm = await DisplayAlert("Xác nhận", "Bạn có chắc chắn muốn đăng xuất?", "Đăng xuất", "Hủy");
+                bool confirm = await DisplayAlert(_lang["LogoutConfirm"], _lang["LogoutConfirmMsg"], _lang["LogoutBtn"], _lang["Cancel"]);
                 if (confirm)
                 {
                     Preferences.Default.Remove("jwt_token");

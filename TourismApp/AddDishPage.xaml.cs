@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Text.Json;
 using TourismApp.Services;
 
 namespace TourismApp;
@@ -54,6 +55,11 @@ public partial class AddDishPage : ContentPage
         {
             await DisplayAlert("Thành công", "Đã thêm món với ảnh từ máy!", "OK");
             await Navigation.PopAsync();
+        }
+        else
+        {
+            var error = await res.Content.ReadAsStringAsync();
+            await DisplayAlert("Lỗi", error, "OK");
         }
     }
 }

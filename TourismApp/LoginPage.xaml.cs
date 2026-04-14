@@ -8,12 +8,27 @@ public partial class LoginPage : ContentPage
 {
     private readonly HttpClient _httpClient;
     private readonly AuthService _authService;
+    private readonly LanguageService _lang;
 
-    public LoginPage(HttpClient httpClient, AuthService authService)
+    public LoginPage(HttpClient httpClient, AuthService authService, LanguageService languageService)
     {
         InitializeComponent();
         _httpClient = httpClient;
         _authService = authService;
+        _lang = languageService;
+        ApplyLocalization();
+    }
+
+    private void ApplyLocalization()
+    {
+        lblWelcome.Text = _lang["Welcome"];
+        txtEmail.Placeholder = _lang["EmailPlaceholder"];
+        txtPassword.Placeholder = _lang["PasswordPlaceholder"];
+        btnLogin.Text = _lang["LoginBtn"];
+        lblNoAccount.Text = _lang["NoAccount"];
+        btnRegisterNow.Text = _lang["RegisterNow"];
+        lblServerSettings.Text = _lang["ServerSettings"];
+        lblAuthenticating.Text = _lang["Authenticating"];
     }
 
     private async void OnGoToRegister(object sender, EventArgs e)
@@ -26,7 +41,7 @@ public partial class LoginPage : ContentPage
     {
         if (string.IsNullOrWhiteSpace(txtEmail.Text) || string.IsNullOrWhiteSpace(txtPassword.Text))
         {
-            await DisplayAlert("Lỗi", "Vui lòng nhập đầy đủ email và mật khẩu", "OK");
+            await DisplayAlert(_lang["Error"], _lang["LoginInputError"], _lang["OK"]);
             return;
         }
 
@@ -41,7 +56,7 @@ public partial class LoginPage : ContentPage
 
             if (!response.IsSuccessStatusCode)
             {
-                await DisplayAlert("Lỗi", "Tài khoản hoặc mật khẩu không đúng", "Thử lại");
+                await DisplayAlert(_lang["Error"], _lang["LoginError"], _lang["TryAgain"]);
                 return;
             }
 
@@ -66,7 +81,7 @@ public partial class LoginPage : ContentPage
         }
         catch (Exception ex)
         {
-            await DisplayAlert("Lỗi kết nối", "Không thể kết nối đến máy chủ", "Đóng");
+            await DisplayAlert(_lang["Error"], _lang["ConnectionError"], _lang["Close"]);
         }
         finally
         {
@@ -80,15 +95,15 @@ public partial class LoginPage : ContentPage
     {
         var currentIp = Preferences.Default.Get("server_ip", "192.168.1.12");
         var newIp = await DisplayPromptAsync(
-            "Cài đặt máy chủ",
-            "Nhập địa chỉ IP WiFi của máy tính\n(chạy 'ipconfig' trên máy tính để xem):",
+            _lang["ServerSettingsTitle"],
+            _lang["ServerSettingsMsg"],
             initialValue: currentIp,
             keyboard: Keyboard.Url);
 
         if (!string.IsNullOrWhiteSpace(newIp) && newIp != currentIp)
         {
             Preferences.Default.Set("server_ip", newIp.Trim());
-            await DisplayAlert("Đã lưu", $"IP máy chủ: {newIp.Trim()}\nVui lòng tắt và mở lại app để áp dụng.", "OK");
+            await DisplayAlert(_lang["ServerSaved"], string.Format(_lang["ServerSavedMsg"], newIp.Trim()), _lang["OK"]);
         }
     }
 

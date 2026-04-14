@@ -1,3 +1,5 @@
+using TourismApp.Services;
+
 namespace TourismApp.Controls;
 
 public partial class CustomBottomBar : ContentView
@@ -15,6 +17,18 @@ public partial class CustomBottomBar : ContentView
     public CustomBottomBar()
     {
         InitializeComponent();
+        ApplyLocalization();
+    }
+
+    private void ApplyLocalization()
+    {
+        var lang = LanguageService.Instance;
+        if (lang == null) return;
+        LabelHome.Text = lang["TabHome"];
+        LabelExplore.Text = lang["TabExplore"];
+        LabelScanQR.Text = lang["TabScanQR"];
+        LabelTour.Text = lang["TabTour"];
+        LabelSettings.Text = lang["TabSettings"];
     }
 
     protected override void OnPropertyChanged(string propertyName = null)

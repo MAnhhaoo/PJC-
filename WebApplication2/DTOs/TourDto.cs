@@ -7,6 +7,8 @@ namespace WebApplication2.DTOs
         public string? Description { get; set; }
         public string? Image { get; set; }
         public bool IsActive { get; set; }
+        public decimal Price { get; set; }
+        public bool IsPurchased { get; set; }
         public DateTime CreatedAt { get; set; }
         public List<TourPOIDto> POIs { get; set; } = new();
     }
@@ -29,6 +31,7 @@ namespace WebApplication2.DTOs
         public string Name { get; set; } = string.Empty;
         public string? Description { get; set; }
         public string? Image { get; set; }
+        public decimal Price { get; set; }
         public List<TourPOICreateDto> POIs { get; set; } = new();
     }
 

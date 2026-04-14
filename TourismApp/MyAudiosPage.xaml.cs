@@ -78,24 +78,45 @@ public partial class MyAudiosPage : ContentPage
         {
             bool audioPlayed = false;
 
-            // Try server audio first
+            // Try local file first, then server audio
             if (!string.IsNullOrEmpty(narration.AudioUrl))
             {
                 try
                 {
-                    var audioStream = await _httpClient.GetStreamAsync(narration.AudioUrl);
-                    _activePlayer?.Dispose();
-                    _activePlayer = _audioManager.CreatePlayer(audioStream);
-                    _activePlayer.PlaybackEnded += (s, args) =>
+                    // Try local file first
+                    var localFileName = Path.GetFileName(narration.AudioUrl);
+                    var localPath = !string.IsNullOrEmpty(localFileName)
+                        ? Path.Combine(FileSystem.AppDataDirectory, "audios", localFileName)
+                        : null;
+
+                    if (!string.IsNullOrEmpty(localPath) && File.Exists(localPath))
                     {
-                        MainThread.BeginInvokeOnMainThread(() => StopCurrentPlayback());
-                    };
-                    _activePlayer.Play();
-                    audioPlayed = true;
+                        var localStream = File.OpenRead(localPath);
+                        _activePlayer?.Dispose();
+                        _activePlayer = _audioManager.CreatePlayer(localStream);
+                        _activePlayer.PlaybackEnded += (s, args) =>
+                        {
+                            MainThread.BeginInvokeOnMainThread(() => StopCurrentPlayback());
+                        };
+                        _activePlayer.Play();
+                        audioPlayed = true;
+                    }
+                    else
+                    {
+                        var audioStream = await _httpClient.GetStreamAsync(narration.AudioUrl);
+                        _activePlayer?.Dispose();
+                        _activePlayer = _audioManager.CreatePlayer(audioStream);
+                        _activePlayer.PlaybackEnded += (s, args) =>
+                        {
+                            MainThread.BeginInvokeOnMainThread(() => StopCurrentPlayback());
+                        };
+                        _activePlayer.Play();
+                        audioPlayed = true;
+                    }
                 }
                 catch
                 {
-                    // Server audio failed — will fall back to device TTS below
+                    // Audio failed — will fall back to device TTS below
                 }
             }
 

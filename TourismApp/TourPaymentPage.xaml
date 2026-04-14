@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="TourismApp.TourPaymentPage"
+             Title="Thanh toán Tour"
+             BackgroundColor="#F5F5F5">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="16">
+
+            <!-- Tour info -->
+            <Frame CornerRadius="16" BackgroundColor="White" HasShadow="True" Padding="16" BorderColor="Transparent">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="🗺️ Thông tin Tour" FontSize="18" FontAttributes="Bold" TextColor="#1565C0"/>
+                    <Label x:Name="lblTourName" FontSize="16" TextColor="Black" FontAttributes="Bold"/>
+                    <HorizontalStackLayout Spacing="4">
+                        <Label Text="💰 Giá:" FontSize="14" TextColor="#666"/>
+                        <Label x:Name="lblPrice" FontSize="16" TextColor="#E65100" FontAttributes="Bold"/>
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- VietQR Code -->
+            <Frame CornerRadius="16" BackgroundColor="White" HasShadow="True" Padding="20" BorderColor="Transparent">
+                <VerticalStackLayout Spacing="12" HorizontalOptions="Center">
+                    <Label Text="📱 Quét mã QR để chuyển khoản" FontSize="16" FontAttributes="Bold"
+                           TextColor="#1565C0" HorizontalTextAlignment="Center"/>
+
+                    <Frame CornerRadius="12" Padding="10" BackgroundColor="#FAFAFA" HasShadow="False"
+                           HorizontalOptions="Center" BorderColor="#E0E0E0">
+                        <Image x:Name="imgQRCode" WidthRequest="260" HeightRequest="260" Aspect="AspectFit"/>
+                    </Frame>
+
+                    <Label Text="Mở app ngân hàng → Quét QR → Chuyển khoản" FontSize="12"
+                           TextColor="#888" HorizontalTextAlignment="Center"/>
+
+                    <Frame CornerRadius="8" BackgroundColor="#E3F2FD" Padding="12" HasShadow="False">
+                        <VerticalStackLayout Spacing="6">
+                            <Label x:Name="lblBankName" FontSize="13" TextColor="#333"/>
+                            <Label x:Name="lblAccountNo" FontSize="13" TextColor="#333" FontAttributes="Bold"/>
+                            <Label x:Name="lblAccountName" FontSize="13" TextColor="#333"/>
+                            <BoxView HeightRequest="1" Color="#E0E0E0"/>
+                            <Label x:Name="lblAmount" FontSize="14" TextColor="#E65100" FontAttributes="Bold"/>
+                            <Label x:Name="lblTransferContent" FontSize="14" TextColor="#E65100" FontAttributes="Bold"/>
+                            <Label Text="⚠️ Nhập đúng nội dung CK để hệ thống tự xác nhận"
+                                   FontSize="11" TextColor="#F57F17"/>
+                        </VerticalStackLayout>
+                    </Frame>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Polling status -->
+            <Frame x:Name="framePolling" CornerRadius="16" BackgroundColor="#FFF8E1"
+                   HasShadow="True" Padding="16" BorderColor="#FFD54F" IsVisible="False">
+                <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
+                    <ActivityIndicator x:Name="pollingIndicator" IsRunning="True" Color="#FF8F00"/>
+                    <Label x:Name="lblPollingStatus" Text="⏳ Đang chờ xác nhận chuyển khoản..."
+                           FontSize="14" TextColor="#F57F17" HorizontalTextAlignment="Center" FontAttributes="Bold"/>
+                    <Label Text="Hệ thống sẽ tự động xác nhận sau khi nhận được tiền"
+                           FontSize="12" TextColor="#888" HorizontalTextAlignment="Center"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Success frame (hidden by default) -->
+            <Frame x:Name="frameSuccess" CornerRadius="16" BackgroundColor="#E8F5E9"
+                   HasShadow="True" Padding="16" BorderColor="#66BB6A" IsVisible="False">
+                <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
+                    <Label Text="✅ Thanh toán thành công!" FontSize="18"
+                           TextColor="#2E7D32" HorizontalTextAlignment="Center" FontAttributes="Bold"/>
+                    <Label Text="Tour đã được mở khóa. Đang chuyển hướng..."
+                           FontSize="13" TextColor="#388E3C" HorizontalTextAlignment="Center"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <Label x:Name="lblStatus" FontSize="13" TextColor="#888" HorizontalTextAlignment="Center"/>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

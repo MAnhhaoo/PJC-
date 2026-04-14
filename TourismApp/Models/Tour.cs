@@ -9,6 +9,8 @@ namespace TourismApp.Models
         public string? Description { get; set; }
         public string? Image { get; set; }
         public bool IsActive { get; set; }
+        public decimal Price { get; set; }
+        public bool IsPurchased { get; set; }
         public DateTime CreatedAt { get; set; }
         public List<TourPOI> POIs { get; set; } = new();
     }
@@ -16,6 +18,7 @@ namespace TourismApp.Models
     public class TourPOI
     {
         public int TourPOIId { get; set; }
+        public int TourId { get; set; }
         public int RestaurantId { get; set; }
         public string RestaurantName { get; set; } = string.Empty;
         public string? RestaurantAddress { get; set; }

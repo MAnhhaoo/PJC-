@@ -33,6 +33,17 @@ namespace WebApplication2.Data
                 .Property(p => p.Amount)
                 .HasPrecision(18, 2);
 
+            modelBuilder.Entity<Payment>()
+                .HasOne(p => p.Tour)
+                .WithMany()
+                .HasForeignKey(p => p.TourId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // ===== Tour =====
+            modelBuilder.Entity<Tour>()
+                .Property(t => t.Price)
+                .HasPrecision(18, 2);
+
             // ===== LocationHistory =====
             modelBuilder.Entity<LocationHistory>()
                 .HasOne(l => l.User)

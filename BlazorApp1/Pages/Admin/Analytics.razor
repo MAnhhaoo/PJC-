@@ -136,7 +136,7 @@
     </MudTabPanel>
 
     <!-- TAB 3: Journeys -->
-    <MudTabPanel Text="🚶 Hành trình khách" Icon="@Icons.Material.Filled.Timeline">
+    <MudTabPanel Text="🚶 Hành trình khách ẩn danh" Icon="@Icons.Material.Filled.Timeline">
         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3" Class="mb-3">
             <MudSelect T="int" Label="Lọc theo Tour" @bind-Value="_journeyTourFilter" Variant="Variant.Outlined" Dense="true" Style="max-width:300px;">
                 <MudSelectItem Value="0">Tất cả tour</MudSelectItem>
@@ -160,12 +160,16 @@
                 <HeaderContent>
                     <MudTh>Session</MudTh>
                     <MudTh>Tour</MudTh>
+                    <MudTh>Khách ẩn danh</MudTh>
                     <MudTh>Điểm GPS</MudTh>
                     <MudTh>Bắt đầu</MudTh>
                 </HeaderContent>
                 <RowTemplate>
                     <MudTd><code>@context.SessionId[..Math.Min(8, context.SessionId.Length)]...</code></MudTd>
                     <MudTd>@context.TourName</MudTd>
+                    <MudTd>
+                        <MudChip T="string" Color="Color.Default" Size="Size.Small" Icon="@Icons.Material.Filled.VisibilityOff">@context.GuestLabel</MudChip>
+                    </MudTd>
                     <MudTd>@context.PointCount</MudTd>
                     <MudTd>@context.StartTime.ToString("dd/MM/yyyy HH:mm")</MudTd>
                 </RowTemplate>
@@ -435,6 +439,7 @@
                     tourId = j.TourId,
                     tourName = j.TourName,
                     userId = j.UserId,
+                    guestLabel = j.GuestLabel,
                     startTime = j.StartTime,
                     pointCount = j.PointCount,
                     points = j.Points?.Select(p => new { lat = p.Lat, lng = p.Lng, time = p.Time }).ToArray()
@@ -493,6 +498,7 @@
         public int TourId { get; set; }
         public string TourName { get; set; } = "";
         public int? UserId { get; set; }
+        public string? GuestLabel { get; set; }
         public DateTime StartTime { get; set; }
         public int PointCount { get; set; }
         public List<TrackPointDto>? Points { get; set; }

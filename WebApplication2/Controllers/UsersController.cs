@@ -604,8 +604,8 @@ public class UsersController : ControllerBase
             await file.CopyToAsync(stream);
         }
 
-        // Cập nhật đường dẫn vào DB (thay port 5216 bằng port của bạn)
-        user.Avatar = $"http://10.0.2.2:5216/avatars/{fileName}";
+        // Cập nhật đường dẫn vào DB (lưu relative path, client tự ghép IP)
+        user.Avatar = $"/avatars/{fileName}";
         _context.SaveChanges();
 
         return Ok(new { url = user.Avatar });

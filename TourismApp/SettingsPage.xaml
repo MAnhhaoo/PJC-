@@ -12,7 +12,7 @@
         <ScrollView Grid.Row="0">
             <VerticalStackLayout Padding="20" Spacing="15">
 
-                <Label Text="⚙️ Cài đặt" FontSize="24" FontAttributes="Bold" TextColor="#2C3E50" Margin="0,10,0,5"/>
+                <Label x:Name="lblSettingsTitle" Text="⚙️ Cài đặt" FontSize="24" FontAttributes="Bold" TextColor="#2C3E50" Margin="0,10,0,5"/>
 
                 <!-- Profile shortcut -->
                 <Border StrokeShape="RoundRectangle 15" BackgroundColor="White" Padding="15" StrokeThickness="0">
@@ -26,21 +26,40 @@
                                    HorizontalOptions="Center" VerticalOptions="Center"/>
                         </Border>
                         <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
-                            <Label Text="Hồ sơ cá nhân" FontSize="16" FontAttributes="Bold" TextColor="#2C3E50"/>
-                            <Label Text="Xem và chỉnh sửa thông tin cá nhân" FontSize="12" TextColor="Gray"/>
+                            <Label x:Name="lblProfileLabel" Text="Hồ sơ cá nhân" FontSize="16" FontAttributes="Bold" TextColor="#2C3E50"/>
+                            <Label x:Name="lblViewEditProfile" Text="Xem và chỉnh sửa thông tin cá nhân" FontSize="12" TextColor="Gray"/>
                         </VerticalStackLayout>
                         <Label Grid.Column="2" Text="›" FontSize="24" TextColor="Gray" VerticalOptions="Center"/>
                     </Grid>
                 </Border>
 
+                <!-- Anonymous Mode -->
+                <Label x:Name="lblAnonymousHeader" Text="🕶️ Chế độ ẩn danh" FontSize="18" FontAttributes="Bold" TextColor="#2C3E50" Margin="0,10,0,5"/>
+
+                <Border StrokeShape="RoundRectangle 15" BackgroundColor="White" Padding="20" StrokeThickness="0">
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <VerticalStackLayout VerticalOptions="Center">
+                                <Label x:Name="lblAnonymousLabel" Text="Chế độ ẩn danh" FontSize="14" TextColor="#2C3E50" FontAttributes="Bold"/>
+                                <Label x:Name="lblAnonymousDesc" Text="Khi bật, dữ liệu di chuyển không gắn với danh tính cá nhân của bạn." FontSize="12" TextColor="Gray"/>
+                            </VerticalStackLayout>
+                            <Switch x:Name="switchAnonymous" Grid.Column="1"
+                                    OnColor="#4CAF50" ThumbColor="White"
+                                    Toggled="OnAnonymousToggled"
+                                    VerticalOptions="Center"/>
+                        </Grid>
+                        <Label x:Name="lblAnonymousStatus" FontSize="12" TextColor="#4CAF50"/>
+                    </VerticalStackLayout>
+                </Border>
+
                 <!-- GPS Settings -->
-                <Label Text="📡 Cài đặt GPS" FontSize="18" FontAttributes="Bold" TextColor="#2C3E50" Margin="0,10,0,5"/>
+                <Label x:Name="lblGpsHeader" Text="📡 Cài đặt GPS" FontSize="18" FontAttributes="Bold" TextColor="#2C3E50" Margin="0,10,0,5"/>
 
                 <Border StrokeShape="RoundRectangle 15" BackgroundColor="White" Padding="20" StrokeThickness="0">
                     <VerticalStackLayout Spacing="12">
                         <!-- Geofence Radius -->
-                        <Label Text="📡 Bán kính phát hiện" FontSize="14" TextColor="#2C3E50" FontAttributes="Bold"/>
-                        <Label Text="Khoảng cách tối đa để tự động phát thuyết minh khi đến gần địa điểm." FontSize="12" TextColor="Gray"/>
+                        <Label x:Name="lblDetectionRadius" Text="📡 Bán kính phát hiện" FontSize="14" TextColor="#2C3E50" FontAttributes="Bold"/>
+                        <Label x:Name="lblDetectionRadiusDesc" Text="Khoảng cách tối đa để tự động phát thuyết minh khi đến gần địa điểm." FontSize="12" TextColor="Gray"/>
                         <Grid ColumnDefinitions="*,60">
                             <Slider x:Name="sliderRadius" Minimum="3" Maximum="50" Value="5"
                                     MinimumTrackColor="#1976D2" MaximumTrackColor="#E0E0E0"
@@ -54,8 +73,8 @@
                         <BoxView HeightRequest="1" Color="#F0F0F0"/>
 
                         <!-- Movement Threshold -->
-                        <Label Text="🚶 Khoảng cách di chuyển" FontSize="14" TextColor="#2C3E50" FontAttributes="Bold"/>
-                        <Label Text="Bạn cần đi ít nhất bao xa để kích hoạt thuyết minh tiếp theo." FontSize="12" TextColor="Gray"/>
+                        <Label x:Name="lblMovementDistance" Text="🚶 Khoảng cách di chuyển" FontSize="14" TextColor="#2C3E50" FontAttributes="Bold"/>
+                        <Label x:Name="lblMovementDistanceDesc" Text="Bạn cần đi ít nhất bao xa để kích hoạt thuyết minh tiếp theo." FontSize="12" TextColor="Gray"/>
                         <Grid ColumnDefinitions="*,60">
                             <Slider x:Name="sliderMovement" Minimum="1" Maximum="10" Value="3"
                                     MinimumTrackColor="#FF9800" MaximumTrackColor="#E0E0E0"
@@ -67,7 +86,7 @@
                         </Grid>
 
                         <!-- Reset Button -->
-                        <Button Text="🔄 Đặt lại mặc định" 
+                        <Button x:Name="btnResetGps" Text="🔄 Đặt lại mặc định"
                                 Clicked="OnResetGpsSettings"
                                 BackgroundColor="#F5F5F5" TextColor="#666"
                                 CornerRadius="8" HeightRequest="40" FontSize="13"
@@ -76,15 +95,30 @@
                 </Border>
 
                 <!-- Server Settings -->
-                <Label Text="🌐 Kết nối máy chủ" FontSize="18" FontAttributes="Bold" TextColor="#2C3E50" Margin="0,10,0,5"/>
+                <Label x:Name="lblServerHeader" Text="🌐 Kết nối máy chủ" FontSize="18" FontAttributes="Bold" TextColor="#2C3E50" Margin="0,10,0,5"/>
 
                 <Border StrokeShape="RoundRectangle 15" BackgroundColor="White" Padding="20" StrokeThickness="0">
                     <VerticalStackLayout Spacing="10">
-                        <Label Text="Địa chỉ IP máy chủ" FontSize="14" TextColor="#2C3E50" FontAttributes="Bold"/>
-                        <Label Text="Dùng cho thiết bị thật kết nối qua WiFi." FontSize="12" TextColor="Gray"/>
+                        <Label x:Name="lblServerIP" Text="Địa chỉ IP máy chủ" FontSize="14" TextColor="#2C3E50" FontAttributes="Bold"/>
+                        <Label x:Name="lblServerIPDesc" Text="Dùng cho thiết bị thật kết nối qua WiFi." FontSize="12" TextColor="Gray"/>
                         <Entry x:Name="entryServerIp" Placeholder="192.168.1.12" 
                                Keyboard="Url" FontSize="14"
                                TextChanged="OnServerIpChanged"/>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Offline Sync -->
+                <Label x:Name="lblOfflineHeader" Text="📥 Dữ liệu Offline" FontSize="18" FontAttributes="Bold" TextColor="#2C3E50" Margin="0,10,0,5"/>
+
+                <Border StrokeShape="RoundRectangle 15" BackgroundColor="White" Padding="20" StrokeThickness="0">
+                    <VerticalStackLayout Spacing="12">
+                        <Label x:Name="lblDownloadDesc" Text="Tải dữ liệu để sử dụng khi không có mạng" FontSize="13" TextColor="Gray"/>
+                        <Label x:Name="lblSyncStatus" Text="" FontSize="12" TextColor="#1976D2"/>
+                        <Button x:Name="btnSync" Text="📥 Đồng bộ dữ liệu offline"
+                                Clicked="OnSyncOfflineClicked"
+                                BackgroundColor="#1976D2" TextColor="White"
+                                CornerRadius="10" HeightRequest="44" FontSize="14"/>
+                        <Label x:Name="lblLastSync" Text="" FontSize="11" TextColor="Gray" HorizontalOptions="Center"/>
                     </VerticalStackLayout>
                 </Border>
 

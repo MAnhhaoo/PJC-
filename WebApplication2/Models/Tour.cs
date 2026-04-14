@@ -16,6 +16,8 @@ namespace WebApplication2.Models
 
         public bool IsActive { get; set; } = true;
 
+        public decimal Price { get; set; } = 0;
+
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         // Navigation

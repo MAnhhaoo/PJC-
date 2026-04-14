@@ -29,6 +29,7 @@ else
             <MudTh>ID</MudTh>
             <MudTh>Tên Tour</MudTh>
             <MudTh>Mô tả</MudTh>
+            <MudTh>Giá</MudTh>
             <MudTh>Số điểm</MudTh>
             <MudTh>Trạng thái</MudTh>
             <MudTh>Ngày tạo</MudTh>
@@ -38,6 +39,16 @@ else
             <MudTd>@context.TourId</MudTd>
             <MudTd><MudText Typo="Typo.body1"><b>@context.Name</b></MudText></MudTd>
             <MudTd>@(context.Description?.Length > 60 ? context.Description[..60] + "..." : context.Description)</MudTd>
+            <MudTd>
+                @if (context.Price > 0)
+                {
+                    <MudChip T="string" Color="Color.Warning" Size="Size.Small">@context.Price.ToString("N0")đ</MudChip>
+                }
+                else
+                {
+                    <MudChip T="string" Color="Color.Success" Size="Size.Small">Miễn phí</MudChip>
+                }
+            </MudTd>
             <MudTd>
                 <MudChip T="string" Color="Color.Info" Size="Size.Small">@context.POIs.Count điểm</MudChip>
             </MudTd>
@@ -68,7 +79,7 @@ else
             @if (context.POIs.Any())
             {
                 <MudTr>
-                    <td colspan="7" style="padding: 12px 24px; background: #FAFAFA;">
+                    <td colspan="8" style="padding: 12px 24px; background: #FAFAFA;">
                         <MudText Typo="Typo.subtitle2" Class="mb-2">📍 Lộ trình (@context.POIs.Count điểm):</MudText>
                         <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Style="flex-wrap:wrap">
                             @foreach (var poi in context.POIs.OrderBy(p => p.OrderIndex))
@@ -97,6 +108,8 @@ else
     <DialogContent>
         <MudTextField @bind-Value="_formName" Label="Tên Tour" Required="true" Class="mb-3" />
         <MudTextField @bind-Value="_formDescription" Label="Mô tả" Lines="3" Class="mb-3" />
+        <MudNumericField @bind-Value="_formPrice" Label="Giá tour (đ)" Min="0" Format="N0" Class="mb-3"
+                         Adornment="Adornment.End" AdornmentText="đ" HelperText="Nhập 0 = Miễn phí" />
 
         <MudText Typo="Typo.subtitle1" Class="mt-4 mb-2">📍 Chọn POI (nhà hàng) theo thứ tự:</MudText>
 
@@ -164,6 +177,7 @@ else
     private TourAdminDto? _editingTour;
     private string _formName = "";
     private string? _formDescription;
+    private decimal _formPrice;
     private List<int> _selectedPOIs = new();
 
     protected override async Task OnInitializedAsync()
@@ -234,6 +248,7 @@ else
         _editingTour = null;
         _formName = "";
         _formDescription = "";
+        _formPrice = 0;
         _selectedPOIs = new List<int> { 0 };
         await LoadRestaurants();
         _dialogVisible = true;
@@ -253,6 +268,7 @@ else
         _editingTour = tour;
         _formName = tour.Name;
         _formDescription = tour.Description;
+        _formPrice = tour.Price;
         _selectedPOIs = tour.POIs.OrderBy(p => p.OrderIndex).Select(p => p.RestaurantId).ToList();
         if (!_selectedPOIs.Any()) _selectedPOIs.Add(0);
         await LoadRestaurants();
@@ -335,6 +351,7 @@ else
             {
                 Name = _formName,
                 Description = _formDescription,
+                Price = _formPrice,
                 POIs = validPOIs.Select((id, i) => new { RestaurantId = id, OrderIndex = i + 1 }).ToList()
             };
 
@@ -419,6 +436,7 @@ else
         public string? Description { get; set; }
         public string? Image { get; set; }
         public bool IsActive { get; set; }
+        public decimal Price { get; set; }
         public DateTime CreatedAt { get; set; }
         public List<TourPOIAdminDto> POIs { get; set; } = new();
     }

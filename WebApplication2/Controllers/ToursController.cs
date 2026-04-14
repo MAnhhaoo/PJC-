@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using WebApplication2.Data;
 using WebApplication2.DTOs;
 using WebApplication2.Models;
@@ -22,6 +23,18 @@ namespace WebApplication2.Controllers
         [HttpGet]
         public async Task<IActionResult> GetTours()
         {
+            // Try to get userId from token (optional — anonymous allowed)
+            int userId = 0;
+            var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!string.IsNullOrEmpty(claim)) int.TryParse(claim, out userId);
+
+            var purchasedTourIds = userId > 0
+                ? await _context.Payments
+                    .Where(p => p.UserId == userId && p.TourId != null && p.Status == "Success")
+                    .Select(p => p.TourId!.Value)
+                    .ToListAsync()
+                : new List<int>();
+
             var tours = await _context.Tours
                 .Where(t => t.IsActive)
                 .Include(t => t.TourPOIs)
@@ -36,6 +49,8 @@ namespace WebApplication2.Controllers
                     Description = t.Description,
                     Image = t.Image,
                     IsActive = t.IsActive,
+                    Price = t.Price,
+                    IsPurchased = t.Price == 0 || purchasedTourIds.Contains(t.TourId),
                     CreatedAt = t.CreatedAt,
                     POIs = t.TourPOIs
                         .OrderBy(tp => tp.OrderIndex)
@@ -54,11 +69,13 @@ namespace WebApplication2.Controllers
                                 .Select(n => new NarrationDto
                                 {
                                     NarrationId = n.NarrationId,
+                                    LanguageId = n.LanguageId,
                                     TextContent = n.TextContent,
                                     AudioUrl = string.IsNullOrEmpty(n.AudioUrl) ? "" :
                                                n.AudioUrl.Replace("audios/", "").TrimStart('/'),
                                     Language = new LanguageDto
                                     {
+                                        LanguageId = n.Language.LanguageId,
                                         Code = n.Language.Code,
                                         Name = n.Language.Name
                                     }
@@ -86,6 +103,7 @@ namespace WebApplication2.Controllers
                     Description = t.Description,
                     Image = t.Image,
                     IsActive = t.IsActive,
+                    Price = t.Price,
                     CreatedAt = t.CreatedAt,
                     POIs = t.TourPOIs
                         .OrderBy(tp => tp.OrderIndex)
@@ -109,6 +127,13 @@ namespace WebApplication2.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetTour(int id)
         {
+            int userId = 0;
+            var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!string.IsNullOrEmpty(claim)) int.TryParse(claim, out userId);
+
+            bool purchased = userId > 0 && await _context.Payments
+                .AnyAsync(p => p.UserId == userId && p.TourId == id && p.Status == "Success");
+
             var tour = await _context.Tours
                 .Include(t => t.TourPOIs)
                     .ThenInclude(tp => tp.Restaurant)
@@ -122,6 +147,8 @@ namespace WebApplication2.Controllers
                     Description = t.Description,
                     Image = t.Image,
                     IsActive = t.IsActive,
+                    Price = t.Price,
+                    IsPurchased = t.Price == 0 || purchased,
                     CreatedAt = t.CreatedAt,
                     POIs = t.TourPOIs
                         .OrderBy(tp => tp.OrderIndex)
@@ -140,11 +167,13 @@ namespace WebApplication2.Controllers
                                 .Select(n => new NarrationDto
                                 {
                                     NarrationId = n.NarrationId,
+                                    LanguageId = n.LanguageId,
                                     TextContent = n.TextContent,
                                     AudioUrl = string.IsNullOrEmpty(n.AudioUrl) ? "" :
                                                n.AudioUrl.Replace("audios/", "").TrimStart('/'),
                                     Language = new LanguageDto
                                     {
+                                        LanguageId = n.Language.LanguageId,
                                         Code = n.Language.Code,
                                         Name = n.Language.Name
                                     }
@@ -167,6 +196,7 @@ namespace WebApplication2.Controllers
                 Name = dto.Name,
                 Description = dto.Description,
                 Image = dto.Image,
+                Price = dto.Price,
                 IsActive = true,
                 CreatedAt = DateTime.Now
             };
@@ -206,6 +236,7 @@ namespace WebApplication2.Controllers
             tour.Name = dto.Name;
             tour.Description = dto.Description;
             tour.Image = dto.Image;
+            tour.Price = dto.Price;
 
             // Replace POIs
             _context.TourPOIs.RemoveRange(tour.TourPOIs);

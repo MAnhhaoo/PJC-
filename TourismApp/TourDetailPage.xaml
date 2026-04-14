@@ -15,6 +15,7 @@
             <HorizontalStackLayout Spacing="8" Margin="0,4,0,0">
                 <Label x:Name="lblPOICount" FontSize="12" TextColor="#888"/>
                 <Label x:Name="lblCurrentPOI" FontSize="12" TextColor="#1565C0" FontAttributes="Bold"/>
+                <Label x:Name="lblTourPrice" FontSize="12" TextColor="#E65100" FontAttributes="Bold"/>
             </HorizontalStackLayout>
 
             <!-- Navigation buttons -->
@@ -29,12 +30,27 @@
         </VerticalStackLayout>
 
         <!-- Main content: Map + POI card -->
-        <Grid Grid.Row="1" RowDefinitions="*,Auto">
+        <Grid Grid.Row="1" RowDefinitions="Auto,*,Auto">
+            <!-- Payment banner (shown when tour is not purchased) -->
+            <Frame x:Name="paymentBanner" Grid.Row="0" IsVisible="False" BackgroundColor="#FFF3E0"
+                   Margin="12,8,12,0" CornerRadius="12" Padding="12,10" HasShadow="True" BorderColor="#FFB74D">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <VerticalStackLayout VerticalOptions="Center">
+                        <Label x:Name="lblPaymentInfo" Text="🔒 Cần thanh toán để nghe thuyết minh"
+                               FontSize="13" TextColor="#E65100" FontAttributes="Bold"/>
+                        <Label x:Name="lblPaymentStatus" Text="" FontSize="11" TextColor="#888"/>
+                    </VerticalStackLayout>
+                    <Button x:Name="btnBuyTour" Grid.Column="1" Text="💳 Mua Tour" FontSize="12"
+                            BackgroundColor="#E65100" TextColor="White" CornerRadius="8"
+                            HeightRequest="36" Clicked="OnBuyTourClicked"/>
+                </Grid>
+            </Frame>
+
             <!-- Map -->
-            <maps:Map x:Name="TourMap" Grid.Row="0" IsShowingUser="True"/>
+            <maps:Map x:Name="TourMap" Grid.Row="1" IsShowingUser="True"/>
 
             <!-- Current POI info card -->
-            <Frame x:Name="poiCard" Grid.Row="1" Margin="12,0,12,12" Padding="14"
+            <Frame x:Name="poiCard" Grid.Row="2" Margin="12,0,12,12" Padding="14"
                    CornerRadius="16" BackgroundColor="White" HasShadow="True" BorderColor="Transparent">
                 <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="12" RowSpacing="6">
                     <Frame Grid.RowSpan="4" Grid.Column="0" CornerRadius="10" Padding="0" HasShadow="False"

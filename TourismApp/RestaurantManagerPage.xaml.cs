@@ -12,6 +12,7 @@ public partial class RestaurantManagerPage : ContentPage
     private readonly IAudioManager _audioManager;
     private readonly AuthService _authService;
     private bool _isBusy = false;
+    private string _selectedPlan = "Normal"; // Default plan
 
     public RestaurantManagerPage(HttpClient httpClient, AuthService authService , IAudioManager audioManager)
     {
@@ -89,8 +90,14 @@ public partial class RestaurantManagerPage : ContentPage
             var response = await _httpClient.PostAsJsonAsync("api/restaurants", data);
             if (response.IsSuccessStatusCode)
             {
-                await DisplayAlert("Thành công", "Đăng ký nhà hàng thành công! Vui lòng chờ Admin duyệt.", "OK");
-                await LoadRestaurantStatus();
+                var json = await response.Content.ReadAsStringAsync();
+                using var doc = System.Text.Json.JsonDocument.Parse(json);
+                var restaurantId = doc.RootElement.GetProperty("restaurantId").GetInt32();
+
+                var amount = _selectedPlan == "Premium" ? 500000 : 100000;
+                var encodedName = Uri.EscapeDataString(txtCreateName.Text.Trim());
+                await Shell.Current.GoToAsync(
+                    $"{nameof(RestaurantPaymentPage)}?restaurantId={restaurantId}&restaurantName={encodedName}&planType={_selectedPlan}&amount={amount}");
             }
             else
             {
@@ -102,6 +109,28 @@ public partial class RestaurantManagerPage : ContentPage
         {
             await DisplayAlert("Lỗi", "Không thể tạo nhà hàng: " + ex.Message, "OK");
         }
+    }
+
+    private void OnSelectNormalPlan(object sender, EventArgs e)
+    {
+        _selectedPlan = "Normal";
+        frameNormalPlan.BackgroundColor = Color.FromArgb("#E3F2FD");
+        frameNormalPlan.BorderColor = Color.FromArgb("#1565C0");
+        lblNormalCheck.Text = "✅";
+        framePremiumPlan.BackgroundColor = Colors.White;
+        framePremiumPlan.BorderColor = Color.FromArgb("#E0E0E0");
+        lblPremiumCheck.Text = "⬜";
+    }
+
+    private void OnSelectPremiumPlan(object sender, EventArgs e)
+    {
+        _selectedPlan = "Premium";
+        framePremiumPlan.BackgroundColor = Color.FromArgb("#FFF8E1");
+        framePremiumPlan.BorderColor = Color.FromArgb("#FF8F00");
+        lblPremiumCheck.Text = "✅";
+        frameNormalPlan.BackgroundColor = Colors.White;
+        frameNormalPlan.BorderColor = Color.FromArgb("#E0E0E0");
+        lblNormalCheck.Text = "⬜";
     }
 
     private async void OnStatusToggled(object sender, ToggledEventArgs e)

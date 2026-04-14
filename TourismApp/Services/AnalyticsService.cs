@@ -16,8 +16,8 @@ public class AnalyticsService
     {
         try
         {
-            var userId = await GetUserIdFromToken();
-            await _httpClient.PostAsJsonAsync("api/analytics/narration-play", new
+            var (userId, guestLabel) = await GetIdentityAsync();
+            var response = await _httpClient.PostAsJsonAsync("api/analytics/narration-play", new
             {
                 userId,
                 restaurantId,
@@ -25,13 +25,46 @@ public class AnalyticsService
                 narrationId,
                 languageCode = languageCode ?? "vi",
                 latitude,
-                longitude
+                longitude,
+                guestLabel
             });
+            System.Diagnostics.Debug.WriteLine($"[AnalyticsService] LogNarrationPlay: status={response.StatusCode}, restaurantId={restaurantId}, userId={userId}, guest={guestLabel}");
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                System.Diagnostics.Debug.WriteLine($"[AnalyticsService] LogNarrationPlay server error: {body}");
+            }
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[AnalyticsService] LogNarrationPlay error: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Returns (userId, guestLabel). When anonymous mode is ON, userId=0 and guestLabel="Guest_XXXX".
+    /// </summary>
+    public static async Task<(int userId, string? guestLabel)> GetIdentityAsync()
+    {
+        bool anonymous = Preferences.Default.Get("anonymous_mode", false);
+        if (anonymous)
+        {
+            var label = GetOrCreateGuestLabel();
+            return (0, label);
+        }
+
+        var id = await GetUserIdFromToken();
+        return (id, null);
+    }
+
+    private static string GetOrCreateGuestLabel()
+    {
+        var existing = Preferences.Default.Get("guest_label", "");
+        if (!string.IsNullOrEmpty(existing)) return existing;
+
+        var label = "Guest_" + Guid.NewGuid().ToString("N")[..8].ToUpper();
+        Preferences.Default.Set("guest_label", label);
+        return label;
     }
 
     private static async Task<int> GetUserIdFromToken()

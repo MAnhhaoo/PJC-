@@ -28,6 +28,41 @@
                 <Entry x:Name="txtCreatePhone" Placeholder="Số điện thoại" FontSize="15" Keyboard="Telephone"/>
                 <Editor x:Name="txtCreateDescription" Placeholder="Mô tả nhà hàng" FontSize="15" HeightRequest="80"/>
 
+                <!-- Plan Selection -->
+                <Label Text="Chọn gói đăng ký" FontSize="18" FontAttributes="Bold" TextColor="#2D3436" Margin="0,10,0,0"/>
+
+                <Frame x:Name="frameNormalPlan" CornerRadius="15" Padding="15" HasShadow="True"
+                       BackgroundColor="#E3F2FD" BorderColor="#1565C0">
+                    <Frame.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnSelectNormalPlan"/>
+                    </Frame.GestureRecognizers>
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <Label Text="✅" FontSize="22" VerticalOptions="Center" x:Name="lblNormalCheck"/>
+                        <VerticalStackLayout Grid.Column="1" Spacing="4" Margin="10,0">
+                            <Label Text="🏪 Gói Thường" FontSize="16" FontAttributes="Bold" TextColor="#1565C0"/>
+                            <Label Text="Giới hạn 8 món ăn" FontSize="13" TextColor="#666"/>
+                        </VerticalStackLayout>
+                        <Label Grid.Column="2" Text="100.000đ" FontSize="16" FontAttributes="Bold"
+                               TextColor="#E65100" VerticalOptions="Center"/>
+                    </Grid>
+                </Frame>
+
+                <Frame x:Name="framePremiumPlan" CornerRadius="15" Padding="15" HasShadow="True"
+                       BackgroundColor="White" BorderColor="#E0E0E0">
+                    <Frame.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnSelectPremiumPlan"/>
+                    </Frame.GestureRecognizers>
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <Label Text="⬜" FontSize="22" VerticalOptions="Center" x:Name="lblPremiumCheck"/>
+                        <VerticalStackLayout Grid.Column="1" Spacing="4" Margin="10,0">
+                            <Label Text="⭐ Gói Premium" FontSize="16" FontAttributes="Bold" TextColor="#FF8F00"/>
+                            <Label Text="Không giới hạn món ăn • 1 năm" FontSize="13" TextColor="#666"/>
+                        </VerticalStackLayout>
+                        <Label Grid.Column="2" Text="500.000đ" FontSize="16" FontAttributes="Bold"
+                               TextColor="#E65100" VerticalOptions="Center"/>
+                    </Grid>
+                </Frame>
+
                 <Button Text="🏪 Đăng ký nhà hàng"
                         BackgroundColor="#FF6D00"
                         TextColor="White"
