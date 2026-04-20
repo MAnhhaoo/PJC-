@@ -5,7 +5,12 @@
     xmlns:local="clr-namespace:TourismApp"
     FlyoutBehavior="Disabled">
 
-    <!-- Customer main app (default start) -->
+    <!-- Login page (default start) -->
+    <TabBar Route="LoginPage">
+        <ShellContent ContentTemplate="{DataTemplate local:LoginPage}" />
+    </TabBar>
+
+    <!-- Customer main app -->
     <TabBar Route="CustomerHomePage">
         <Tab Title="Trang chủ" Icon="tab_home.png">
             <ShellContent Title="Trang chủ" ContentTemplate="{DataTemplate local:CustomerHomePage}" />
@@ -22,11 +27,6 @@
         <Tab Title="Cài đặt" Icon="tab_settings.png">
             <ShellContent Title="Cài đặt" ContentTemplate="{DataTemplate local:SettingsPage}" />
         </Tab>
-    </TabBar>
-
-    <!-- Login page (navigated to on logout, no tab bar) -->
-    <TabBar Route="LoginPage">
-        <ShellContent ContentTemplate="{DataTemplate local:LoginPage}" />
     </TabBar>
 
     <!-- Restaurant manager (for restaurant role) -->

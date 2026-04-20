@@ -1055,7 +1055,7 @@ D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\BlazorApp1.dll
 D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\refint\BlazorApp1.dll
 D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\BlazorApp1.pdb
 D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\ref\BlazorApp1.dll
+D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\mpnezo3ggr-{0}-859kledjf0-859kledjf0.gz
+D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\kyjy2iuvp1-{0}-9wtdwmxpdw-9wtdwmxpdw.gz
+D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\5jzqasczcu-{0}-7echu07efo-7echu07efo.gz
 D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
-D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\mpnezo3ggr-{0}-293k0hz3dn-293k0hz3dn.gz
-D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\kyjy2iuvp1-{0}-7eqhbj65zi-7eqhbj65zi.gz
-D:\vscode\WebApplication2\BlazorApp1\obj\Debug\net8.0\compressed\5jzqasczcu-{0}-09oiq48ysc-09oiq48ysc.gz

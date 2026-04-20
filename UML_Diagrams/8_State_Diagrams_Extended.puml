@@ -1,0 +1,488 @@
+@startuml State_06_Narration_Lifecycle
+skinparam state {
+    BackgroundColor #FFFDE7
+    BorderColor #F57F17
+}
+
+title Sơ đồ State 6: Vòng đời Thuyết minh (Narration Lifecycle)
+
+[*] --> Creating : Admin/Owner tạo\nthuyết minh mới
+
+state Creating #FFF9C4 {
+    Creating : Nhập TextContent
+    Creating : Chọn ngôn ngữ đích
+}
+
+state Translating #E3F2FD {
+    Translating : Gọi MyMemory API
+    Translating : vi → {targetLang}
+}
+
+state GeneratingTTS #E8F5E9 {
+    GeneratingTTS : Gọi Google TTS API
+    GeneratingTTS : translate_tts?q={text}&tl={code}
+}
+
+state SavingAudio #FFF9C4 {
+    SavingAudio : Lưu file MP3
+    SavingAudio : audios/res_{id}_{code}_{guid}.mp3
+}
+
+state Active #C8E6C9 {
+    Active : Narration đang hoạt động
+    Active : Có AudioUrl hợp lệ
+    Active : Khách có thể nghe
+}
+
+state NoAudio #FFCDD2 {
+    NoAudio : TTS tạo thất bại
+    NoAudio : AudioUrl = ""
+    NoAudio : Chỉ hiện text
+}
+
+state Updated #E3F2FD {
+    Updated : Admin cập nhật nội dung
+    Updated : hoặc thay file audio
+}
+
+state Deleted #ECEFF1 {
+    Deleted : Xóa khỏi DB
+    Deleted : File audio bị xóa
+}
+
+Creating --> Translating : Ngôn ngữ != "vi"
+Creating --> GeneratingTTS : Ngôn ngữ == "vi"\n(không cần dịch)
+
+Translating --> GeneratingTTS : Dịch xong\n(hoặc dịch lỗi → dùng text gốc)
+
+GeneratingTTS --> SavingAudio : TTS thành công
+GeneratingTTS --> NoAudio : TTS thất bại
+
+SavingAudio --> Active : File lưu OK\n+ INSERT DB
+
+Active --> Updated : Admin sửa TextContent\nhoặc upload audio mới
+Updated --> Active : SaveChanges()
+
+Active --> Deleted : Owner xóa\n(DELETE my/narrations/{id})
+Active --> Deleted : Admin xóa\n(POST admin/delete-narration/{id})
+
+NoAudio --> Updated : Admin upload audio mới
+Updated --> Active
+
+Deleted --> [*]
+
+note right of Active
+  Được phát trên:
+  - RestaurantDetailPage
+  - POIMapPage (auto-play khi gần POI)
+  - MyAudiosPage (owner quản lý)
+end note
+
+note bottom of Deleted
+  Khi xóa:
+  1. Xóa file MP3 vật lý từ audios/
+  2. DELETE FROM Narrations WHERE Id = {id}
+end note
+
+@enduml
+
+
+@startuml State_07_Tour_Extended
+skinparam state {
+    BackgroundColor #FFFDE7
+    BorderColor #F57F17
+}
+
+title Sơ đồ State 7: Vòng đời Tour (Chi tiết)
+
+[*] --> Draft : Admin tạo tour mới\nPOST /api/tours
+
+state Draft #FFF9C4 {
+    Draft : IsActive = true (mặc định)
+    Draft : Price >= 0
+    Draft : Có danh sách POIs
+}
+
+state Active #C8E6C9 {
+    Active : Hiển thị trên app
+    Active : Khách có thể xem/mua
+}
+
+state Hidden #ECEFF1 {
+    Hidden : IsActive = false
+    Hidden : Ẩn khỏi app khách
+    Hidden : Chỉ Admin thấy
+}
+
+state Editing #E3F2FD {
+    Editing : Sửa Name, Description
+    Editing : Sửa Image, Price
+    Editing : Thay đổi POIs
+}
+
+state Deleted #FFCDD2 {
+    Deleted : Xóa Tour + TourPOIs
+    Deleted : Không khôi phục được
+}
+
+Draft --> Active : Tạo xong\n(IsActive = true)
+
+Active --> Hidden : PATCH /api/tours/{id}/toggle\n(Admin ẩn tour)
+Hidden --> Active : PATCH /api/tours/{id}/toggle\n(Admin hiện tour)
+
+Active --> Editing : PUT /api/tours/{id}\n(Admin sửa tour)
+Hidden --> Editing : PUT /api/tours/{id}
+
+Editing --> Active : SaveChanges()\n(nếu IsActive = true)
+Editing --> Hidden : SaveChanges()\n(nếu IsActive = false)
+
+Active --> Deleted : DELETE /api/tours/{id}
+Hidden --> Deleted : DELETE /api/tours/{id}
+
+Deleted --> [*]
+
+note right of Active
+  Tour miễn phí (Price == 0):
+  → Khách xem ngay, không cần mua
+  
+  Tour trả phí (Price > 0):
+  → Khách cần thanh toán trước
+  → IsPurchased check qua Payments
+end note
+
+note bottom of Editing
+  Khi sửa POIs:
+  1. Xóa tất cả TourPOIs cũ
+  2. Thêm TourPOIs mới
+  3. Giữ nguyên TourId
+end note
+
+@enduml
+
+
+@startuml State_08_Restaurant_Extended
+skinparam state {
+    BackgroundColor #FFFDE7
+    BorderColor #F57F17
+}
+
+title Sơ đồ State 8: Vòng đời Nhà hàng (Chi tiết với Premium & Lock)
+
+[*] --> Created : Chủ tạo nhà hàng\nPOST /api/restaurants
+
+state Created #FFF9C4 {
+    Created : IsApproved = false
+    Created : IsPremium = false
+    Created : Chờ thanh toán đăng ký
+}
+
+state PendingPayment #FFE0B2 {
+    PendingPayment : Payment "Pending"
+    PendingPayment : Chờ chuyển khoản qua VietQR
+    PendingPayment : SePay webhook đang lắng nghe
+}
+
+state Approved #C8E6C9 {
+    Approved : IsApproved = true
+    Approved : IsPremium = false
+    Approved : Giới hạn 8 món ăn
+    Approved : Hiển thị trên app
+}
+
+state Premium #E3F2FD {
+    Premium : IsApproved = true
+    Premium : IsPremium = true
+    Premium : Không giới hạn món
+    Premium : PremiumExpireDate > Now
+    
+    state PremiumLevel1 #BBDEFB {
+        PremiumLevel1 : Gói tháng
+        PremiumLevel1 : PremiumExpireDate = +1 tháng
+    }
+    state PremiumLevel2 #90CAF9 {
+        PremiumLevel2 : Gói năm
+        PremiumLevel2 : PremiumExpireDate = +1 năm
+    }
+}
+
+state Locked #FFCDD2 {
+    Locked : IsApproved = false (bị Admin hủy)
+    Locked : Ẩn khỏi app khách
+    Locked : Owner không thể phục vụ
+}
+
+state InactiveByOwner #ECEFF1 {
+    InactiveByOwner : IsActive = false
+    InactiveByOwner : Owner tự tắt hoạt động
+}
+
+Created --> PendingPayment : Tạo Payment\n(RestaurantRegistration)
+
+PendingPayment --> Approved : Payment Success\n(SePay webhook hoặc\nAdmin confirm)
+PendingPayment --> Created : Payment Cancelled\n(Hủy thanh toán +\nxóa nhà hàng)
+
+PendingPayment --> Premium : Payment Success\n(RestaurantRegistrationPremium)
+
+Approved --> Premium : Nâng cấp Premium\nPATCH /upgrade/{level}\n+ Thanh toán thành công
+
+Premium --> Approved : PremiumExpireDate\nhết hạn (tự động\nhạ cấp)
+
+Approved --> Locked : Admin PATCH\n/admin/{id}/approve\n(hủy duyệt)
+Premium --> Locked : Admin PATCH\n/admin/{id}/approve\n(hủy duyệt)
+
+Locked --> Approved : Admin PATCH\n/admin/{id}/approve\n(duyệt lại)
+
+Approved --> InactiveByOwner : Owner PATCH\n/toggle-active (false)
+InactiveByOwner --> Approved : Owner PATCH\n/toggle-active (true)
+
+Premium --> InactiveByOwner : Owner tự tắt
+InactiveByOwner --> Premium : Owner mở lại\n(nếu vẫn còn Premium)
+
+@enduml
+
+
+@startuml State_09_User_Extended
+skinparam state {
+    BackgroundColor #FFFDE7
+    BorderColor #F57F17
+}
+
+title Sơ đồ State 9: Vòng đời Tài khoản Người dùng (Chi tiết)
+
+[*] --> Registering : Nhập Email,\nPassword, FullName
+
+state Registering #FFF9C4 {
+    Registering : POST /api/users/register
+    Registering : BCrypt.HashPassword(pwd)
+    Registering : Role mặc định = "User"
+}
+
+state Active #C8E6C9 {
+    Active : Status = "Active"
+    Active : Có thể đăng nhập
+    Active : Sử dụng đầy đủ chức năng
+
+    state NormalUser #E8F5E9 {
+        NormalUser : UserLevel = 0
+        NormalUser : Giới hạn tính năng
+    }
+
+    state VIPUser #BBDEFB {
+        VIPUser : UserLevel = 1
+        VIPUser : Thanh toán UserUpgrade
+        VIPUser : Mở khóa tính năng Premium
+    }
+
+    NormalUser --> VIPUser : Payment "UserUpgrade"\nStatus = "Success"\n→ UserLevel = 1
+}
+
+state ProfileUpdating #E3F2FD {
+    ProfileUpdating : PUT /api/users/me
+    ProfileUpdating : Sửa FullName, Phone,\n  Address, Avatar
+}
+
+state AvatarUploading #FFF9C4 {
+    AvatarUploading : POST /api/users/upload-avatar
+    AvatarUploading : Lưu file wwwroot/avatars/
+}
+
+state Banned #FFCDD2 {
+    Banned : Status = "Banned"
+    Banned : Không thể đăng nhập
+    Banned : Admin đã khóa
+}
+
+Registering --> Active : Đăng ký thành công\nTự động tạo JWT token
+
+Active --> ProfileUpdating : User sửa\nthông tin cá nhân
+ProfileUpdating --> Active : SaveChanges()
+
+Active --> AvatarUploading : User upload\nảnh đại diện
+AvatarUploading --> Active : Avatar URL\ncập nhật trong DB
+
+Active --> Banned : Admin PUT\n/users/{id}/toggle-status\n(Active → Banned)
+
+Banned --> Active : Admin PUT\n/users/{id}/toggle-status\n(Banned → Active)
+
+note right of Banned
+  Khi bị khóa:
+  - AppLogin trả về 401
+    "Tài khoản đã bị khóa"
+  - Không cho Admin bị khóa
+    (BadRequest nếu Role == "Admin")
+end note
+
+note bottom of Active
+  Roles:
+  - "User": Khách du lịch
+  - "Restaurant": Chủ nhà hàng
+  - "Admin": Quản trị (chỉ login web)
+end note
+
+@enduml
+
+
+@startuml State_10_TTS_AudioFile
+skinparam state {
+    BackgroundColor #FFFDE7
+    BorderColor #F57F17
+}
+
+title Sơ đồ State 10: Vòng đời File Audio TTS
+
+[*] --> Requested : Yêu cầu tạo TTS\n(create-translated hoặc\nupdate-my)
+
+state Requested #FFF9C4 {
+    Requested : TextContent đã có
+    Requested : LanguageCode đã xác định
+}
+
+state Translating #E3F2FD {
+    Translating : Gọi MyMemory API
+    Translating : vi → {targetLang}
+    Translating : Chờ phản hồi
+}
+
+state TranslationFailed #FFCDD2 {
+    TranslationFailed : API lỗi hoặc timeout
+    TranslationFailed : Sử dụng text gốc tiếng Việt
+}
+
+state GeneratingAudio #E8F5E9 {
+    GeneratingAudio : Gọi Google TTS API
+    GeneratingAudio : translate_tts?q={text}&tl={code}
+    GeneratingAudio : Nhận audioBytes (MP3)
+}
+
+state Saved #C8E6C9 {
+    Saved : File MP3 đã lưu
+    Saved : audios/res_{id}_{code}_{guid}.mp3
+    Saved : AudioUrl trong DB
+}
+
+state TTSFailed #FFCDD2 {
+    TTSFailed : Google TTS lỗi
+    TTSFailed : AudioUrl = ""
+    TTSFailed : Chỉ có TextContent
+}
+
+state ReplacedByUpload #BBDEFB {
+    ReplacedByUpload : Owner upload file mới
+    ReplacedByUpload : Thay thế file TTS
+}
+
+state PhysicallyDeleted #ECEFF1 {
+    PhysicallyDeleted : File.Delete() từ server
+    PhysicallyDeleted : Narration bị xóa khỏi DB
+}
+
+Requested --> Translating : langCode != "vi"
+Requested --> GeneratingAudio : langCode == "vi"\n(không cần dịch)
+
+Translating --> GeneratingAudio : Dịch thành công
+Translating --> TranslationFailed : Dịch thất bại
+TranslationFailed --> GeneratingAudio : Dùng text gốc
+
+GeneratingAudio --> Saved : TTS thành công\n+ File.WriteAllBytesAsync
+GeneratingAudio --> TTSFailed : TTS thất bại
+
+Saved --> ReplacedByUpload : Admin upload\naudioFile mới\n(POST admin/update-audio)
+ReplacedByUpload --> Saved : File mới lưu OK
+
+TTSFailed --> ReplacedByUpload : Admin upload\naudio thủ công
+
+Saved --> PhysicallyDeleted : Xóa narration\n(File.Delete + DB DELETE)
+TTSFailed --> PhysicallyDeleted : Xóa narration
+
+PhysicallyDeleted --> [*]
+
+@enduml
+
+
+@startuml State_11_Payment_Extended
+skinparam state {
+    BackgroundColor #FFFDE7
+    BorderColor #F57F17
+}
+
+title Sơ đồ State 11: Thanh toán chi tiết (với SePay Webhook)
+
+[*] --> Initiated : Người dùng tạo\nyêu cầu thanh toán
+
+state Initiated #FFF9C4 {
+    Initiated : Chọn loại thanh toán:\n- TourPurchase\n- RestaurantRegistration\n- RestaurantRegistrationPremium\n- RestaurantPremium\n- UserUpgrade
+}
+
+state Pending #FFE0B2 {
+    Pending : Status = "Pending"
+    Pending : TransactionId = "TPA{id}"
+    
+    state ShowingQR #FFF9C4 {
+        ShowingQR : Hiển thị VietQR\ntrên MAUI App
+        ShowingQR : Bank: TPBank\nAccNo: 24619072005
+    }
+    
+    state Polling #E3F2FD {
+        Polling : App kiểm tra mỗi 3 giây
+        Polling : GET /check-tour/{id}\nhoặc GET /check-restaurant/{id}
+    }
+    
+    state WaitingWebhook #E8F5E9 {
+        WaitingWebhook : SePay gửi POST /webhook
+        WaitingWebhook : qua ngrok tunnel
+    }
+    
+    ShowingQR --> Polling
+    Polling --> WaitingWebhook
+}
+
+state WebhookReceived #C8E6C9 {
+    WebhookReceived : Nhận BankWebhookPayload
+    WebhookReceived : Parse "TPA{id}" từ Content
+    WebhookReceived : Kiểm tra amount
+}
+
+state Success #C8E6C9 {
+    Success : Status = "Success"
+    
+    state TourPurchased #E8F5E9 {
+        TourPurchased : Tour được mở khóa
+        TourPurchased : IsPurchased = true
+    }
+    
+    state RestaurantApproved #E8F5E9 {
+        RestaurantApproved : IsApproved = true
+        RestaurantApproved : Nhà hàng xuất hiện trên app
+    }
+    
+    state PremiumActivated #BBDEFB {
+        PremiumActivated : IsPremium = true
+        PremiumActivated : PremiumExpireDate set
+    }
+    
+    state UserUpgraded #BBDEFB {
+        UserUpgraded : UserLevel = 1
+        UserUpgraded : VIP features unlocked
+    }
+}
+
+state Cancelled #ECEFF1 {
+    Cancelled : Người dùng hủy
+    Cancelled : DELETE /cancel-restaurant/{id}
+    Cancelled : Xóa Payment + Restaurant
+}
+
+Initiated --> Pending : Tạo Payment\n(POST purchase-tour\nhoặc register-restaurant)
+
+Pending --> WebhookReceived : SePay POST /webhook\n{ content: "...TPA{id}..." }
+Pending --> Success : Admin POST\n/confirm/{id}\n(xác nhận thủ công)
+Pending --> Cancelled : Người dùng hủy
+
+WebhookReceived --> Success : amount >= required\n+ Match TPA{id}
+WebhookReceived --> Pending : amount < required\nhoặc không match
+
+Success --> [*]
+Cancelled --> [*]
+
+@enduml
+

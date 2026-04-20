@@ -22,7 +22,11 @@
     </MudButton>
 </MudStack>
 
-<MudTable Items="@_narrations" Hover="true" Loading="@_loading" Bordered="true" Striped="true">
+<MudTable T="NarrationAdminDto"
+          @ref="_table"
+          ServerData="LoadServerData"
+          RowsPerPage="10"
+          Hover="true" Loading="@_loading" Bordered="true" Striped="true">
     <HeaderContent>
         <MudTh>Nhà hàng/Món ăn</MudTh>
         <MudTh>Ngôn ngữ</MudTh>
@@ -67,19 +71,21 @@
             }
         </MudTd>
     </RowTemplate>
+    <PagerContent>
+        <MudTablePager PageSizeOptions="new int[] { 10, 25, 50 }" />
+    </PagerContent>
 </MudTable>
 </div>
 
 @code {
-    private List<NarrationAdminDto> _narrations = new();
-    private bool _loading = true;
+    private MudTable<NarrationAdminDto>? _table;
+    private bool _loading;
     private int? _playingId;
     private DotNetObjectReference<ManageNarrations> _dotNetRef;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         _dotNetRef = DotNetObjectReference.Create(this);
-        await LoadData();
     }
 
     [JSInvokable]
@@ -89,13 +95,22 @@
         StateHasChanged();
     }
 
-    private async Task LoadData()
+    private async Task<TableData<NarrationAdminDto>> LoadServerData(TableState state, CancellationToken token)
     {
         _loading = true;
         try {
-            _narrations = await ApiService.GetFromJsonAsync<List<NarrationAdminDto>>("api/restaurants/admin/all-narrations") ?? new();
+            var page = state.Page + 1;
+            var pageSize = state.PageSize;
+            var result = await ApiService.GetFromJsonAsync<NarrationPagedResult>(
+                $"api/restaurants/admin/all-narrations?page={page}&pageSize={pageSize}");
+            return new TableData<NarrationAdminDto>
+            {
+                TotalItems = result?.Total ?? 0,
+                Items = result?.Data ?? new()
+            };
         } catch (Exception ex) {
             Snackbar.Add("Lỗi: " + ex.Message, Severity.Error);
+            return new TableData<NarrationAdminDto>();
         } finally { _loading = false; }
     }
 
@@ -104,7 +119,7 @@
         var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
         var dialog = await DialogService.ShowAsync<CreateNarrationDialog>("Tạo thuyết minh mới", options);
         var result = await dialog.Result;
-        if (!result.Canceled) await LoadData();
+        if (!result.Canceled && _table != null) await _table.ReloadServerData();
     }
 
     private async Task OpenTranslateDialog(NarrationAdminDto item)
@@ -124,7 +139,7 @@
                     LanguageCode = (string)data.Lang 
                 };
                 await ApiService.PostAsync("api/narrations/create-translated", newNarration);
-                await LoadData();
+                if (_table != null) await _table.ReloadServerData();
             }
         }
         catch (Exception ex)
@@ -138,7 +153,7 @@
         try
         {
             var success = await ApiService.PostFileAsync("api/restaurants/admin/update-audio", id, e.File);
-            if (success) { Snackbar.Add("Thành công!", Severity.Success); await LoadData(); }
+            if (success) { Snackbar.Add("Thành công!", Severity.Success); if (_table != null) await _table.ReloadServerData(); }
         }
         catch (Exception ex)
         {
@@ -179,11 +194,17 @@
         try
         {
             var response = await ApiService.PostAsync($"api/restaurants/admin/delete-narration/{id}", new { });
-            if (response.IsSuccessStatusCode) { Snackbar.Add("Đã xóa!", Severity.Success); await LoadData(); }
+            if (response.IsSuccessStatusCode) { Snackbar.Add("Đã xóa!", Severity.Success); if (_table != null) await _table.ReloadServerData(); }
         }
         catch (Exception ex)
         {
             Snackbar.Add("Lỗi xóa: " + ex.Message, Severity.Error);
         }
+    }
+
+    public class NarrationPagedResult
+    {
+        public int Total { get; set; }
+        public List<NarrationAdminDto> Data { get; set; } = new();
     }
 }

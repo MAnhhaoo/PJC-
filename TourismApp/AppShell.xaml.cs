@@ -1,4 +1,7 @@
-﻿namespace TourismApp
+﻿using System.Net.Http.Json;
+using TourismApp.Services;
+
+namespace TourismApp
 {
     public partial class AppShell : Shell
     {
@@ -40,7 +43,38 @@
             bool confirm = await DisplayAlert("Xác nhận", "Bạn có chắc chắn muốn đăng xuất?", "Đăng xuất", "Hủy");
             if (confirm)
             {
-                Preferences.Default.Remove("jwt_token");
+                try
+                {
+                    var heartbeat = Handler?.MauiContext?.Services.GetService<HeartbeatService>();
+                    heartbeat?.Stop();
+                }
+                catch { }
+
+                // Notify server to clear online status immediately
+                try
+                {
+                    var httpClient = Handler?.MauiContext?.Services.GetService<HttpClient>();
+                    if (httpClient != null)
+                    {
+                        var token = await SecureStorage.GetAsync("auth_token");
+                        if (!string.IsNullOrEmpty(token))
+                        {
+                            await httpClient.PostAsync("api/users/logout", null);
+                        }
+                        else
+                        {
+                            var deviceId = Preferences.Default.Get("guest_device_id", "");
+                            if (!string.IsNullOrEmpty(deviceId))
+                            {
+                                await httpClient.PostAsJsonAsync("api/users/guest-logout",
+                                    new { DeviceId = deviceId });
+                            }
+                        }
+                    }
+                }
+                catch { }
+
+                SecureStorage.Remove("auth_token");
                 await Shell.Current.GoToAsync("//LoginPage");
             }
         }

@@ -1,0 +1,389 @@
+@startuml Activity_01_Login
+skinparam activity {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+    DiamondBackgroundColor #FFF9C4
+    DiamondBorderColor #F57F17
+}
+
+title Sơ đồ Activity 1: Quy trình Đăng nhập
+
+start
+
+:Người dùng mở ứng dụng;
+
+if (Đã có token trong SecureStorage?) then (Có)
+    :Lấy token từ SecureStorage;
+    :Gọi API GetMe() kiểm tra token;
+    
+    if (Token hợp lệ?) then (Có)
+        if (Role == "Restaurant"?) then (Có)
+            :Chuyển đến **RestaurantDashboardPage**;
+        else (Không)
+            :Chuyển đến **CustomerHomePage**;
+        endif
+        stop
+    else (Không / Hết hạn)
+        :Xóa token cũ;
+    endif
+endif
+
+:Hiển thị **LoginPage**;
+:Người dùng nhập Email + Mật khẩu;
+:Nhấn nút "Đăng nhập";
+
+:Gọi API POST /api/users/app-login;
+
+if (Email tồn tại?) then (Có)
+    :BCrypt.Verify(password, hash);
+    
+    if (Mật khẩu đúng?) then (Đúng)
+        if (Tài khoản Active?) then (Active)
+            :Tạo JWT Token;
+            :Lưu token vào SecureStorage;
+            :Lưu role, fullName vào Preferences;
+            
+            if (Role == "Restaurant"?) then (Có)
+                :Chuyển đến\n**RestaurantDashboardPage**;
+            else (Không)
+                :Chuyển đến\n**CustomerHomePage**;
+            endif
+        else (Bị khóa)
+            :Hiển thị "Tài khoản đã bị khóa";
+        endif
+    else (Sai)
+        :Hiển thị "Sai email hoặc mật khẩu";
+    endif
+else (Không)
+    :Hiển thị "Sai email hoặc mật khẩu";
+endif
+
+stop
+
+@enduml
+
+
+' ================================================================
+
+
+@startuml Activity_02_Payment
+skinparam activity {
+    BackgroundColor #FFEBEE
+    BorderColor #D32F2F
+    DiamondBackgroundColor #FFF9C4
+    DiamondBorderColor #F57F17
+}
+
+title Sơ đồ Activity 2: Quy trình Thanh toán (Tour / Nhà hàng)
+
+start
+
+:Người dùng chọn Tour\nhoặc Đăng ký nhà hàng;
+
+:Mở **PaymentPage**\n(TourPaymentPage / RestaurantPaymentPage);
+
+:Gọi API tạo Payment\n(POST /api/payments/purchase-tour\nhoặc register-restaurant);
+
+if (Đã mua/đăng ký rồi?) then (Đã mua)
+    :Hiển thị "Bạn đã mua rồi";
+    stop
+else (Chưa)
+endif
+
+if (Có Payment Pending?) then (Có)
+    :Dùng lại Payment cũ;
+else (Chưa)
+    :Tạo Payment mới\n(Status = "Pending")\nTransactionId = "TPA{PaymentId}";
+endif
+
+:Tạo URL VietQR:\nhttps://img.vietqr.io/image/\n{bankId}-{accountNo}\n?amount=X&addInfo=TPA{id};
+
+:Tải và hiển thị **mã QR**\ntrên màn hình;
+
+:Hiển thị thông tin chuyển khoản:\nNgân hàng, STK, Số tiền,\nNội dung CK;
+
+fork
+    :Bắt đầu **Polling**\n(mỗi 3 giây);
+    
+    repeat
+        :Gọi API check-tour/{id}\nhoặc check-restaurant/{id};
+        
+        if (isPurchased / isPaid == true?) then (Đã thanh toán)
+            :Dừng Polling;
+            :Hiển thị ✅ "Thành công!";
+            :Quay về trang trước;
+            stop
+        else (Chưa)
+            :Đợi 3 giây;
+        endif
+    repeat while (Chưa thanh toán)
+
+fork again
+    :Người dùng quét QR\nbằng app ngân hàng;
+    :Chuyển khoản đúng\nsố tiền + nội dung CK;
+    
+    :Ngân hàng thông báo\ncho **SePay**;
+    
+    :SePay gọi **Webhook**\nPOST /api/payments/webhook\n{ content: "TPA123",\ntransferAmount: X };
+    
+    :API tìm Payment theo\nregex TPA(\\d+);
+    
+    if (Số tiền đủ?) then (Đủ)
+        :Payment.Status = "Success";
+        
+        if (PaymentType?) then
+            if (TourPurchase) then (Tour)
+                :Tour đã mở khóa;
+            elseif (RestaurantRegistration) then (Nhà hàng thường)
+                :Restaurant.IsApproved = true;
+            elseif (RestaurantRegistrationPremium) then (Nhà hàng Premium)
+                :Restaurant.IsApproved = true\nRestaurant.IsPremium = true\nPremiumExpireDate = +1 năm;
+            endif
+        endif
+    else (Không đủ)
+        :Từ chối "Amount insufficient";
+    endif
+
+end fork
+
+stop
+
+@enduml
+
+
+' ================================================================
+
+
+@startuml Activity_03_GPSTour
+skinparam activity {
+    BackgroundColor #F3E5F5
+    BorderColor #6A1B9A
+    DiamondBackgroundColor #FFF9C4
+    DiamondBorderColor #F57F17
+}
+
+title Sơ đồ Activity 3: Đi Tour GPS + Thuyết minh tự động
+
+start
+
+:Người dùng chọn Tour\ntừ **TourListPage**;
+
+if (Tour có giá > 0?) then (Trả phí)
+    if (Đã mua tour?) then (Đã mua)
+    else (Chưa)
+        :Chuyển đến **TourPaymentPage**;
+        :Thanh toán tour;
+        note right: Xem Activity 2
+    endif
+else (Miễn phí)
+endif
+
+:Mở **TourDetailPage**;
+:Hiển thị thông tin Tour\n+ Danh sách POI;
+
+:Nhấn "Bắt đầu Tour";
+:Mở **POIMapPage**;
+
+:Hiển thị bản đồ\nvới các Pin nhà hàng;
+
+:StartLocationUpdates();
+:Tạo CancellationTokenSource;
+:Tạo SessionId cho Analytics;
+
+repeat
+    :Lấy vị trí GPS hiện tại;
+    :Cập nhật vị trí trên bản đồ;
+    
+    :Gửi TrackPoint\nPOST /api/analytics/track-point;
+    
+    :Tính khoảng cách tới\nmỗi POI (nhà hàng);
+    
+    if (Có POI nào trong bán kính\nphát hiện? (mặc định 5m)) then (Có)
+        if (Đã phát cho POI này\ntrong phiên?) then (Đã phát)
+        else (Chưa phát)
+            :Lấy ngôn ngữ hiện tại\ntừ LanguageService;
+            
+            :Tìm Narration theo\nlanguageCode;
+            
+            if (Có audio file\ntrên server?) then (Có)
+                :Tải audio từ server\nGET /audios/{file};
+                
+                if (Tải thành công?) then (OK)
+                    :Phát audio bằng\nAudioManager;
+                else (Lỗi 404)
+                    :Dùng TextToSpeech\nđọc textContent;
+                endif
+            else (Không có audio)
+                :Dùng TextToSpeech\nđọc textContent;
+            endif
+            
+            :Gửi NarrationPlayLog\nPOST /api/analytics/narration-play;
+            
+            :Đánh dấu đã phát\ncho POI này;
+        endif
+    else (Không)
+    endif
+    
+    :Đợi 3 giây;
+    
+repeat while (CancellationToken\nchưa bị Cancel?)
+
+:StopLocationUpdates();
+
+stop
+
+@enduml
+
+
+' ================================================================
+
+
+@startuml Activity_04_ManageRestaurant
+skinparam activity {
+    BackgroundColor #FFF3E0
+    BorderColor #E65100
+    DiamondBackgroundColor #FFF9C4
+    DiamondBorderColor #F57F17
+}
+
+title Sơ đồ Activity 4: Quản lý Nhà hàng (Chủ nhà hàng)
+
+start
+
+:Chủ nhà hàng đăng nhập\n(Role = "Restaurant");
+
+:Mở **RestaurantDashboardPage**;
+
+:Gọi GET /api/restaurants/my;
+
+if (Đã có nhà hàng?) then (Có)
+    :Hiển thị thông tin nhà hàng\n+ Trạng thái (Approved/Pending);
+    
+    fork
+        :Chỉnh sửa thông tin\n(**EditRestaurantPage**);
+        :Gọi PUT /api/restaurants/update-my\n(multipart/form-data);
+    fork again
+        :Quản lý món ăn\n(**DishListPage**);
+        :Xem danh sách món ăn;
+        
+        if (Thêm món mới?) then (Có)
+            :Mở **AddDishPage**;
+            :Nhập tên, chọn ảnh,\nghi âm audio, chọn ngôn ngữ;
+            :POST /api/dishes (form-data);
+            
+            if (Premium hoặc < 8 món?) then (OK)
+                :Lưu món ăn + thuyết minh;
+            else (Quá giới hạn)
+                :Hiển thị "Nâng cấp Premium";
+            endif
+        endif
+    fork again
+        :Nâng cấp Premium\n(**UpgradePremiumPage**);
+        :Chuyển đến thanh toán;
+        note right: Xem Activity 2
+    fork again
+        :Xem mã QR nhà hàng\n(**RestaurantQRPage**);
+        :GET /api/restaurants/{id}/qrcode;
+        :Hiển thị QR để\nchia sẻ / in;
+    fork again
+        :Nghe thuyết minh\n(**MyAudiosPage**);
+        :Xem/Nghe audio\nđã tạo;
+    end fork
+    
+else (Chưa có)
+    :Hiển thị form đăng ký\nnhà hàng mới;
+    :Nhập thông tin nhà hàng;
+    :Chọn gói Thường / Premium;
+    :Chuyển đến thanh toán;
+    note right: Xem Activity 2
+endif
+
+stop
+
+@enduml
+
+
+' ================================================================
+
+
+@startuml Activity_05_ChangeLanguage
+skinparam activity {
+    BackgroundColor #E0F7FA
+    BorderColor #00695C
+    DiamondBackgroundColor #FFF9C4
+    DiamondBorderColor #F57F17
+}
+
+title Sơ đồ Activity 5: Đổi ngôn ngữ + Dịch thuật tự động
+
+start
+
+:Người dùng mở **CustomerHomePage**;
+
+:Chọn ngôn ngữ từ Picker\n(VI / EN / JA / FR / KO / ZH / TH);
+
+:LanguageService.SetLanguage(code);
+:Lưu vào Preferences;
+
+:Cập nhật tất cả Label\ntrên giao diện (i18n);
+
+if (Ngôn ngữ != "vi"?) then (Khác tiếng Việt)
+    :Gọi TranslationService\n.TranslateRestaurantsAsync();
+    
+    repeat :Dịch từng nhà hàng;
+        :Kiểm tra cache\n(ConcurrentDictionary);
+        
+        if (Có trong cache?) then (Có)
+            :Dùng bản dịch từ cache;
+        else (Không)
+            :Gọi MyMemory API\nhttps://api.mymemory.translated.net;
+            :Lưu kết quả vào cache\n+ Preferences;
+        endif
+    repeat while (Còn nhà hàng chưa dịch?)
+    
+    :Cập nhật danh sách\nnhà hàng đã dịch;
+else (Tiếng Việt)
+    :Hiển thị dữ liệu gốc;
+endif
+
+:Giao diện đã được\ncập nhật ngôn ngữ mới;
+
+stop
+
+@enduml
+
+
+' ================================================================
+
+
+@startuml Activity_06_OfflineSync
+skinparam activity {
+    BackgroundColor #ECEFF1
+    BorderColor #37474F
+    DiamondBackgroundColor #FFF9C4
+    DiamondBorderColor #F57F17
+}
+
+title Sơ đồ Activity 6: Đồng bộ dữ liệu Offline
+
+start
+
+:Người dùng mở **SettingsPage**;
+:Nhấn "Tải dữ liệu Offline";
+
+:OfflineSyncService.SyncOfflineDataAsync();
+
+:Gọi GET /api/restaurants;
+:Nhận danh sách nhà hàng\n+ thuyết minh;
+
+:Lưu vào SQLite cục bộ\n(PoiDbContext);
+
+:Cập nhật thời gian\nđồng bộ cuối;
+
+:Lưu "last_offline_sync"\nvào Preferences;
+
+:Hiển thị "Đồng bộ thành công"\n+ Thời gian;
+
+stop
+
+@enduml

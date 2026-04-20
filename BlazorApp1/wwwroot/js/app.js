@@ -233,7 +233,7 @@ window.initJourneyMap = (elementId) => {
     return true;
 };
 
-window.updateHeatmap = (data) => {
+window.updateHeatmap = (data, thresholds) => {
     console.log('[Heatmap] updateHeatmap called, data length:', data?.length, 'map exists:', !!window._heatmapMap);
     if (!window._heatmapMap) { console.log('[Heatmap] NO MAP - aborting'); return; }
 
@@ -247,6 +247,33 @@ window.updateHeatmap = (data) => {
 
     if (!data || data.length === 0) { console.log('[Heatmap] No data - aborting'); return; }
 
+    // Default thresholds if not provided
+    if (!thresholds || thresholds.length === 0) {
+        thresholds = [
+            { min: 0, color: '#4CAF50', label: 'Rất thấp' },
+            { min: 10, color: '#8BC34A', label: 'Thấp' },
+            { min: 30, color: '#FFEB3B', label: 'Trung bình' },
+            { min: 60, color: '#FF9800', label: 'Cao' },
+            { min: 100, color: '#F44336', label: 'Rất cao' }
+        ];
+    }
+    // Sort descending so we match the highest threshold first
+    thresholds.sort((a, b) => b.min - a.min);
+
+    function getColorForCount(count) {
+        for (var i = 0; i < thresholds.length; i++) {
+            if (count >= thresholds[i].min) return thresholds[i].color;
+        }
+        return thresholds[thresholds.length - 1].color;
+    }
+
+    function getLabelForCount(count) {
+        for (var i = 0; i < thresholds.length; i++) {
+            if (count >= thresholds[i].min) return thresholds[i].label || '';
+        }
+        return '';
+    }
+
     console.log('[Heatmap] First item:', JSON.stringify(data[0]));
 
     // Build heatmap points: [lat, lng, intensity]
@@ -255,24 +282,25 @@ window.updateHeatmap = (data) => {
     const bounds = [];
 
     data.forEach(d => {
-        // Use explicit number check instead of truthy (0 is valid coord in some cases)
         if (typeof d.lat === 'number' && typeof d.lng === 'number' &&
             (Math.abs(d.lat) > 0.0001 || Math.abs(d.lng) > 0.0001)) {
             const intensity = d.count / maxCount;
             heatPoints.push([d.lat, d.lng, intensity]);
             bounds.push([d.lat, d.lng]);
 
-            // Add info markers
-            const marker = L.circleMarker([d.lat, d.lng], {
-                radius: Math.max(6, Math.min(20, d.count * 3)),
-                fillColor: '#e53935',
-                color: '#b71c1c',
-                weight: 2,
-                opacity: 0.9,
-                fillOpacity: 0.6
-            })
-            .addTo(window._heatmapMap)
-            .bindPopup('<b>' + d.name + '</b><br/>Lượt truy cập: <b>' + d.count + '</b>');
+            // Colored pin marker based on visit count thresholds
+            var pinColor = getColorForCount(d.count);
+            var pinLabel = getLabelForCount(d.count);
+            var icon = L.divIcon({
+                className: '',
+                html: '<div style="background:' + pinColor + ';color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4);">' + d.count + '</div>',
+                iconSize: [32, 32],
+                iconAnchor: [16, 16],
+                popupAnchor: [0, -18]
+            });
+            var marker = L.marker([d.lat, d.lng], { icon: icon })
+                .addTo(window._heatmapMap)
+                .bindPopup('<b>' + d.name + '</b><br/>Lượt ghé: <b>' + d.count + '</b><br/>Mức: <span style="color:' + pinColor + ';font-weight:bold;">' + pinLabel + '</span>');
             window._heatmapMarkers.push(marker);
         }
     });
@@ -285,7 +313,7 @@ window.updateHeatmap = (data) => {
             blur: 25,
             maxZoom: 17,
             max: 1.0,
-            gradient: { 0.2: '#2196F3', 0.4: '#66BB6A', 0.6: '#FFEE58', 0.8: '#FF9800', 1.0: '#F44336' }
+            gradient: { 0.2: '#4CAF50', 0.4: '#8BC34A', 0.6: '#FFEB3B', 0.8: '#FF9800', 1.0: '#F44336' }
         }).addTo(window._heatmapMap);
     }
 
@@ -380,4 +408,107 @@ window.destroyAnalyticsMap = () => {
     window._heatmapMarkers = [];
     window._journeyMarkers = [];
     window._journeyLines = [];
+};
+
+// ===== Live Visitors Map =====
+window._liveMap = null;
+window._liveMarkers = [];
+
+window.initLiveVisitorsMap = (elementId) => {
+    const el = document.getElementById(elementId);
+    if (!el || el.offsetWidth === 0) return false;
+
+    if (window._liveMap) {
+        try { window._liveMap.remove(); } catch (e) { }
+        window._liveMap = null;
+    }
+    window._liveMarkers = [];
+
+    window._liveMap = L.map(elementId).setView([10.762622, 106.660172], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap'
+    }).addTo(window._liveMap);
+
+    setTimeout(() => { if (window._liveMap) window._liveMap.invalidateSize(); }, 400);
+    setTimeout(() => { if (window._liveMap) window._liveMap.invalidateSize(); }, 1000);
+    return true;
+};
+
+window.updateLiveVisitors = (visitors, perRestaurant, thresholds) => {
+    if (!window._liveMap) return;
+
+    (window._liveMarkers || []).forEach(m => m.remove());
+    window._liveMarkers = [];
+
+    if (!thresholds || thresholds.length === 0) {
+        thresholds = [
+            { min: 0, color: '#4CAF50' },
+            { min: 3, color: '#8BC34A' },
+            { min: 5, color: '#FFEB3B' },
+            { min: 10, color: '#FF9800' },
+            { min: 20, color: '#F44336' }
+        ];
+    }
+    thresholds.sort((a, b) => b.min - a.min);
+
+    function getColor(count) {
+        for (var i = 0; i < thresholds.length; i++) {
+            if (count >= thresholds[i].min) return thresholds[i].color;
+        }
+        return '#4CAF50';
+    }
+
+    const bounds = [];
+
+    // Show restaurant pins with visitor counts
+    if (perRestaurant && perRestaurant.length > 0) {
+        perRestaurant.forEach(r => {
+            if (Math.abs(r.latitude) < 0.0001 && Math.abs(r.longitude) < 0.0001) return;
+            var color = getColor(r.visitorCount);
+            var icon = L.divIcon({
+                className: '',
+                html: '<div style="background:' + color + ';color:#fff;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.4);">' + r.visitorCount + '</div>',
+                iconSize: [36, 36],
+                iconAnchor: [18, 18],
+                popupAnchor: [0, -20]
+            });
+            var m = L.marker([r.latitude, r.longitude], { icon: icon })
+                .addTo(window._liveMap)
+                .bindPopup('<b>' + r.name + '</b><br/>Khách đang ở đây: <b>' + r.visitorCount + '</b>');
+            window._liveMarkers.push(m);
+            bounds.push([r.latitude, r.longitude]);
+        });
+    }
+
+    // Show individual visitor dots
+    if (visitors && visitors.length > 0) {
+        visitors.forEach(v => {
+            if (Math.abs(v.lat) < 0.0001 && Math.abs(v.lng) < 0.0001) return;
+            var color = v.type === 'user' ? '#1565C0' : '#9E9E9E';
+            var marker = L.circleMarker([v.lat, v.lng], {
+                radius: 5,
+                fillColor: color,
+                color: '#fff',
+                weight: 1,
+                fillOpacity: 0.7
+            })
+            .addTo(window._liveMap)
+            .bindPopup('<b>' + v.label + '</b><br/>Loại: ' + (v.type === 'user' ? '👤 Đã đăng ký' : '🕶️ Khách vãng lai'));
+            window._liveMarkers.push(marker);
+            bounds.push([v.lat, v.lng]);
+        });
+    }
+
+    if (bounds.length > 0) {
+        window._liveMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+    }
+    window._liveMap.invalidateSize();
+};
+
+window.destroyLiveMap = () => {
+    if (window._liveMap) {
+        try { window._liveMap.remove(); } catch (e) { }
+        window._liveMap = null;
+    }
+    window._liveMarkers = [];
 };

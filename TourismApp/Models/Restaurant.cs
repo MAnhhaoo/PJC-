@@ -18,6 +18,7 @@ namespace TourismApp.Models
         public bool IsActive { get; set; } = true;
         public int PremiumLevel { get; set; } = 0;
         public bool IsApproved { get; set; }
+        public double BroadcastRadius { get; set; } = 50;
         public DateTime? PremiumExpireDate { get; set; }
         public List<Narration> Narrations { get; set; } = new List<Narration>();
         public double Distance { get; set; }

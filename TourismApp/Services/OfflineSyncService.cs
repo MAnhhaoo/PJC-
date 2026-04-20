@@ -18,7 +18,7 @@ public class OfflineSyncService
         EnsureSchemaUpToDate();
     }
 
-    private const int SchemaVersion = 6;
+    private const int SchemaVersion = 7;
 
     private void EnsureSchemaUpToDate()
     {
@@ -89,7 +89,8 @@ public class OfflineSyncService
                 IsActive = r.IsActive,
                 PremiumLevel = r.PremiumLevel,
                 IsApproved = r.IsApproved,
-                PremiumExpireDate = r.PremiumExpireDate
+                PremiumExpireDate = r.PremiumExpireDate,
+                BroadcastRadius = r.BroadcastRadius
             });
         }
         await _db.SaveChangesAsync();

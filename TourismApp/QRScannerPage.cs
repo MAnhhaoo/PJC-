@@ -78,11 +78,29 @@ public class QRScannerPage : ContentPage
         var value = result.Value;
         if (string.IsNullOrEmpty(value)) return;
 
-        const string prefix = "tourismapp://restaurant/";
-        if (!value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) return;
+        int restaurantId = -1;
+        bool isHomeLink = false;
 
-        var idStr = value.Substring(prefix.Length);
-        if (!int.TryParse(idStr, out var restaurantId)) return;
+        // Support tourismapp://home — navigate to home page
+        if (value.StartsWith("tourismapp://home", StringComparison.OrdinalIgnoreCase))
+        {
+            isHomeLink = true;
+        }
+        // Support old format: tourismapp://restaurant/{id}
+        else if (value.StartsWith("tourismapp://restaurant/", StringComparison.OrdinalIgnoreCase))
+        {
+            var idStr = value.Substring("tourismapp://restaurant/".Length);
+            int.TryParse(idStr, out restaurantId);
+        }
+        // Support new HTTP format: http(s)://.../r/{id}
+        else if (Uri.TryCreate(value, UriKind.Absolute, out var uri)
+                 && uri.Segments.Length >= 2
+                 && uri.Segments[uri.Segments.Length - 2].TrimEnd('/') == "r")
+        {
+            int.TryParse(uri.Segments[uri.Segments.Length - 1].TrimEnd('/'), out restaurantId);
+        }
+
+        if (!isHomeLink && restaurantId <= 0) return;
 
         _isNavigating = true;
         _barcodeReader.IsDetecting = false;
@@ -91,11 +109,18 @@ public class QRScannerPage : ContentPage
         {
             try
             {
-                await Shell.Current.GoToAsync($"{nameof(RestaurantDetailPage)}?restaurantId={restaurantId}");
+                if (isHomeLink)
+                {
+                    await Shell.Current.GoToAsync("//CustomerHomePage");
+                }
+                else
+                {
+                    await Shell.Current.GoToAsync($"{nameof(RestaurantDetailPage)}?restaurantId={restaurantId}");
+                }
             }
             catch (Exception ex)
             {
-                await DisplayAlert("Lỗi", "Không thể mở nhà hàng: " + ex.Message, "OK");
+                await DisplayAlert("Lỗi", "Không thể mở: " + ex.Message, "OK");
                 _isNavigating = false;
                 _barcodeReader.IsDetecting = true;
             }

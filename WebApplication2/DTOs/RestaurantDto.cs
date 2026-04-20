@@ -13,6 +13,7 @@
         public bool IsPremium { get; set; }
         public bool IsActive { get; set; }
         public bool IsApproved { get; set; }
+        public double BroadcastRadius { get; set; } = 50;
         public DateTime? PremiumExpireDate { get; set; }
         public List<NarrationDto> Narrations { get; set; } = new List<NarrationDto>();
     }

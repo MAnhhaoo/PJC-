@@ -1,0 +1,303 @@
+@startuml State_01_Payment
+skinparam state {
+    BackgroundColor #FFFDE7
+    BorderColor #F57F17
+}
+
+title Sơ đồ State 1: Trạng thái Thanh toán (Payment)
+
+[*] --> Pending : Người dùng tạo\nyêu cầu thanh toán
+
+state Pending #FFF9C4 {
+    Pending : Đang chờ chuyển khoản
+    Pending : TransactionId = "TPA{id}"
+    Pending : App đang Polling mỗi 3s
+}
+
+state Success #C8E6C9 {
+    Success : Đã thanh toán thành công
+    Success : Xác nhận qua SePay Webhook
+    Success : hoặc Admin xác nhận thủ công
+}
+
+state Failed #FFCDD2 {
+    Failed : Thanh toán thất bại
+    Failed : Số tiền không đủ
+}
+
+state Cancelled #ECEFF1 {
+    Cancelled : Người dùng hủy
+    Cancelled : Thoát trang thanh toán
+}
+
+Pending --> Success : SePay Webhook\nxác nhận\n(amount >= required)
+Pending --> Success : Admin gọi\nPOST /confirm/{id}
+Pending --> Failed : Số tiền\nkhông đủ
+Pending --> Cancelled : Người dùng\nthoát trang\n(OnDisappearing)
+
+Success --> [*]
+Failed --> [*]
+Cancelled --> [*]
+
+note right of Success
+  Tùy PaymentType:
+  - TourPurchase → Mở khóa tour
+  - RestaurantRegistration → IsApproved = true
+  - RestaurantRegistrationPremium → IsApproved + IsPremium
+  - RestaurantPremium → IsPremium = true
+  - UserUpgrade → UserLevel = 1
+end note
+
+@enduml
+
+
+' ================================================================
+
+
+@startuml State_02_Restaurant
+skinparam state {
+    BackgroundColor #E8F5E9
+    BorderColor #2E7D32
+}
+
+title Sơ đồ State 2: Trạng thái Nhà hàng (Restaurant)
+
+[*] --> ChuaDangKy
+
+state ChuaDangKy #ECEFF1 {
+    ChuaDangKy : Chủ nhà hàng chưa\nđăng ký nhà hàng
+}
+
+state ChoDuyet #FFF9C4 {
+    ChoDuyet : IsApproved = false
+    ChoDuyet : Đã tạo Restaurant
+    ChoDuyet : Đang chờ thanh toán
+}
+
+state HoatDongThuong #C8E6C9 {
+    HoatDongThuong : IsApproved = true
+    HoatDongThuong : IsPremium = false
+    HoatDongThuong : Giới hạn 8 món ăn
+    HoatDongThuong : Hiển thị trên app
+}
+
+state HoatDongPremium #B3E5FC {
+    HoatDongPremium : IsApproved = true
+    HoatDongPremium : IsPremium = true
+    HoatDongPremium : Không giới hạn món
+    HoatDongPremium : Ưu tiên hiển thị
+}
+
+state HetHanPremium #FFE0B2 {
+    HetHanPremium : PremiumExpireDate < now
+    HetHanPremium : Tự động hạ về Thường
+}
+
+ChuaDangKy --> ChoDuyet : Chủ nhà hàng\nnhấn "Đăng ký"\n+ Tạo Restaurant
+
+ChoDuyet --> HoatDongThuong : Thanh toán gói Thường\nthành công\n(SePay Webhook)
+
+ChoDuyet --> HoatDongPremium : Thanh toán gói Premium\nthành công\n(SePay Webhook)
+
+HoatDongThuong --> HoatDongPremium : Nâng cấp Premium\n+ Thanh toán thành công
+
+HoatDongPremium --> HetHanPremium : PremiumExpireDate\nhết hạn
+
+HetHanPremium --> HoatDongThuong : Tự động hạ\nvề gói Thường
+
+HetHanPremium --> HoatDongPremium : Gia hạn Premium\n+ Thanh toán
+
+ChoDuyet --> ChuaDangKy : Hủy đăng ký\n(CancelRestaurantPayment)\nXóa Restaurant + Payment
+
+@enduml
+
+
+' ================================================================
+
+
+@startuml State_03_User
+skinparam state {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+}
+
+title Sơ đồ State 3: Trạng thái Người dùng (User)
+
+[*] --> ChuaDangKy
+
+state ChuaDangKy #ECEFF1 {
+    ChuaDangKy : Chưa có tài khoản
+    ChuaDangKy : Có thể dùng chế độ\nẩn danh (Guest)
+}
+
+state Active #C8E6C9 {
+
+    state UserThuong #E8F5E9 {
+        UserThuong : UserLevel = 0
+        UserThuong : Chức năng cơ bản
+    }
+    
+    state UserVIP #B3E5FC {
+        UserVIP : UserLevel = 1
+        UserVIP : Đã nâng cấp VIP
+        UserVIP : Chức năng nâng cao
+    }
+    
+    UserThuong --> UserVIP : Nâng cấp VIP\n(UserUpgrade Payment)
+}
+
+state Banned #FFCDD2 {
+    Banned : Status = "Banned"
+    Banned : Không thể đăng nhập
+    Banned : Admin đã khóa
+}
+
+ChuaDangKy --> Active : Đăng ký tài khoản\nPOST /api/users/register
+
+Active --> Banned : Admin khóa\nToggleStatus()
+
+Banned --> Active : Admin mở khóa\nToggleStatus()
+
+@enduml
+
+
+' ================================================================
+
+
+@startuml State_04_Tour
+skinparam state {
+    BackgroundColor #F3E5F5
+    BorderColor #6A1B9A
+}
+
+title Sơ đồ State 4: Trạng thái Tour Du lịch
+
+[*] --> TourActive
+
+state TourActive #E8F5E9 {
+    TourActive : IsActive = true
+    TourActive : Hiển thị trên app
+
+    state TourMienPhi #C8E6C9 {
+        TourMienPhi : Price = 0
+        TourMienPhi : Ai cũng có thể đi
+    }
+    
+    state TourTraPhi #B3E5FC {
+        TourTraPhi : Price > 0
+        TourTraPhi : Cần mua để mở khóa
+    }
+}
+
+state TourInactive #ECEFF1 {
+    TourInactive : IsActive = false
+    TourInactive : Không hiển thị
+    TourInactive : Admin đã tắt
+}
+
+TourActive --> TourInactive : Admin tắt Tour\n(IsActive = false)
+TourInactive --> TourActive : Admin bật lại\n(IsActive = true)
+
+' ===== Trạng thái User với Tour =====
+
+state "Trạng thái người dùng\nvới Tour trả phí" as UserTourState {
+    state ChuaMua #FFF9C4 {
+        ChuaMua : Chưa thanh toán
+        ChuaMua : Chỉ xem thông tin
+    }
+    
+    state DangThanhToan #FFE0B2 {
+        DangThanhToan : Payment Pending
+        DangThanhToan : Đang hiện QR
+    }
+    
+    state DaMua #C8E6C9 {
+        DaMua : Payment Success
+        DaMua : Có thể đi Tour
+    }
+    
+    state DangDiTour #B3E5FC {
+        DangDiTour : GPS đang theo dõi
+        DangDiTour : Auto-play thuyết minh
+        DangDiTour : Gửi TrackPoint
+    }
+    
+    ChuaMua --> DangThanhToan : Nhấn "Mua Tour"
+    DangThanhToan --> DaMua : SePay xác nhận\nthanh toán
+    DangThanhToan --> ChuaMua : Hủy thanh toán\n(Thoát trang)
+    DaMua --> DangDiTour : Nhấn "Bắt đầu Tour"
+    DangDiTour --> DaMua : Dừng Tour\n(StopLocationUpdates)
+}
+
+@enduml
+
+
+' ================================================================
+
+
+@startuml State_05_Narration
+skinparam state {
+    BackgroundColor #E0F2F1
+    BorderColor #00695C
+}
+
+title Sơ đồ State 5: Trạng thái phát Thuyết minh (Narration)
+
+[*] --> ChuaPhat
+
+state ChuaPhat #ECEFF1 {
+    ChuaPhat : Người dùng chưa\nđến gần POI
+    ChuaPhat : hoặc chưa nhấn phát
+}
+
+state DangTimNarration #FFF9C4 {
+    DangTimNarration : Tìm Narration theo\nlanguageCode hiện tại
+}
+
+state DangTaiAudio #FFE0B2 {
+    DangTaiAudio : GET /audios/{file}
+    DangTaiAudio : Tải file audio từ server
+}
+
+state DangPhatAudio #C8E6C9 {
+    DangPhatAudio : AudioManager đang phát
+    DangPhatAudio : file audio
+}
+
+state DangPhatTTS #B3E5FC {
+    DangPhatTTS : TextToSpeech.SpeakAsync()
+    DangPhatTTS : Đọc textContent
+}
+
+state DaPhat #E8EAF6 {
+    DaPhat : Đã phát xong
+    DaPhat : Log NarrationPlayLog
+    DaPhat : Đánh dấu đã phát
+}
+
+state Loi #FFCDD2 {
+    Loi : Không có Narration
+    Loi : hoặc lỗi phát
+}
+
+ChuaPhat --> DangTimNarration : Người dùng đến gần POI\n(khoảng cách <= bán kính)\nhoặc nhấn nút phát
+
+DangTimNarration --> DangTaiAudio : Tìm thấy Narration\ncó AudioUrl
+
+DangTimNarration --> DangPhatTTS : Tìm thấy Narration\nchỉ có TextContent\n(không có audio)
+
+DangTimNarration --> Loi : Không tìm thấy\nNarration cho ngôn ngữ này
+
+DangTaiAudio --> DangPhatAudio : Tải audio\nthành công (200 OK)
+
+DangTaiAudio --> DangPhatTTS : Lỗi tải audio (404)\nFallback sang TTS
+
+DangPhatAudio --> DaPhat : Phát xong
+
+DangPhatTTS --> DaPhat : Đọc xong
+
+DaPhat --> ChuaPhat : Chuyển sang\nPOI tiếp theo
+
+Loi --> ChuaPhat : Bỏ qua POI này
+
+@enduml

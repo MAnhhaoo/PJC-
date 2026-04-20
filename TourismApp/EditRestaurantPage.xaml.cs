@@ -37,6 +37,9 @@ public partial class EditRestaurantPage : ContentPage
             try
             {
                 var uri = new Uri(imageValue);
+                // External URL (different host from our server) — return as-is
+                if (_httpClient.BaseAddress == null || !string.Equals(uri.Host, _httpClient.BaseAddress.Host, StringComparison.OrdinalIgnoreCase))
+                    return imageValue;
                 return new Uri(_httpClient.BaseAddress!, uri.PathAndQuery).ToString();
             }
             catch { return imageValue; }
@@ -150,6 +153,10 @@ public partial class EditRestaurantPage : ContentPage
                 _longitude = res.GetProperty("longitude").GetDouble();
                 lblLocation.Text = $"Tọa độ: {_latitude:F4}, {_longitude:F4}";
                 UpdateLocationPin();
+
+                // Load broadcast radius
+                if (res.TryGetProperty("broadcastRadius", out var br))
+                    txtBroadcastRadius.Text = br.GetDouble().ToString(CultureInfo.InvariantCulture);
 
                 // If restaurant already has valid coordinates, show as confirmed
                 if (IsValidCoordinates(_latitude, _longitude))
@@ -369,6 +376,10 @@ public partial class EditRestaurantPage : ContentPage
             content.Add(new StringContent(txtPhone.Text ?? ""), "phone");
             content.Add(new StringContent(_latitude.ToString(CultureInfo.InvariantCulture)), "latitude");
             content.Add(new StringContent(_longitude.ToString(CultureInfo.InvariantCulture)), "longitude");
+
+            // Broadcast radius
+            if (double.TryParse(txtBroadcastRadius.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out var radius) && radius > 0)
+                content.Add(new StringContent(radius.ToString(CultureInfo.InvariantCulture)), "broadcastRadius");
 
             // Image
             if (_selectedImageBytes != null)

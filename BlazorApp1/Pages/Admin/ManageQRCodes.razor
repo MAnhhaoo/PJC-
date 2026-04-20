@@ -10,7 +10,34 @@
 <div class="pa-4 mt-10">
     <MudText Typo="Typo.h4" Class="mb-6">Quản lý mã QR nhà hàng</MudText>
 
-    <MudTable Items="@_restaurants" Hover="true" Loading="@_loading" Bordered="true" Striped="true">
+    @* App QR Code - always first *@
+    <MudPaper Class="pa-4 mb-4" Elevation="2">
+        <MudStack Row="true" AlignItems="AlignItems.Center">
+            <img src="@GetAppQRCodeUrl()" alt="QR App" style="width:120px;height:120px;" />
+            <MudStack>
+                <MudText Typo="Typo.h6">📱 App</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Mã QR mở ứng dụng Tourism App</MudText>
+                <MudStack Row="true">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.Download"
+                               OnClick="@(() => DownloadAppQR())">
+                        Tải xuống
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Secondary" Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.Print"
+                               OnClick="@(() => PrintAppQR())">
+                        In
+                    </MudButton>
+                </MudStack>
+            </MudStack>
+        </MudStack>
+    </MudPaper>
+
+    <MudTable T="QRRestaurantItem"
+              @ref="_table"
+              ServerData="LoadServerData"
+              RowsPerPage="10"
+              Hover="true" Bordered="true" Striped="true">
         <HeaderContent>
             <MudTh>ID</MudTh>
             <MudTh>Tên nhà hàng</MudTh>
@@ -39,33 +66,48 @@
                 </MudStack>
             </MudTd>
         </RowTemplate>
+        <PagerContent>
+            <MudTablePager PageSizeOptions="new int[] { 10, 25, 50 }" />
+        </PagerContent>
     </MudTable>
 </div>
 
 @code {
-    private List<QRRestaurantItem> _restaurants = new();
-    private bool _loading = true;
+    private MudTable<QRRestaurantItem>? _table;
 
-    protected override async Task OnInitializedAsync() => await LoadData();
-
-    private async Task LoadData()
+    private async Task<TableData<QRRestaurantItem>> LoadServerData(TableState state, CancellationToken token)
     {
-        _loading = true;
         try
         {
-            var list = await ApiService.GetFromJsonAsync<List<QRRestaurantItem>>("api/restaurants") ?? new();
-            _restaurants = list;
+            var page = state.Page + 1;
+            var pageSize = state.PageSize;
+            var result = await ApiService.GetFromJsonAsync<QRPagedResult>(
+                $"api/restaurants/admin/all?page={page}&pageSize={pageSize}");
+            return new TableData<QRRestaurantItem>
+            {
+                TotalItems = result?.Total ?? 0,
+                Items = result?.Data?.Select(r => new QRRestaurantItem
+                {
+                    RestaurantId = r.RestaurantId,
+                    Name = r.Name ?? ""
+                }).ToList() ?? new()
+            };
         }
         catch (Exception ex)
         {
             Snackbar.Add("Lỗi: " + ex.Message, Severity.Error);
+            return new TableData<QRRestaurantItem>();
         }
-        finally { _loading = false; }
     }
 
     private string GetQRCodeUrl(int restaurantId)
     {
         return $"{Http.BaseAddress}api/restaurants/{restaurantId}/qrcode";
+    }
+
+    private string GetAppQRCodeUrl()
+    {
+        return $"{Http.BaseAddress}api/restaurants/app-qrcode";
     }
 
     private async Task DownloadQR(int restaurantId, string name)
@@ -80,10 +122,33 @@
         await JSRuntime.InvokeVoidAsync("printQR", url, name);
     }
 
+    private async Task DownloadAppQR()
+    {
+        var url = GetAppQRCodeUrl();
+        await JSRuntime.InvokeVoidAsync("downloadFile", url, "qr-app.png");
+    }
+
+    private async Task PrintAppQR()
+    {
+        var url = GetAppQRCodeUrl();
+        await JSRuntime.InvokeVoidAsync("printQR", url, "App");
+    }
+
     public class QRRestaurantItem
     {
         public int RestaurantId { get; set; }
         public string Name { get; set; } = "";
-        public string Address { get; set; } = "";
+    }
+
+    public class QRPagedRestaurant
+    {
+        public int RestaurantId { get; set; }
+        public string? Name { get; set; }
+    }
+
+    public class QRPagedResult
+    {
+        public int Total { get; set; }
+        public List<QRPagedRestaurant> Data { get; set; } = new();
     }
 }

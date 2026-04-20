@@ -30,18 +30,33 @@ public partial class ProfilePage : ContentPage
 
         try
         {
+            // Kiểm tra xem có đăng nhập không
+            var token = await SecureStorage.GetAsync("auth_token");
+            if (string.IsNullOrEmpty(token))
+            {
+                // Chế độ khách vãng lai
+                lblFullNameHeader.Text = _lang["GuestBtn"] ?? "👤 Khách vãng lai";
+                lblEmail.Text = "—";
+                lblPhone.Text = "—";
+                lblAddress.Text = "—";
+                btnEditProfile.IsVisible = false;
+                btnLogout.Text = _lang["LoginBtn"];
+                return;
+            }
+
+            btnEditProfile.IsVisible = true;
+            btnLogout.Text = _lang["Logout"];
             _user = await _userService.GetMeAsync();
 
             if (_user != null)
             {
                 lblEmail.Text = _user.Email;
-                lblFullNameHeader.Text = _user.FullName; // Hiển thị tên ở Header
+                lblFullNameHeader.Text = _user.FullName;
                 lblPhone.Text = string.IsNullOrEmpty(_user.Phone) ? _lang["NotUpdated"] : _user.Phone;
                 lblAddress.Text = string.IsNullOrEmpty(_user.Address) ? _lang["NotUpdated"] : _user.Address;
 
                 if (!string.IsNullOrEmpty(_user.Avatar))
                 {
-                    // Resolve avatar URL to use the correct server address
                     var avatarUrl = _user.Avatar;
                     if (avatarUrl.StartsWith("http"))
                     {
@@ -74,6 +89,14 @@ public partial class ProfilePage : ContentPage
 
             private async void OnLogoutClicked(object sender, EventArgs e)
             {
+                var token = await SecureStorage.GetAsync("auth_token");
+                if (string.IsNullOrEmpty(token))
+                {
+                    // Khách vãng lai → quay về trang đăng nhập
+                    await Shell.Current.GoToAsync("//LoginPage");
+                    return;
+                }
+
                 bool confirm = await DisplayAlert(_lang["LogoutConfirm"], _lang["LogoutConfirmMsg"], _lang["LogoutBtn"], _lang["Cancel"]);
                 if (confirm)
                 {

@@ -13,11 +13,13 @@ public class RestaurantsController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly IWebHostEnvironment _env;
+    private readonly IConfiguration _config;
 
-    public RestaurantsController(AppDbContext context, IWebHostEnvironment env)
+    public RestaurantsController(AppDbContext context, IWebHostEnvironment env, IConfiguration config)
     {
         _context = context;
         _env = env;
+        _config = config;
     }
 
     private async Task<string> TranslateTextAsync(string text, string sourceLang, string targetLang)
@@ -63,6 +65,7 @@ public class RestaurantsController : ControllerBase
                 Image = r.Image,
                 IsPremium = r.IsPremium,
                 IsApproved = r.IsApproved,
+                BroadcastRadius = r.BroadcastRadius,
 
                 // THÊM DÒNG NÀY VÀO ĐỂ GỬI THUYẾT MINH VỀ MOBILE
                 Narrations = r.Narrations.Select(n => new NarrationDto
@@ -139,13 +142,17 @@ public class RestaurantsController : ControllerBase
     }
 
     // 🔹 GET: api/restaurants/{id}/qrcode
+    // QR now uses HTTP URL so external cameras can open the guest web page
     [HttpGet("{id}/qrcode")]
     public IActionResult GetQRCode(int id)
     {
         var exists = _context.Restaurants.Any(r => r.RestaurantId == id);
         if (!exists) return NotFound();
 
-        var qrContent = $"tourismapp://restaurant/{id}";
+        // Use configured server URL so external cameras can reach the server
+        var baseUrl = _config["ServerBaseUrl"] ?? $"{Request.Scheme}://{Request.Host}";
+        var qrContent = $"{baseUrl}/r/{id}";
+
         using var qrGenerator = new QRCodeGenerator();
         using var qrCodeData = qrGenerator.CreateQrCode(qrContent, QRCodeGenerator.ECCLevel.Q);
         var qrCode = new PngByteQRCode(qrCodeData);
@@ -178,6 +185,7 @@ public class RestaurantsController : ControllerBase
                 IsPremium = r.IsPremium,
                 IsActive = r.IsActive,
                 IsApproved = r.IsApproved,
+                BroadcastRadius = r.BroadcastRadius,
                 PremiumExpireDate = r.PremiumExpireDate,
                 Narrations = r.Narrations.Select(n => new NarrationDto
                 {
@@ -220,7 +228,8 @@ public class RestaurantsController : ControllerBase
             IsPremium = false,
             CreatedAt = DateTime.Now,
 
-            OwnerId = userId // ✅ FIX CHUẨN
+            OwnerId = userId, // ✅ FIX CHUẨN
+            BroadcastRadius = dto.BroadcastRadius > 0 ? dto.BroadcastRadius : 50
         };
 
         _context.Restaurants.Add(restaurant);
@@ -271,6 +280,7 @@ public class RestaurantsController : ControllerBase
         [FromForm] string phone,
         [FromForm] string? latitude,
         [FromForm] string? longitude,
+        [FromForm] double? broadcastRadius,
         [FromForm] List<int>? languageIds,
         [FromForm] List<string>? textContents,
         IFormFile? imageFile)
@@ -297,6 +307,9 @@ public class RestaurantsController : ControllerBase
         if (double.TryParse(longitude, System.Globalization.NumberStyles.Float,
                 System.Globalization.CultureInfo.InvariantCulture, out var lng))
             restaurant.Longitude = lng;
+
+        if (broadcastRadius.HasValue && broadcastRadius.Value > 0)
+            restaurant.BroadcastRadius = broadcastRadius.Value;
 
         if (imageFile != null)
         {
@@ -475,24 +488,38 @@ public class RestaurantsController : ControllerBase
     }
 
 
-    // 🔹 GET: api/restaurants/admin/all-narrations
+    // 🔹 GET: api/restaurants/admin/all-narrations (paginated)
     [Authorize(Roles = "Admin")]
     [HttpGet("admin/all-narrations")]
-    public async Task<IActionResult> GetAllNarrationsForAdmin()
+    public async Task<IActionResult> GetAllNarrationsForAdmin(string? search, int page = 1, int pageSize = 10)
     {
-        var narrations = await _context.Narrations
+        var query = _context.Narrations
             .Include(n => n.Language)
             .Include(n => n.Dish).ThenInclude(d => d.Restaurant)
             .Include(n => n.Restaurant)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(n => n.TextContent.Contains(search) ||
+                (n.Restaurant != null && n.Restaurant.Name.Contains(search)) ||
+                (n.Dish != null && n.Dish.Restaurant.Name.Contains(search)));
+        }
+
+        var total = await query.CountAsync();
+
+        var narrations = await query
+            .OrderByDescending(n => n.NarrationId)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(n => new NarrationAdminDto
-            { // Dùng DTO để đồng bộ với Frontend
+            {
                 NarrationId = n.NarrationId,
-                DishId = n.DishId ?? 0,          // 🔥 Dòng này cứu sống nút "Dịch" của bạn
+                DishId = n.DishId ?? 0,
                 RestaurantId = n.RestaurantId,
                 TextContent = n.TextContent,
                 LanguageName = n.Language.Name,
                 AudioUrl = n.AudioUrl,
-                // Lấy tên nhà hàng dù là thuyết minh món ăn hay thuyết minh chung của nhà hàng
                 RestaurantName = n.Dish != null ? n.Dish.Restaurant.Name : (n.Restaurant != null ? n.Restaurant.Name : "N/A")
             })
             .ToListAsync();
@@ -509,7 +536,7 @@ public class RestaurantsController : ControllerBase
             }
         }
 
-        return Ok(narrations);
+        return Ok(new { total, data = narrations });
     }
 
     // 🔹 POST: api/restaurants/admin/update-audiox`
@@ -599,14 +626,25 @@ public class RestaurantsController : ControllerBase
         public int? RestaurantId { get; set; }
     }
 
-    // 🔹 GET: api/restaurants/admin/all — List all restaurants for admin
+    // 🔹 GET: api/restaurants/admin/all — List all restaurants for admin (paginated)
     [Authorize(Roles = "Admin")]
     [HttpGet("admin/all")]
-    public IActionResult GetAllRestaurantsForAdmin()
+    public IActionResult GetAllRestaurantsForAdmin(string? search, int page = 1, int pageSize = 10)
     {
-        var restaurants = _context.Restaurants
+        var query = _context.Restaurants
             .Include(r => r.Owner)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(r => r.Name.Contains(search) || r.Address.Contains(search));
+        }
+
+        var total = query.Count();
+        var restaurants = query
             .OrderByDescending(r => r.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(r => new
             {
                 r.RestaurantId,
@@ -619,13 +657,29 @@ public class RestaurantsController : ControllerBase
                 r.IsApproved,
                 r.IsActive,
                 r.IsPremium,
+                r.BroadcastRadius,
                 r.CreatedAt,
                 OwnerName = r.Owner != null ? r.Owner.FullName : "N/A",
                 OwnerEmail = r.Owner != null ? r.Owner.Email : "N/A"
             })
             .ToList();
 
-        return Ok(restaurants);
+        return Ok(new { total, data = restaurants });
+    }
+
+    // 🔹 GET: api/restaurants/app-qrcode — QR code that opens the MAUI app (user home)
+    [HttpGet("app-qrcode")]
+    public IActionResult GetAppQRCode()
+    {
+        // Use tourismapp:// deep link so external camera opens the MAUI app, not the admin web
+        var qrContent = "tourismapp://home";
+
+        using var qrGenerator = new QRCodeGenerator();
+        using var qrCodeData = qrGenerator.CreateQrCode(qrContent, QRCodeGenerator.ECCLevel.Q);
+        var qrCode = new PngByteQRCode(qrCodeData);
+        var pngBytes = qrCode.GetGraphic(10);
+
+        return File(pngBytes, "image/png", "qr-app.png");
     }
 
     // 🔹 PATCH: api/restaurants/admin/{id}/approve — Toggle approval
@@ -640,6 +694,28 @@ public class RestaurantsController : ControllerBase
         await _context.SaveChangesAsync();
 
         return Ok(new { restaurant.IsApproved, message = restaurant.IsApproved ? "Đã duyệt nhà hàng" : "Đã hủy duyệt nhà hàng" });
+    }
+
+    // 🔹 PATCH: api/restaurants/admin/{id}/broadcast-radius — Admin adjusts broadcast radius
+    [Authorize(Roles = "Admin")]
+    [HttpPatch("admin/{id}/broadcast-radius")]
+    public async Task<IActionResult> UpdateBroadcastRadius(int id, [FromBody] UpdateRadiusDto dto)
+    {
+        var restaurant = await _context.Restaurants.FindAsync(id);
+        if (restaurant == null) return NotFound();
+
+        if (dto.BroadcastRadius <= 0)
+            return BadRequest("Bán kính phải lớn hơn 0");
+
+        restaurant.BroadcastRadius = dto.BroadcastRadius;
+        await _context.SaveChangesAsync();
+
+        return Ok(new { restaurant.BroadcastRadius, message = $"Đã cập nhật bán kính phát thành {dto.BroadcastRadius}m" });
+    }
+
+    public class UpdateRadiusDto
+    {
+        public double BroadcastRadius { get; set; }
     }
 
 

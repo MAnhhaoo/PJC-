@@ -32,8 +32,16 @@
 
                     <Frame CornerRadius="12" Padding="10" BackgroundColor="#FAFAFA" HasShadow="False"
                            HorizontalOptions="Center" BorderColor="#E0E0E0">
-                        <Image x:Name="imgQRCode" WidthRequest="260" HeightRequest="260" Aspect="AspectFit"/>
+                        <Grid>
+                            <Image x:Name="imgQRCode" WidthRequest="260" HeightRequest="260" Aspect="AspectFit"/>
+                            <ActivityIndicator x:Name="qrLoading" IsRunning="True" Color="#1565C0"
+                                               HorizontalOptions="Center" VerticalOptions="Center"/>
+                        </Grid>
                     </Frame>
+
+                    <Button x:Name="btnRetryQR" Text="🔄 Tải lại mã QR" IsVisible="False"
+                            BackgroundColor="#FF8F00" TextColor="White" CornerRadius="8"
+                            FontSize="14" HeightRequest="40" Clicked="OnRetryQRClicked"/>
 
                     <Label Text="Mở app ngân hàng → Quét QR → Chuyển khoản" FontSize="12"
                            TextColor="#888" HorizontalTextAlignment="Center"/>

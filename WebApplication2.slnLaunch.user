@@ -7,11 +7,11 @@
         "Action": "Start"
       },
       {
-        "Path": "BlazorApp1\\BlazorApp1.csproj",
+        "Path": "TourismApp\\TourismApp.csproj",
         "Action": "Start"
       },
       {
-        "Path": "TourismApp\\TourismApp.csproj",
+        "Path": "BlazorApp1\\BlazorApp1.csproj",
         "Action": "Start"
       }
     ]

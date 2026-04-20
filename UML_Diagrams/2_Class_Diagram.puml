@@ -1,0 +1,413 @@
+@startuml Class_Diagram
+skinparam class {
+    BackgroundColor #FFFDE7
+    BorderColor #F57F17
+    ArrowColor #333
+}
+skinparam classAttributeIconSize 0
+
+title Sơ đồ Class - Hệ thống Du lịch Ẩm thực
+
+' ========================================
+' MODELS (Entity Layer)
+' ========================================
+
+package "Models (Entity)" #E8EAF6 {
+
+    class User {
+        +int UserId <<PK>>
+        +string Email
+        +string PasswordHash
+        +string FullName
+        +string? Avatar
+        +string? Phone
+        +string? Address
+        +string Role
+        +int UserLevel
+        +DateTime CreatedAt
+        +string Status
+    }
+
+    class Restaurant {
+        +int RestaurantId <<PK>>
+        +int OwnerId <<FK>>
+        +string? Name
+        +string? Address
+        +string? Phone
+        +string? Description
+        +string? Image
+        +double Latitude
+        +double Longitude
+        +bool IsActive
+        +bool IsApproved
+        +bool IsPremium
+        +int PremiumLevel
+        +DateTime? PremiumExpireDate
+        +DateTime CreatedAt
+    }
+
+    class Dish {
+        +int DishId <<PK>>
+        +int RestaurantId <<FK>>
+        +string Name
+        +string ImageUrl
+        +bool IsActive
+    }
+
+    class Narration {
+        +int NarrationId <<PK>>
+        +int? DishId <<FK>>
+        +int? RestaurantId <<FK>>
+        +int LanguageId <<FK>>
+        +string TextContent
+        +string AudioUrl
+    }
+
+    class Language {
+        +int LanguageId <<PK>>
+        +string Code
+        +string Name
+    }
+
+    class Tour {
+        +int TourId <<PK>>
+        +string Name
+        +string? Description
+        +string? Image
+        +bool IsActive
+        +decimal Price
+        +DateTime CreatedAt
+    }
+
+    class TourPOI {
+        +int TourPOIId <<PK>>
+        +int TourId <<FK>>
+        +int RestaurantId <<FK>>
+        +int OrderIndex
+    }
+
+    class Payment {
+        +int PaymentId <<PK>>
+        +int UserId <<FK>>
+        +int? RestaurantId <<FK>>
+        +int? TourId <<FK>>
+        +decimal Amount
+        +string PaymentType
+        +DateTime PaymentDate
+        +string Status
+        +string? PaymentMethod
+        +string? TransactionId
+        +DateTime? ExpireDate
+    }
+
+    class Review {
+        +int ReviewId <<PK>>
+        +int UserId <<FK>>
+        +int RestaurantId <<FK>>
+        +int Rating
+        +string Comment
+        +DateTime CreatedAt
+    }
+
+    class LocationHistory {
+        +int LocationHistoryId <<PK>>
+        +int UserId <<FK>>
+        +int RestaurantId <<FK>>
+        +DateTime VisitedAt
+    }
+
+    class DishHistory {
+        +int DishHistoryId <<PK>>
+        +int UserId <<FK>>
+        +int DishId <<FK>>
+        +DateTime ListenedAt
+    }
+
+    class TourTrackPoint {
+        +int Id <<PK>>
+        +int? UserId <<FK>>
+        +int TourId <<FK>>
+        +string SessionId
+        +double Latitude
+        +double Longitude
+        +string? GuestLabel
+        +DateTime RecordedAt
+    }
+
+    class NarrationPlayLog {
+        +int Id <<PK>>
+        +int? UserId <<FK>>
+        +int RestaurantId <<FK>>
+        +int? TourId
+        +int? NarrationId
+        +string? LanguageCode
+        +double Latitude
+        +double Longitude
+        +string? GuestLabel
+        +DateTime PlayedAt
+    }
+
+    class RestaurantRegistrationHistory {
+        +int RegistrationHistoryId <<PK>>
+        +int RestaurantId <<FK>>
+        +int OwnerId <<FK>>
+        +string Action
+        +DateTime ActionDate
+        +string Note
+    }
+
+    class SystemLog {
+        +int LogId <<PK>>
+        +int? UserId <<FK>>
+        +string Action
+        +DateTime CreatedAt
+    }
+}
+
+' ========================================
+' RELATIONSHIPS
+' ========================================
+
+User "1" --> "0..*" Restaurant : sở hữu >
+User "1" --> "0..*" Payment : thực hiện >
+User "1" --> "0..*" Review : đánh giá >
+User "1" --> "0..*" LocationHistory : lịch sử vị trí >
+User "1" --> "0..*" DishHistory : lịch sử nghe >
+User "1" --> "0..*" TourTrackPoint : theo dõi GPS >
+User "1" --> "0..*" NarrationPlayLog : log phát audio >
+User "1" --> "0..*" SystemLog : log hệ thống >
+
+Restaurant "1" --> "0..*" Dish : chứa >
+Restaurant "1" --> "0..*" Narration : có thuyết minh >
+Restaurant "1" --> "0..*" Review : nhận đánh giá >
+Restaurant "1" --> "0..*" LocationHistory : lượt ghé thăm >
+Restaurant "1" --> "0..*" Payment : thanh toán liên quan >
+Restaurant "1" --> "0..*" RestaurantRegistrationHistory : lịch sử đăng ký >
+Restaurant "1" --> "0..*" NarrationPlayLog : log phát audio >
+
+Dish "1" --> "0..*" Narration : có thuyết minh >
+Dish "1" --> "0..*" DishHistory : lịch sử nghe >
+
+Tour "1" --> "0..*" TourPOI : chứa điểm dừng >
+Tour "1" --> "0..*" Payment : thanh toán mua tour >
+Tour "1" --> "0..*" TourTrackPoint : GPS tracking >
+
+TourPOI "0..*" --> "1" Restaurant : tham chiếu >
+
+Narration "0..*" --> "1" Language : thuộc ngôn ngữ >
+
+' ========================================
+' CONTROLLERS (API Layer)
+' ========================================
+
+package "Controllers (API)" #E8F5E9 {
+
+    class UsersController {
+        +GetUsers(search, page, pageSize)
+        +GetMe()
+        +UpdateMe(dto)
+        +Login(request)
+        +AppLogin(request)
+        +Register(request)
+        +RegisterRestaurant(request)
+        +UploadAvatar(file)
+        +ToggleStatus(id)
+    }
+
+    class RestaurantsController {
+        +GetRestaurants()
+        +GetRestaurantById(id)
+        +GetMyRestaurant()
+        +CreateRestaurant(dto)
+        +UpdateMyRestaurant(form)
+        +GetDishesByRestaurant(id)
+        +GetQRCode(id)
+        +GetLanguages()
+    }
+
+    class DishesController {
+        +Create(name, price, description, ...)
+        +GetByRestaurant(restaurantId)
+        +Update(id, dto)
+        +ToggleDish(id)
+        +Delete(id)
+    }
+
+    class NarrationsController {
+        +GetByDish(dishId)
+        +CreateTranslated(dto)
+        +ProxyTranslate(text, langPair)
+        +Delete(id)
+    }
+
+    class ToursController {
+        +GetTours()
+        +GetTourById(id)
+        +CreateTour(dto)
+        +UpdateTour(id, dto)
+        +DeleteTour(id)
+    }
+
+    class PaymentsController {
+        +PurchaseTour(request)
+        +CheckTourAccess(tourId)
+        +RegisterRestaurantPayment(request)
+        +CheckRestaurantPayment(restaurantId)
+        +CancelTourPayment(tourId)
+        +CancelRestaurantPayment(restaurantId)
+        +PaymentWebhook(payload)
+        +ConfirmPayment(id)
+        +GetPaymentsForAdmin(...)
+        +GetStats(from, to)
+        +MonthlyRevenue()
+    }
+
+    class AnalyticsController {
+        +LogNarrationPlay(req)
+        +LogTrackPoint(req)
+        +GetOverview(days)
+    }
+
+    class ReviewController {
+        +GetByRestaurant(restaurantId)
+        +Create(dto)
+    }
+}
+
+' ========================================
+' SERVICES (MAUI App Layer)
+' ========================================
+
+package "Services (MAUI App)" #FFF3E0 {
+
+    class AuthService {
+        +LoginAsync(email, password)
+        +RegisterAsync(dto)
+        +GetTokenAsync()
+        +LogoutAsync()
+    }
+
+    class RestaurantService {
+        +GetRestaurantsAsync()
+        +GetRestaurantByIdAsync(id)
+        +GetMyRestaurantAsync()
+    }
+
+    class DishService {
+        +GetDishesByRestaurantAsync(id)
+        +CreateDishAsync(form)
+    }
+
+    class UserService {
+        +GetProfileAsync()
+        +UpdateProfileAsync(dto)
+        +UploadAvatarAsync(file)
+    }
+
+    class GpsService {
+        +StartTracking()
+        +StopTracking()
+        +GetCurrentLocation()
+        +CalculateDistance(lat1, lon1, lat2, lon2)
+    }
+
+    class LanguageService {
+        +string CurrentLanguage
+        +SetLanguage(code)
+        +GetTranslation(key)
+        +SupportedLanguages
+    }
+
+    class TranslationService {
+        +TranslateAsync(text, from, to)
+        +TranslateRestaurantsAsync(list, langCode)
+    }
+
+    class OfflineSyncService {
+        +SyncOfflineDataAsync()
+        +GetCachedRestaurantsAsync()
+    }
+
+    class AnalyticsService {
+        +LogNarrationPlayAsync(req)
+        +LogTrackPointAsync(req)
+    }
+}
+
+' ========================================
+' PAGES (MAUI UI Layer)
+' ========================================
+
+package "Pages (MAUI)" #FCE4EC {
+
+    class CustomerHomePage {
+        +OnAppearing()
+        +LoadRestaurants()
+        +OnSearchTextChanged()
+        +OnRestaurantTapped()
+    }
+
+    class RestaurantDetailPage {
+        +OnAppearing()
+        +LoadDishes()
+        +PlayNarration()
+        +OnDishTapped()
+    }
+
+    class TourListPage {
+        +OnAppearing()
+        +LoadTours()
+        +OnTourTapped()
+    }
+
+    class TourDetailPage {
+        +OnAppearing()
+        +StartTour()
+        +OnBuyTour()
+    }
+
+    class POIMapPage {
+        +OnAppearing()
+        +StartLocationUpdates()
+        +StopLocationUpdates()
+        +CheckNearbyRestaurants()
+        +PlayNarrationAuto()
+    }
+
+    class TourPaymentPage {
+        +OnAppearing()
+        +CreatePaymentAndShowQR()
+        +StartPolling(token)
+    }
+
+    class RestaurantPaymentPage {
+        +OnAppearing()
+        +CreatePaymentAndShowQR()
+        +StartPolling(token)
+    }
+
+    class LoginPage {
+        +OnLoginClicked()
+        +OnRegisterClicked()
+    }
+
+    class SettingsPage {
+        +OnRadiusChanged()
+        +OnMovementChanged()
+        +OnServerIpChanged()
+        +OnSyncOffline()
+    }
+}
+
+' ===== CONTROLLER DEPENDENCIES =====
+UsersController ..> User : sử dụng
+RestaurantsController ..> Restaurant : sử dụng
+DishesController ..> Dish : sử dụng
+NarrationsController ..> Narration : sử dụng
+ToursController ..> Tour : sử dụng
+PaymentsController ..> Payment : sử dụng
+AnalyticsController ..> TourTrackPoint : sử dụng
+AnalyticsController ..> NarrationPlayLog : sử dụng
+ReviewController ..> Review : sử dụng
+
+@enduml

@@ -449,6 +449,17 @@ public partial class TourDetailPage : ContentPage
     private async void OnBuyTourClicked(object sender, EventArgs e)
     {
         if (_tour == null) return;
+
+        // Guest users cannot purchase tours
+        var token = await SecureStorage.GetAsync("auth_token");
+        if (string.IsNullOrEmpty(token))
+        {
+            await DisplayAlert(_langService["Error"],
+                "Bạn cần đăng nhập để mua tour. Vui lòng đăng nhập trước.",
+                _langService["OK"]);
+            return;
+        }
+
         await Shell.Current.GoToAsync($"{nameof(TourPaymentPage)}?tourId={_tour.TourId}&tourName={Uri.EscapeDataString(_tour.Name)}&price={_tour.Price}");
     }
 

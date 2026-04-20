@@ -17,15 +17,15 @@
             <Label Text="{Binding Address}" TextColor="Gray" FontSize="14"/>
             <Label Text="{Binding Description}" LineBreakMode="WordWrap" FontSize="14" TextColor="#555"/>
 
-            <Frame CornerRadius="10" Padding="10" BackgroundColor="#FFF8E1" HasShadow="False" BorderColor="#FFB300">
+            <Border StrokeShape="RoundRectangle 10" Padding="10" BackgroundColor="#FFF8E1" Stroke="#FFB300" StrokeThickness="1">
                 <Label Text="{Binding PremiumText}" TextColor="#E65100" FontAttributes="Bold" FontSize="14"
                        HorizontalTextAlignment="Center"/>
-            </Frame>
+            </Border>
 
             <!-- Management Buttons -->
             <Label Text="Quản lý" FontSize="18" FontAttributes="Bold" TextColor="#333" Margin="0,8,0,0"/>
 
-            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="10">
 
                 <Button Text="✏️ Chỉnh sửa nhà hàng"
                         BackgroundColor="#2196F3" TextColor="White" CornerRadius="12"
@@ -62,23 +62,32 @@
                         HeightRequest="50" FontSize="13"
                         Clicked="OnUpgradeClicked"/>
 
+                <Button Grid.Row="3" Grid.ColumnSpan="2"
+                        Text="🚪 Đăng xuất"
+                        BackgroundColor="#E53935" TextColor="White" CornerRadius="12"
+                        HeightRequest="50" FontSize="14" FontAttributes="Bold"
+                        Clicked="OnLogoutClicked"/>
+
             </Grid>
 
             <!-- Dish Preview -->
             <Label Text="Món ăn" FontSize="18" FontAttributes="Bold" TextColor="#333" Margin="0,8,0,0"/>
 
-            <Frame x:Name="frameDishLimit" CornerRadius="10" Padding="10" HasShadow="False" BorderColor="#E0E0E0"
+            <Border x:Name="frameDishLimit" StrokeShape="RoundRectangle 10" Padding="10" Stroke="#E0E0E0" StrokeThickness="1"
                    BackgroundColor="#E3F2FD" IsVisible="False">
                 <Label x:Name="lblDishLimit" FontSize="13" TextColor="#1565C0" HorizontalTextAlignment="Center"/>
-            </Frame>
+            </Border>
 
             <CollectionView ItemsSource="{Binding Dishes}" HeightRequest="200">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Frame Margin="0,4" Padding="10" CornerRadius="10"
-                               BackgroundColor="White" HasShadow="True" BorderColor="Transparent">
+                        <Border Margin="0,4" Padding="10" StrokeShape="RoundRectangle 10"
+                               BackgroundColor="White" Stroke="Transparent">
+                            <Border.Shadow>
+                                <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.3"/>
+                            </Border.Shadow>
                             <Label Text="{Binding Name}" FontSize="15"/>
-                        </Frame>
+                        </Border>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>

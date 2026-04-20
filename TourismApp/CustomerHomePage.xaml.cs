@@ -115,11 +115,11 @@ public partial class CustomerHomePage : ContentPage
                     foreach (var res in Restaurants)
                         res.Distance = _gpsService.CalculateDistance(loc.Latitude, loc.Longitude, res.Latitude, res.Longitude);
 
-                    // Geofence Engine: find nearest unplayed restaurant within radius, auto-play if idle
+                    // Geofence Engine: find nearest unplayed restaurant within ITS OWN radius, auto-play if idle
                     if (_activePlayer == null && _currentPlayingRestaurant == null && !_isSpeaking)
                     {
                         var nearest = Restaurants
-                            .Where(r => r.Distance <= GeofenceRadiusMeters && !_playedRestaurantIds.Contains(r.RestaurantId))
+                            .Where(r => r.Distance <= r.BroadcastRadius && !_playedRestaurantIds.Contains(r.RestaurantId))
                             .OrderBy(r => r.Distance)
                             .FirstOrDefault();
 

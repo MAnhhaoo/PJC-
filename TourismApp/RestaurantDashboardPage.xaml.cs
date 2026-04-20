@@ -142,4 +142,13 @@ public partial class RestaurantDashboardPage : ContentPage
         var encodedName = Uri.EscapeDataString(_restaurantName);
         await Shell.Current.GoToAsync($"{nameof(RestaurantQRPage)}?restaurantId={_restaurantId}&restaurantName={encodedName}");
     }
+
+    private async void OnLogoutClicked(object sender, EventArgs e)
+    {
+        var confirm = await DisplayAlert("Đăng xuất", "Bạn có chắc muốn đăng xuất?", "Đăng xuất", "Hủy");
+        if (!confirm) return;
+
+        await _authService.LogoutAsync();
+        await Shell.Current.GoToAsync("//LoginPage");
+    }
 }

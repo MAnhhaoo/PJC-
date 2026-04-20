@@ -14,6 +14,8 @@ namespace TourismApp.Models
 
         public string ImageUrl { get; set; }
 
+        public string Image => ImageUrl;
+
         public bool IsActive { get; set; }
     }
 }

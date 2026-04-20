@@ -227,9 +227,14 @@ public class UsersController : ControllerBase
     // GET: api/users
     [Authorize]
     [HttpGet]
-    public IActionResult GetUsers(string? search, int page = 1, int pageSize = 10)
+    public IActionResult GetUsers(string? search, string? role, int page = 1, int pageSize = 10)
     {
         var query = _context.Users.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(role))
+        {
+            query = query.Where(u => u.Role == role);
+        }
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -239,6 +244,15 @@ public class UsersController : ControllerBase
         }
 
         var total = query.Count();
+        var now = DateTime.UtcNow;
+
+        // Online count across ALL users (not just current page)
+        var onlineCount = _context.Users.Count(u =>
+            u.LastActiveAt != null && u.LastActiveAt > now.AddMinutes(-1));
+
+        // Guest online count
+        var guestOnlineCount = _context.GuestSessions.Count(g =>
+            g.LastActiveAt > now.AddMinutes(-1));
 
         var users = query
             .OrderByDescending(u => u.CreatedAt)
@@ -252,13 +266,17 @@ public class UsersController : ControllerBase
                 u.Role,
                 u.UserLevel,
                 u.Status,
-                u.CreatedAt
+                u.CreatedAt,
+                u.LastActiveAt,
+                IsOnline = u.LastActiveAt != null && u.LastActiveAt > now.AddMinutes(-5)
             })
             .ToList();
 
         return Ok(new
         {
             total,
+            onlineCount,
+            guestOnlineCount,
             users
         });
     }
@@ -461,6 +479,10 @@ public class UsersController : ControllerBase
         var restaurant = _context.Restaurants
             .FirstOrDefault(r => r.OwnerId == user.UserId);
 
+        // Cập nhật trạng thái hoạt động
+        user.LastActiveAt = DateTime.UtcNow;
+        _context.SaveChanges();
+
         // 🔐 JWT
         var claims = new[]
         {
@@ -477,7 +499,7 @@ public class UsersController : ControllerBase
             issuer: _config["Jwt:Issuer"],
             audience: _config["Jwt:Audience"],
             claims: claims,
-            expires: DateTime.Now.AddHours(1),
+            expires: DateTime.Now.AddHours(24),
             signingCredentials: new SigningCredentials(
                 key,
                 SecurityAlgorithms.HmacSha256
@@ -553,7 +575,7 @@ public class UsersController : ControllerBase
             issuer: _config["Jwt:Issuer"],
             audience: _config["Jwt:Audience"],
             claims: claims,
-            expires: DateTime.Now.AddHours(1),
+            expires: DateTime.Now.AddHours(24),
             signingCredentials: creds
         );
 
@@ -578,6 +600,30 @@ public class UsersController : ControllerBase
         _context.SaveChanges();
 
         return Ok("Đăng ký thành công");
+    }
+
+    // POST: api/users/heartbeat
+    [Authorize]
+    [HttpPost("heartbeat")]
+    public IActionResult Heartbeat([FromBody] HeartbeatRequest? request)
+    {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdClaim))
+            return Unauthorized();
+
+        var userId = int.Parse(userIdClaim);
+        var user = _context.Users.Find(userId);
+        if (user == null) return NotFound();
+
+        user.LastActiveAt = DateTime.UtcNow;
+        if (request != null)
+        {
+            if (request.Latitude != 0) user.LastLatitude = request.Latitude;
+            if (request.Longitude != 0) user.LastLongitude = request.Longitude;
+        }
+        _context.SaveChanges();
+
+        return Ok();
     }
 
     // Thêm API này vào UsersController.cs (Backend)
@@ -609,5 +655,126 @@ public class UsersController : ControllerBase
         _context.SaveChanges();
 
         return Ok(new { url = user.Avatar });
+    }
+
+    // POST: api/users/guest-heartbeat
+    [AllowAnonymous]
+    [HttpPost("guest-heartbeat")]
+    public IActionResult GuestHeartbeat([FromBody] GuestHeartbeatRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request?.DeviceId))
+            return BadRequest("DeviceId is required");
+
+        var session = _context.GuestSessions
+            .FirstOrDefault(g => g.DeviceId == request.DeviceId);
+
+        if (session == null)
+        {
+            session = new GuestSession
+            {
+                DeviceId = request.DeviceId,
+                LastActiveAt = DateTime.UtcNow,
+                Latitude = request.Latitude != 0 ? request.Latitude : null,
+                Longitude = request.Longitude != 0 ? request.Longitude : null
+            };
+            _context.GuestSessions.Add(session);
+        }
+        else
+        {
+                session.LastActiveAt = DateTime.UtcNow;
+                    if (request.Latitude != 0) session.Latitude = request.Latitude;
+                    if (request.Longitude != 0) session.Longitude = request.Longitude;
+                }
+
+                // Also record track point for guest journey
+                if (request.Latitude != 0 && request.Longitude != 0)
+                {
+                    var sessionId = Preferences_GetOrCreateSessionId(request.DeviceId);
+                    _context.GuestTrackPoints.Add(new GuestTrackPoint
+                    {
+                        DeviceId = request.DeviceId,
+                        SessionId = sessionId,
+                        Latitude = request.Latitude,
+                        Longitude = request.Longitude,
+                        RecordedAt = DateTime.UtcNow
+                    });
+                }
+
+                _context.SaveChanges();
+                return Ok();
+            }
+
+            private string Preferences_GetOrCreateSessionId(string deviceId)
+            {
+                // Use a deterministic session ID based on device + date (new session each day)
+                var dateKey = DateTime.UtcNow.ToString("yyyyMMdd");
+                return $"{deviceId}_{dateKey}";
+            }
+
+    // POST: api/users/logout — clear LastActiveAt so user goes offline immediately
+    [Authorize]
+    [HttpPost("logout")]
+    public IActionResult Logout()
+    {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdClaim))
+            return Unauthorized();
+
+        var userId = int.Parse(userIdClaim);
+        var user = _context.Users.Find(userId);
+        if (user != null)
+        {
+            user.LastActiveAt = null;
+            _context.SaveChanges();
+        }
+        return Ok();
+    }
+
+    // POST: api/users/guest-logout — clear guest session LastActiveAt
+    [AllowAnonymous]
+    [HttpPost("guest-logout")]
+    public IActionResult GuestLogout([FromBody] GuestHeartbeatRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request?.DeviceId))
+            return BadRequest();
+
+        var session = _context.GuestSessions
+            .FirstOrDefault(g => g.DeviceId == request.DeviceId);
+        if (session != null)
+        {
+            session.LastActiveAt = DateTime.UtcNow.AddMinutes(-10); // mark as offline
+            _context.SaveChanges();
+        }
+        return Ok();
+    }
+
+    // GET: api/users/online-details
+    [Authorize]
+    [HttpGet("online-details")]
+    public IActionResult GetOnlineDetails()
+    {
+        var now = DateTime.UtcNow;
+
+        var onlineUsers = _context.Users
+            .Where(u => u.LastActiveAt != null && u.LastActiveAt > now.AddMinutes(-5))
+            .Select(u => new
+            {
+                u.UserId,
+                u.FullName,
+                u.Email,
+                u.Role,
+                u.LastActiveAt
+            })
+            .ToList();
+
+        var guestOnlineCount = _context.GuestSessions
+            .Count(g => g.LastActiveAt > now.AddMinutes(-5));
+
+        return Ok(new
+        {
+            onlineUsers,
+            guestOnlineCount,
+            totalOnline = onlineUsers.Count + guestOnlineCount
+        });
     }
 }

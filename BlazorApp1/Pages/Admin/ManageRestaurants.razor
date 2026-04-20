@@ -7,95 +7,136 @@
 
 <MudText Typo="Typo.h4" Class="mb-4">🏪 Quản lý nhà hàng</MudText>
 
-@if (_loading)
-{
-    <MudProgressCircular Indeterminate="true" />
-}
-else if (_restaurants == null || !_restaurants.Any())
-{
-    <MudAlert Severity="Severity.Info">Chưa có nhà hàng nào.</MudAlert>
-}
-else
-{
-    <MudTable Items="@_restaurants" Hover="true" Striped="true" Dense="true" Elevation="2">
-        <HeaderContent>
-            <MudTh>ID</MudTh>
-            <MudTh>Tên nhà hàng</MudTh>
-            <MudTh>Địa chỉ</MudTh>
-            <MudTh>Chủ sở hữu</MudTh>
-            <MudTh>Trạng thái</MudTh>
-            <MudTh>Duyệt</MudTh>
-            <MudTh>Ngày tạo</MudTh>
-            <MudTh>Hành động</MudTh>
-        </HeaderContent>
-        <RowTemplate>
-            <MudTd>@context.RestaurantId</MudTd>
-            <MudTd>@context.Name</MudTd>
-            <MudTd>@context.Address</MudTd>
-            <MudTd>
-                <MudText Typo="Typo.body2">@context.OwnerName</MudText>
-                <MudText Typo="Typo.caption" Color="Color.Secondary">@context.OwnerEmail</MudText>
-            </MudTd>
-            <MudTd>
-                @if (context.IsActive)
-                {
-                    <MudChip T="string" Color="Color.Success" Size="Size.Small">Hoạt động</MudChip>
-                }
-                else
-                {
-                    <MudChip T="string" Color="Color.Default" Size="Size.Small">Đóng cửa</MudChip>
-                }
-            </MudTd>
-            <MudTd>
-                @if (context.IsApproved)
-                {
-                    <MudChip T="string" Color="Color.Success" Size="Size.Small">Đã duyệt</MudChip>
-                }
-                else
-                {
-                    <MudChip T="string" Color="Color.Warning" Size="Size.Small">Chờ duyệt</MudChip>
-                }
-            </MudTd>
-            <MudTd>@context.CreatedAt?.ToString("dd/MM/yyyy")</MudTd>
-            <MudTd>
-                <MudButton Variant="Variant.Filled"
-                           Color="@(context.IsApproved ? Color.Error : Color.Success)"
-                           Size="Size.Small"
-                           OnClick="@(() => ToggleApproval(context))">
-                    @(context.IsApproved ? "Hủy duyệt" : "Duyệt")
-                </MudButton>
-            </MudTd>
-        </RowTemplate>
-    </MudTable>
-}
+<MudTextField T="string" Value="_search" ValueChanged="OnSearchChanged" Immediate="true"
+              Placeholder="Tìm theo tên hoặc địa chỉ" Class="mb-4" />
+
+<MudTable T="RestaurantAdmin"
+          @ref="_table"
+          ServerData="LoadServerData"
+          RowsPerPage="10"
+          Hover="true" Striped="true" Dense="true" Elevation="2">
+    <HeaderContent>
+        <MudTh>ID</MudTh>
+        <MudTh>Tên nhà hàng</MudTh>
+        <MudTh>Địa chỉ</MudTh>
+        <MudTh>Chủ sở hữu</MudTh>
+        <MudTh>Trạng thái</MudTh>
+        <MudTh>Duyệt</MudTh>
+        <MudTh>Bán kính (m)</MudTh>
+        <MudTh>Ngày tạo</MudTh>
+        <MudTh>Hành động</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>@context.RestaurantId</MudTd>
+        <MudTd>@context.Name</MudTd>
+        <MudTd>@context.Address</MudTd>
+        <MudTd>
+            <MudText Typo="Typo.body2">@context.OwnerName</MudText>
+            <MudText Typo="Typo.caption" Color="Color.Secondary">@context.OwnerEmail</MudText>
+        </MudTd>
+        <MudTd>
+            @if (context.IsActive)
+            {
+                <MudChip T="string" Color="Color.Success" Size="Size.Small">Hoạt động</MudChip>
+            }
+            else
+            {
+                <MudChip T="string" Color="Color.Default" Size="Size.Small">Đóng cửa</MudChip>
+            }
+        </MudTd>
+        <MudTd>
+            @if (context.IsApproved)
+            {
+                <MudChip T="string" Color="Color.Success" Size="Size.Small">Đã duyệt</MudChip>
+            }
+            else
+            {
+                <MudChip T="string" Color="Color.Warning" Size="Size.Small">Chờ duyệt</MudChip>
+            }
+        </MudTd>
+        <MudTd>
+            <MudNumericField T="double" Value="context.BroadcastRadius"
+                             ValueChanged="@(v => UpdateRadius(context, v))"
+                             Min="1" Max="5000" Step="5"
+                             Variant="Variant.Outlined" Style="width:100px" />
+        </MudTd>
+        <MudTd>@context.CreatedAt?.ToString("dd/MM/yyyy")</MudTd>
+        <MudTd>
+            <MudButton Variant="Variant.Filled"
+                       Color="@(context.IsApproved ? Color.Error : Color.Success)"
+                       Size="Size.Small"
+                       OnClick="@(() => ToggleApproval(context))">
+                @(context.IsApproved ? "Hủy duyệt" : "Duyệt")
+            </MudButton>
+        </MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager PageSizeOptions="new int[] { 10, 25, 50 }" />
+    </PagerContent>
+</MudTable>
 
 @code {
-    private List<RestaurantAdmin> _restaurants = new();
-    private bool _loading = true;
+    private MudTable<RestaurantAdmin>? _table;
+    private string _search = "";
 
-    protected override async Task OnInitializedAsync()
+    private async Task<TableData<RestaurantAdmin>> LoadServerData(TableState state, CancellationToken token)
     {
-        await LoadData();
-    }
-
-    private async Task LoadData()
-    {
-        _loading = true;
         try
         {
-            var token = await localStorage.GetItemAsync<string>("token");
+            var tkn = await localStorage.GetItemAsync<string>("token");
             Http.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", tkn);
 
-            _restaurants = await Http.GetFromJsonAsync<List<RestaurantAdmin>>("api/restaurants/admin/all") ?? new();
+            var page = state.Page + 1;
+            var pageSize = state.PageSize;
+            var result = await Http.GetFromJsonAsync<RestaurantPagedResult>(
+                $"api/restaurants/admin/all?search={_search}&page={page}&pageSize={pageSize}", token);
+
+            return new TableData<RestaurantAdmin>
+            {
+                TotalItems = result?.Total ?? 0,
+                Items = result?.Data ?? new()
+            };
         }
         catch (Exception ex)
         {
             Snackbar.Add("Lỗi tải dữ liệu: " + ex.Message, Severity.Error);
+            return new TableData<RestaurantAdmin>();
         }
-        finally
+    }
+
+    private async Task OnSearchChanged(string value)
+    {
+        _search = value;
+        if (_table != null) await _table.ReloadServerData();
+    }
+
+    private async Task UpdateRadius(RestaurantAdmin restaurant, double newRadius)
+    {
+        if (newRadius <= 0) return;
+        try
         {
-            _loading = false;
+            var tkn = await localStorage.GetItemAsync<string>("token");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", tkn);
+
+            var response = await Http.PatchAsJsonAsync(
+                $"api/restaurants/admin/{restaurant.RestaurantId}/broadcast-radius",
+                new { BroadcastRadius = newRadius });
+
+            if (response.IsSuccessStatusCode)
+            {
+                restaurant.BroadcastRadius = newRadius;
+                Snackbar.Add($"Đã cập nhật bán kính phát thành {newRadius}m", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add("Cập nhật bán kính thất bại", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Lỗi: " + ex.Message, Severity.Error);
         }
     }
 
@@ -103,9 +144,9 @@ else
     {
         try
         {
-            var token = await localStorage.GetItemAsync<string>("token");
+            var tkn = await localStorage.GetItemAsync<string>("token");
             Http.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", tkn);
 
             var response = await Http.PatchAsync($"api/restaurants/admin/{restaurant.RestaurantId}/approve", null);
             if (response.IsSuccessStatusCode)
@@ -125,6 +166,12 @@ else
         }
     }
 
+    public class RestaurantPagedResult
+    {
+        public int Total { get; set; }
+        public List<RestaurantAdmin> Data { get; set; } = new();
+    }
+
     public class RestaurantAdmin
     {
         public int RestaurantId { get; set; }
@@ -135,6 +182,7 @@ else
         public bool IsApproved { get; set; }
         public bool IsActive { get; set; }
         public bool IsPremium { get; set; }
+        public double BroadcastRadius { get; set; } = 50;
         public DateTime? CreatedAt { get; set; }
         public string? OwnerName { get; set; }
         public string? OwnerEmail { get; set; }

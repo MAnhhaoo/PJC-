@@ -24,7 +24,8 @@ else if (_tours == null || !_tours.Any())
 }
 else
 {
-    <MudTable Items="@_tours" Hover="true" Striped="true" Dense="true" Elevation="2">
+    <MudTable Items="@_tours" Hover="true" Striped="true" Dense="true" Elevation="2"
+              RowsPerPage="10">
         <HeaderContent>
             <MudTh>ID</MudTh>
             <MudTh>Tên Tour</MudTh>
@@ -97,6 +98,9 @@ else
                 </MudTr>
             }
         </ChildRowContent>
+        <PagerContent>
+            <MudTablePager PageSizeOptions="new int[] { 10, 25, 50 }" />
+        </PagerContent>
     </MudTable>
 }
 
