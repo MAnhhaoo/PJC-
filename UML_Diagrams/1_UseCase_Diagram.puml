@@ -1,0 +1,162 @@
+@startuml UseCase_TourismApp
+left to right direction
+skinparam packageStyle rectangle
+skinparam usecase {
+    BackgroundColor #E8F5E9
+    BorderColor #2E7D32
+}
+skinparam actor {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+}
+
+title Sơ đồ Use Case - Hệ thống Du lịch Ẩm thực
+
+' ===== CÁC TÁC NHÂN =====
+actor "Khách vãng lai\n(Ẩn danh)" as Guest
+actor "Người dùng\n(User)" as User
+actor "Chủ nhà hàng\n(Restaurant)" as RestOwner
+actor "Quản trị viên\n(Admin)" as Admin
+actor "Hệ thống SePay\n(Webhook)" as SePay
+actor "Hệ thống VietQR" as VietQR
+actor "API Dịch thuật\n(MyMemory)" as TranslateAPI
+
+' ===== GÓI: XÁC THỰC =====
+rectangle "Xác thực & Tài khoản" {
+    usecase "Đăng nhập" as UC_Login
+    usecase "Đăng ký tài khoản" as UC_Register
+    usecase "Xem/Sửa hồ sơ cá nhân" as UC_Profile
+    usecase "Tải lên ảnh đại diện" as UC_UploadAvatar
+    usecase "Chế độ ẩn danh" as UC_Anonymous
+}
+
+' ===== GÓI: KHÁM PHÁ NHÀ HÀNG =====
+rectangle "Khám phá Nhà hàng" {
+    usecase "Xem danh sách nhà hàng" as UC_ListRestaurant
+    usecase "Xem chi tiết nhà hàng" as UC_DetailRestaurant
+    usecase "Xem bản đồ nhà hàng" as UC_MapRestaurant
+    usecase "Quét mã QR nhà hàng" as UC_ScanQR
+    usecase "Xem danh sách món ăn" as UC_ListDish
+    usecase "Nghe thuyết minh\n(Audio/TTS)" as UC_ListenNarration
+    usecase "Đánh giá nhà hàng" as UC_Review
+}
+
+' ===== GÓI: TOUR DU LỊCH =====
+rectangle "Tour Du lịch" {
+    usecase "Xem danh sách tour" as UC_ListTour
+    usecase "Xem chi tiết tour" as UC_DetailTour
+    usecase "Mua tour (thanh toán)" as UC_BuyTour
+    usecase "Đi tour (GPS theo dõi)" as UC_GoTour
+    usecase "Phát thuyết minh tự động\ntheo vị trí" as UC_AutoNarrate
+}
+
+' ===== GÓI: THANH TOÁN =====
+rectangle "Thanh toán" {
+    usecase "Tạo yêu cầu thanh toán" as UC_CreatePayment
+    usecase "Hiển thị mã QR\nchuyển khoản" as UC_ShowQR
+    usecase "Kiểm tra trạng thái\nthanh toán (Polling)" as UC_CheckPayment
+    usecase "Xác nhận thanh toán\n(Webhook)" as UC_WebhookConfirm
+}
+
+' ===== GÓI: QUẢN LÝ NHÀ HÀNG =====
+rectangle "Quản lý Nhà hàng" {
+    usecase "Đăng ký nhà hàng mới" as UC_RegisterRest
+    usecase "Xem dashboard nhà hàng" as UC_Dashboard
+    usecase "Chỉnh sửa thông tin\nnhà hàng" as UC_EditRestaurant
+    usecase "Thêm/Sửa/Xóa món ăn" as UC_ManageDish
+    usecase "Thêm thuyết minh\ncho món ăn" as UC_AddNarration
+    usecase "Nâng cấp Premium" as UC_UpgradePremium
+    usecase "Xem mã QR nhà hàng" as UC_ViewQR
+}
+
+' ===== GÓI: QUẢN TRỊ HỆ THỐNG =====
+rectangle "Quản trị hệ thống (Admin)" {
+    usecase "Quản lý người dùng" as UC_ManageUser
+    usecase "Quản lý nhà hàng" as UC_ManageRestaurant
+    usecase "Quản lý thuyết minh" as UC_ManageNarration
+    usecase "Quản lý tour" as UC_ManageTour
+    usecase "Quản lý thanh toán" as UC_ManagePayment
+    usecase "Xem thống kê Analytics" as UC_Analytics
+    usecase "Khóa/Mở tài khoản" as UC_ToggleUser
+    usecase "Duyệt nhà hàng" as UC_ApproveRest
+}
+
+' ===== GÓI: TIỆN ÍCH =====
+rectangle "Tiện ích" {
+    usecase "Đổi ngôn ngữ\n(7 ngôn ngữ)" as UC_ChangeLanguage
+    usecase "Dịch thuật tự động" as UC_Translate
+    usecase "Tải dữ liệu offline" as UC_OfflineSync
+    usecase "Cài đặt GPS\n(bán kính, khoảng cách)" as UC_GpsSettings
+    usecase "Cài đặt IP server" as UC_ServerIP
+}
+
+' ===== QUAN HỆ: KHÁCH VÃNG LAI =====
+Guest --> UC_ListRestaurant
+Guest --> UC_MapRestaurant
+Guest --> UC_ListTour
+Guest --> UC_Anonymous
+Guest --> UC_ChangeLanguage
+
+' ===== QUAN HỆ: NGƯỜI DÙNG =====
+User --> UC_Login
+User --> UC_Register
+User --> UC_Profile
+User --> UC_UploadAvatar
+User --> UC_ListRestaurant
+User --> UC_DetailRestaurant
+User --> UC_MapRestaurant
+User --> UC_ScanQR
+User --> UC_ListDish
+User --> UC_ListenNarration
+User --> UC_Review
+User --> UC_ListTour
+User --> UC_DetailTour
+User --> UC_BuyTour
+User --> UC_GoTour
+User --> UC_AutoNarrate
+User --> UC_ChangeLanguage
+User --> UC_Translate
+User --> UC_OfflineSync
+User --> UC_GpsSettings
+User --> UC_ServerIP
+User --> UC_Anonymous
+
+' ===== QUAN HỆ: CHỦ NHÀ HÀNG =====
+RestOwner --> UC_Login
+RestOwner --> UC_RegisterRest
+RestOwner --> UC_Dashboard
+RestOwner --> UC_EditRestaurant
+RestOwner --> UC_ManageDish
+RestOwner --> UC_AddNarration
+RestOwner --> UC_UpgradePremium
+RestOwner --> UC_ViewQR
+
+' ===== QUAN HỆ: ADMIN =====
+Admin --> UC_Login
+Admin --> UC_ManageUser
+Admin --> UC_ManageRestaurant
+Admin --> UC_ManageNarration
+Admin --> UC_ManageTour
+Admin --> UC_ManagePayment
+Admin --> UC_Analytics
+Admin --> UC_ToggleUser
+Admin --> UC_ApproveRest
+
+' ===== QUAN HỆ: HỆ THỐNG BÊN NGOÀI =====
+SePay --> UC_WebhookConfirm
+UC_ShowQR --> VietQR
+UC_Translate --> TranslateAPI
+
+' ===== QUAN HỆ INCLUDE/EXTEND =====
+UC_BuyTour ..> UC_CreatePayment : <<include>>
+UC_CreatePayment ..> UC_ShowQR : <<include>>
+UC_ShowQR ..> UC_CheckPayment : <<include>>
+UC_RegisterRest ..> UC_CreatePayment : <<include>>
+UC_UpgradePremium ..> UC_CreatePayment : <<include>>
+UC_GoTour ..> UC_AutoNarrate : <<include>>
+UC_DetailRestaurant ..> UC_ListDish : <<include>>
+
+UC_Login <.. UC_Anonymous : <<extend>>
+UC_ListenNarration <.. UC_Translate : <<extend>>
+
+@enduml

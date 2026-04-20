@@ -1,0 +1,775 @@
+@startuml Sequence_10_CreateTTS
+skinparam sequence {
+    ArrowColor #1565C0
+    LifeLineBorderColor #333
+    ParticipantBackgroundColor #E3F2FD
+    ParticipantBorderColor #1565C0
+}
+
+title Sơ đồ Sequence 10: Tạo file TTS thuyết minh (Text-to-Speech)
+
+actor "Admin / Chủ nhà hàng" as User
+participant "ManageNarrations\n(Blazor)" as UI
+participant "NarrationsController\n(API)" as API
+participant "MyMemory API\n(Dịch thuật)" as Translate
+participant "Google TTS\n(Text-to-Speech)" as TTS
+database "SQL Server" as DB
+database "File System\n(audios/)" as FS
+
+User -> UI : Nhập nội dung thuyết minh\n+ Chọn ngôn ngữ đích
+activate UI
+
+UI -> API : POST /api/narrations/create-translated-multi\n{ textContent, languageCodes[], restaurantId }
+activate API
+
+API -> DB : Lấy Languages theo codes
+activate DB
+DB --> API : Danh sách Language entities
+deactivate DB
+
+loop Với mỗi languageCode trong danh sách
+    alt languageCode != "vi" (không phải tiếng Việt)
+        API -> Translate : GET /get?q={text}&langpair=vi|{code}
+        activate Translate
+        Translate --> API : { translatedText }
+        deactivate Translate
+        API -> API : textForTts = translatedText
+    else languageCode == "vi"
+        API -> API : textForTts = originalText
+    end
+
+    API -> TTS : GET /translate_tts?q={textForTts}&tl={code}&client=tw-ob
+    activate TTS
+    TTS --> API : audioBytes (MP3)
+    deactivate TTS
+
+    API -> FS : WriteAllBytesAsync(\n  "res_{restaurantId}_{code}_{guid}.mp3",\n  audioBytes)
+    activate FS
+    FS --> API : File saved
+    deactivate FS
+
+    API -> DB : INSERT Narration {\n  RestaurantId, LanguageId,\n  TextContent, AudioUrl }
+    activate DB
+    DB --> API : OK
+    deactivate DB
+end
+
+API --> UI : 200 OK { created: N }
+deactivate API
+
+UI --> User : Hiển thị "Tạo thành công N thuyết minh"
+deactivate UI
+
+@enduml
+
+
+@startuml Sequence_11_GenerateQRCode
+skinparam sequence {
+    ArrowColor #1565C0
+    LifeLineBorderColor #333
+    ParticipantBackgroundColor #E3F2FD
+    ParticipantBorderColor #1565C0
+}
+
+title Sơ đồ Sequence 11: Tạo mã QR cho nhà hàng
+
+actor "Admin" as Admin
+participant "ManageQRCodes\n(Blazor)" as UI
+participant "RestaurantsController\n(API)" as API
+participant "QRCoder\nLibrary" as QR
+
+Admin -> UI : Chọn nhà hàng\n→ Nhấn "Tạo QR"
+activate UI
+
+UI -> API : GET /api/restaurants/{id}/qrcode
+activate API
+
+API -> API : Kiểm tra nhà hàng tồn tại
+API -> API : qrContent = "tourismapp://restaurant/{id}"
+
+API -> QR : CreateQrCode(qrContent, ECCLevel.Q)
+activate QR
+QR --> API : QRCodeData
+deactivate QR
+
+API -> QR : PngByteQRCode.GetGraphic(10)
+activate QR
+QR --> API : pngBytes
+deactivate QR
+
+API --> UI : File(pngBytes, "image/png",\n  "qr-restaurant-{id}.png")
+deactivate API
+
+UI --> Admin : Hiển thị hình ảnh QR Code\n+ Nút tải về
+deactivate UI
+
+== Khách quét QR ==
+
+actor "Khách du lịch" as Tourist
+participant "QRScannerPage\n(MAUI)" as Scanner
+participant "AppShell\n(MAUI)" as Shell
+
+Tourist -> Scanner : Quét mã QR bằng camera
+activate Scanner
+Scanner -> Scanner : Decode QR →\n"tourismapp://restaurant/{id}"
+Scanner -> Shell : GoToAsync(\n  "RestaurantDetailPage?id={id}")
+deactivate Scanner
+activate Shell
+Shell --> Tourist : Hiển thị chi tiết nhà hàng
+deactivate Shell
+
+@enduml
+
+
+@startuml Sequence_12_TourCRUD
+skinparam sequence {
+    ArrowColor #1565C0
+    LifeLineBorderColor #333
+    ParticipantBackgroundColor #E3F2FD
+    ParticipantBorderColor #1565C0
+}
+
+title Sơ đồ Sequence 12: Quản lý Tour (Thêm / Sửa / Xóa / Ẩn-Hiện)
+
+actor "Admin" as Admin
+participant "ManageTours\n(Blazor)" as UI
+participant "ToursController\n(API)" as API
+database "SQL Server" as DB
+
+== Thêm Tour mới ==
+
+Admin -> UI : Nhập Name, Description,\nImage, Price + Chọn POIs
+activate UI
+UI -> API : POST /api/tours\n{ name, description, image,\n  price, pois[] }
+activate API
+API -> DB : INSERT Tour
+activate DB
+DB --> API : tour.TourId
+deactivate DB
+
+loop Với mỗi POI
+    API -> DB : INSERT TourPOI {\n  TourId, RestaurantId, OrderIndex }
+end
+
+API --> UI : 200 OK { tourId }
+deactivate API
+UI --> Admin : "Tạo tour thành công"
+deactivate UI
+
+== Chỉnh sửa Tour ==
+
+Admin -> UI : Chọn tour → Sửa thông tin + POIs
+activate UI
+UI -> API : PUT /api/tours/{id}\n{ name, description, image,\n  price, pois[] }
+activate API
+API -> DB : UPDATE Tour SET\n  Name, Description, Image, Price
+API -> DB : DELETE tất cả TourPOIs cũ
+loop Với mỗi POI mới
+    API -> DB : INSERT TourPOI mới
+end
+API --> UI : 200 OK
+deactivate API
+UI --> Admin : "Cập nhật thành công"
+deactivate UI
+
+== Ẩn / Hiện Tour ==
+
+Admin -> UI : Nhấn toggle ẩn/hiện
+activate UI
+UI -> API : PATCH /api/tours/{id}/toggle
+activate API
+API -> DB : UPDATE Tour SET\n  IsActive = !IsActive
+API --> UI : { isActive: true/false }
+deactivate API
+UI --> Admin : Cập nhật trạng thái tour
+deactivate UI
+
+== Xóa Tour ==
+
+Admin -> UI : Nhấn "Xóa" → Xác nhận
+activate UI
+UI -> API : DELETE /api/tours/{id}
+activate API
+API -> DB : DELETE TourPOIs\n  WHERE TourId = {id}
+API -> DB : DELETE Tour\n  WHERE TourId = {id}
+API --> UI : 200 OK
+deactivate API
+UI --> Admin : "Đã xóa tour"
+deactivate UI
+
+@enduml
+
+
+@startuml Sequence_13_AnonymousRouteTracking
+skinparam sequence {
+    ArrowColor #1565C0
+    LifeLineBorderColor #333
+    ParticipantBackgroundColor #E3F2FD
+    ParticipantBorderColor #1565C0
+}
+
+title Sơ đồ Sequence 13: Lưu tuyến đi ẩn danh (Anonymous Route Tracking)
+
+actor "Khách ẩn danh" as Guest
+participant "POIMapPage\n(MAUI)" as Map
+participant "GpsService\n(MAUI)" as GPS
+participant "AnalyticsService\n(MAUI)" as Analytics
+participant "AnalyticsController\n(API)" as API
+database "SQL Server" as DB
+
+Guest -> Map : Mở tour map\n(chưa đăng nhập)
+activate Map
+
+Map -> Map : Tạo GuestLabel =\n"Guest_{Guid}"
+Map -> Map : Tạo SessionId =\n"session_{Guid}"
+
+Map -> GPS : StartListening()
+activate GPS
+
+loop Mỗi 5 giây khi GPS thay đổi
+    GPS --> Map : LocationChanged\n(lat, lng)
+    Map -> Analytics : LogTrackPoint(\n  userId=0, tourId, sessionId,\n  lat, lng, guestLabel)
+    activate Analytics
+    Analytics -> API : POST /api/analytics/track-point\n{ tourId, sessionId,\n  lat, lng, guestLabel }
+    activate API
+    API -> DB : INSERT TourTrackPoint {\n  UserId=null, TourId,\n  SessionId, Lat, Lng,\n  GuestLabel, RecordedAt }
+    activate DB
+    DB --> API : OK
+    deactivate DB
+    API --> Analytics : { success: true }
+    deactivate API
+    deactivate Analytics
+end
+
+== Khi nghe thuyết minh POI ==
+
+Guest -> Map : Nhấn "Phát thuyết minh"\ntại POI
+Map -> Analytics : LogNarrationPlay(\n  userId=0, restaurantId,\n  tourId, guestLabel, lat, lng)
+activate Analytics
+Analytics -> API : POST /api/analytics/narration-play\n{ restaurantId, tourId,\n  guestLabel, lat, lng }
+activate API
+API -> DB : INSERT NarrationPlayLog {\n  UserId=null, RestaurantId,\n  GuestLabel, PlayedAt }
+activate DB
+DB --> API : OK
+deactivate DB
+API --> Analytics : { success: true }
+deactivate API
+deactivate Analytics
+
+GPS --> Map : Dừng GPS khi\nthoát trang
+deactivate GPS
+deactivate Map
+
+@enduml
+
+
+@startuml Sequence_14_TopPOI_Heatmap
+skinparam sequence {
+    ArrowColor #1565C0
+    LifeLineBorderColor #333
+    ParticipantBackgroundColor #E3F2FD
+    ParticipantBorderColor #1565C0
+}
+
+title Sơ đồ Sequence 14: Thống kê Top POI & Heatmap vị trí người dùng
+
+actor "Admin" as Admin
+participant "Analytics\n(Blazor)" as UI
+participant "AnalyticsController\n(API)" as API
+database "SQL Server" as DB
+
+== Top địa điểm nghe nhiều nhất ==
+
+Admin -> UI : Mở trang Analytics\n→ Tab "Top POI"
+activate UI
+
+UI -> API : GET /api/analytics/top-pois?days=30&top=10
+activate API
+
+API -> DB : SELECT RestaurantId,\n  COUNT(*) as PlayCount\nFROM NarrationPlayLogs\nWHERE PlayedAt >= @since\nGROUP BY RestaurantId\nORDER BY PlayCount DESC\nTOP 10
+activate DB
+DB --> API : Danh sách { RestaurantId, PlayCount }
+deactivate DB
+
+API -> DB : SELECT RestaurantId, Name,\n  Address, Lat, Lng\nFROM Restaurants\nWHERE RestaurantId IN (...)
+activate DB
+DB --> API : Thông tin nhà hàng
+deactivate DB
+
+API -> API : Merge dữ liệu:\n{ name, address, lat, lng, playCount }
+
+API --> UI : 200 OK [top POI data]
+deactivate API
+
+UI --> Admin : Hiển thị biểu đồ cột\nTop 10 POI
+deactivate UI
+
+== Heatmap vị trí người dùng ==
+
+Admin -> UI : Chuyển tab "Heatmap"
+activate UI
+
+UI -> API : GET /api/analytics/heatmap?days=30
+activate API
+
+API -> DB : SELECT RestaurantId, COUNT(*)\nFROM NarrationPlayLogs\nGROUP BY RestaurantId
+activate DB
+DB --> API : playData[]
+deactivate DB
+
+API -> DB : SELECT RestaurantId, COUNT(*)\nFROM LocationHistories\nGROUP BY RestaurantId
+activate DB
+DB --> API : visitData[]
+deactivate DB
+
+API -> API : Merge playData + visitData\n→ tổng hợp count theo RestaurantId
+
+API -> DB : SELECT Lat, Lng, Name\nFROM Restaurants\nWHERE Id IN (...)
+activate DB
+DB --> API : Tọa độ nhà hàng
+deactivate DB
+
+API --> UI : 200 OK [{ lat, lng, name, count }]
+deactivate API
+
+UI -> UI : Render heatmap trên bản đồ\n(Leaflet.js heatLayer)
+UI --> Admin : Hiển thị heatmap\nvới độ nóng theo lượt nghe
+deactivate UI
+
+@enduml
+
+
+@startuml Sequence_15_LockUnlockRestaurant
+skinparam sequence {
+    ArrowColor #1565C0
+    LifeLineBorderColor #333
+    ParticipantBackgroundColor #E3F2FD
+    ParticipantBorderColor #1565C0
+}
+
+title Sơ đồ Sequence 15: Khóa / Mở khóa nhà hàng (Admin)
+
+actor "Admin" as Admin
+participant "ManageRestaurants\n(Blazor)" as UI
+participant "RestaurantsController\n(API)" as API
+database "SQL Server" as DB
+
+Admin -> UI : Xem danh sách nhà hàng
+activate UI
+UI -> API : GET /api/restaurants/admin/all
+activate API
+API -> DB : SELECT * FROM Restaurants\n  JOIN Users ON OwnerId
+activate DB
+DB --> API : Danh sách nhà hàng
+deactivate DB
+API --> UI : 200 OK [restaurants]
+deactivate API
+UI --> Admin : Hiển thị bảng nhà hàng\nvới nút Duyệt/Hủy duyệt
+deactivate UI
+
+== Duyệt / Hủy duyệt nhà hàng ==
+
+Admin -> UI : Nhấn "Duyệt" / "Hủy duyệt"
+activate UI
+UI -> API : PATCH /api/restaurants/admin/{id}/approve
+activate API
+
+API -> DB : SELECT * FROM Restaurants\nWHERE Id = {id}
+activate DB
+DB --> API : Restaurant entity
+deactivate DB
+
+API -> DB : UPDATE Restaurants SET\n  IsApproved = !IsApproved\nWHERE Id = {id}
+activate DB
+DB --> API : OK
+deactivate DB
+
+API --> UI : { isApproved: true/false,\n  message: "Đã duyệt/hủy duyệt" }
+deactivate API
+
+UI --> Admin : Cập nhật trạng thái\ntrên bảng
+deactivate UI
+
+== Khóa / Mở khóa User ==
+
+Admin -> UI : Nhấn "Khóa" / "Mở khóa" User
+activate UI
+UI -> API : PUT /api/users/{id}/toggle-status
+activate API
+
+API -> DB : SELECT * FROM Users\nWHERE UserId = {id}
+activate DB
+DB --> API : User entity
+deactivate DB
+
+alt User.Role == "Admin"
+    API --> UI : 400 "Không thể khóa Admin"
+else User.Role != "Admin"
+    API -> DB : UPDATE Users SET Status =\n  (Active ↔ Banned)\nWHERE UserId = {id}
+    API --> UI : { status: "Banned"/"Active" }
+end
+deactivate API
+
+UI --> Admin : Cập nhật badge trạng thái
+deactivate UI
+
+@enduml
+
+
+@startuml Sequence_16_UpdateUserProfile
+skinparam sequence {
+    ArrowColor #1565C0
+    LifeLineBorderColor #333
+    ParticipantBackgroundColor #E3F2FD
+    ParticipantBorderColor #1565C0
+}
+
+title Sơ đồ Sequence 16: Cập nhật tài khoản người dùng
+
+actor "Người dùng" as User
+participant "ProfilePage\n(MAUI)" as Profile
+participant "HttpClient\n(MAUI)" as HTTP
+participant "UsersController\n(API)" as API
+database "SQL Server" as DB
+
+User -> Profile : Mở trang Profile
+activate Profile
+
+Profile -> HTTP : GET /api/users/me\n[Authorization: Bearer token]
+activate HTTP
+HTTP -> API : GetMe()
+activate API
+API -> API : userId = ClaimTypes.NameIdentifier
+API -> DB : SELECT * FROM Users\nWHERE UserId = {userId}
+activate DB
+DB --> API : User entity
+deactivate DB
+API --> HTTP : { email, fullName, phone,\n  address, role, userLevel, avatar }
+deactivate API
+HTTP --> Profile : Thông tin user
+deactivate HTTP
+
+Profile --> User : Hiển thị thông tin hiện tại
+
+== Cập nhật thông tin ==
+
+User -> Profile : Sửa FullName, Phone,\nAddress, Avatar
+Profile -> HTTP : PUT /api/users/me\n{ fullName, phone, address, avatar }
+activate HTTP
+HTTP -> API : UpdateMe(dto)
+activate API
+
+API -> API : userId = ClaimTypes.NameIdentifier
+API -> DB : SELECT * FROM Users\nWHERE UserId = {userId}
+activate DB
+DB --> API : User entity
+deactivate DB
+
+API -> API : user.FullName = dto.FullName\nuser.Phone = dto.Phone\nuser.Address = dto.Address\nuser.Avatar = dto.Avatar
+
+alt Role == "Admin" && dto.UserLevel != null
+    API -> API : user.UserLevel = dto.UserLevel
+end
+
+API -> DB : SaveChanges()
+API --> HTTP : { message: "Cập nhật thành công",\n  fullName, phone, address, avatar }
+deactivate API
+HTTP --> Profile : Kết quả cập nhật
+deactivate HTTP
+
+Profile --> User : Hiển thị "Cập nhật thành công"
+deactivate Profile
+
+== Upload Avatar ==
+
+User -> Profile : Chọn ảnh đại diện mới
+activate Profile
+Profile -> HTTP : POST /api/users/upload-avatar\n[multipart/form-data: file]
+activate HTTP
+HTTP -> API : UploadAvatar(file)
+activate API
+
+API -> API : Tạo folder\nwwwroot/avatars/
+API -> API : fileName =\navatar_{userId}_{guid}.ext
+API -> API : Lưu file vào\nwwwroot/avatars/{fileName}
+
+API -> DB : UPDATE Users SET\n  Avatar = "/avatars/{fileName}"
+activate DB
+DB --> API : OK
+deactivate DB
+
+API --> HTTP : { url: "/avatars/{fileName}" }
+deactivate API
+HTTP --> Profile : URL avatar mới
+deactivate HTTP
+
+Profile --> User : Hiển thị avatar mới
+deactivate Profile
+
+@enduml
+
+
+@startuml Sequence_17_DeleteNarration
+skinparam sequence {
+    ArrowColor #1565C0
+    LifeLineBorderColor #333
+    ParticipantBackgroundColor #E3F2FD
+    ParticipantBorderColor #1565C0
+}
+
+title Sơ đồ Sequence 17: Xóa bản ghi thuyết minh
+
+actor "Chủ nhà hàng" as Owner
+participant "MyAudiosPage\n(MAUI)" as UI
+participant "HttpClient\n(MAUI)" as HTTP
+participant "RestaurantsController\n(API)" as API
+database "SQL Server" as DB
+database "File System\n(audios/)" as FS
+
+== Chủ nhà hàng xóa thuyết minh của mình ==
+
+Owner -> UI : Vuốt trái thuyết minh\n→ Nhấn "Xóa"
+activate UI
+
+UI -> UI : Hiển thị xác nhận\n"Bạn có chắc muốn xóa?"
+Owner -> UI : Nhấn "Xác nhận"
+
+UI -> HTTP : DELETE /api/restaurants/my/narrations/{id}\n[Bearer token]
+activate HTTP
+HTTP -> API : DeleteMyNarration(id)
+activate API
+
+API -> API : userId = ClaimTypes.NameIdentifier
+API -> DB : SELECT Restaurant\nJOIN Narrations\nWHERE OwnerId = {userId}
+activate DB
+DB --> API : Restaurant + Narrations
+deactivate DB
+
+API -> API : Tìm narration trong\nnhà hàng của owner
+
+alt Tìm thấy narration
+    alt Có AudioUrl && không phải URL http
+        API -> FS : File.Delete(\n  "audios/{audioUrl}")
+        activate FS
+        FS --> API : File deleted
+        deactivate FS
+    end
+
+    API -> DB : DELETE FROM Narrations\nWHERE NarrationId = {id}
+    activate DB
+    DB --> API : OK
+    deactivate DB
+
+    API --> HTTP : { message:\n  "Xóa thuyết minh thành công" }
+else Không tìm thấy
+    API --> HTTP : 404 "Không tìm thấy\nthuyết minh"
+end
+deactivate API
+HTTP --> UI : Kết quả
+deactivate HTTP
+
+UI --> Owner : Cập nhật danh sách\n(xóa khỏi ListView)
+deactivate UI
+
+== Admin xóa thuyết minh bất kỳ ==
+
+actor "Admin" as Admin
+participant "ManageNarrations\n(Blazor)" as AdminUI
+
+Admin -> AdminUI : Chọn thuyết minh\n→ Nhấn "Xóa"
+activate AdminUI
+
+AdminUI -> API : POST /api/restaurants/admin/delete-narration/{id}
+activate API
+
+API -> DB : SELECT * FROM Narrations\nWHERE NarrationId = {id}
+activate DB
+DB --> API : Narration entity
+deactivate DB
+
+API -> FS : Xóa file audio vật lý\n(nếu tồn tại)
+API -> DB : DELETE FROM Narrations\nWHERE NarrationId = {id}
+API --> AdminUI : 200 OK
+deactivate API
+
+AdminUI --> Admin : Cập nhật bảng thuyết minh
+deactivate AdminUI
+
+@enduml
+
+
+@startuml Sequence_18_PaymentManagement
+skinparam sequence {
+    ArrowColor #1565C0
+    LifeLineBorderColor #333
+    ParticipantBackgroundColor #E3F2FD
+    ParticipantBorderColor #1565C0
+}
+
+title Sơ đồ Sequence 18: Quản lý thanh toán (Admin)
+
+actor "Admin" as Admin
+participant "AdminPayments\n(Blazor)" as UI
+participant "PaymentsController\n(API)" as API
+database "SQL Server" as DB
+
+== Xem danh sách thanh toán ==
+
+Admin -> UI : Mở trang Quản lý\nthanh toán
+activate UI
+
+UI -> API : GET /api/payments/admin\n?search=&from=&to=\n&page=1&pageSize=10
+activate API
+
+API -> DB : SELECT p.*, u.FullName,\n  r.Name, t.Name\nFROM Payments p\nJOIN Users u\nLEFT JOIN Restaurants r\nLEFT JOIN Tours t\nWHERE ... ORDER BY PaymentDate DESC\nOFFSET/FETCH
+activate DB
+DB --> API : { totalRecords, data[] }
+deactivate DB
+
+API --> UI : { totalRecords, page,\n  pageSize, data[] }
+deactivate API
+UI --> Admin : Hiển thị bảng thanh toán\nvới phân trang
+deactivate UI
+
+== Xem thống kê doanh thu ==
+
+Admin -> UI : Chọn khoảng thời gian\n→ Xem thống kê
+activate UI
+
+UI -> API : GET /api/payments/admin/stats\n?from=&to=
+activate API
+API -> DB : SUM(Amount) nhóm theo\nPaymentType (User/Restaurant)
+activate DB
+DB --> API : { totalSuccess,\n  userRevenue, restaurantRevenue }
+deactivate DB
+API --> UI : Thống kê doanh thu
+deactivate API
+
+UI -> API : GET /api/payments/admin/monthly-revenue
+activate API
+API -> DB : GROUP BY Year, Month\nWHERE 6 tháng gần nhất
+activate DB
+DB --> API : [{ year, month, total }]
+deactivate DB
+API --> UI : Doanh thu theo tháng
+deactivate API
+
+UI --> Admin : Biểu đồ doanh thu\n+ Tổng hợp
+deactivate UI
+
+== Xác nhận thanh toán thủ công ==
+
+Admin -> UI : Nhấn "Xác nhận" cho\npayment đang Pending
+activate UI
+
+UI -> API : POST /api/payments/confirm/{id}
+activate API
+
+API -> DB : SELECT Payment\nJOIN Restaurant, User
+activate DB
+DB --> API : Payment entity
+deactivate DB
+
+API -> API : payment.Status = "Success"
+
+alt PaymentType == "UserUpgrade"
+    API -> DB : UPDATE Users SET\n  UserLevel = 1
+else PaymentType == "RestaurantPremium"
+    API -> DB : UPDATE Restaurants SET\n  IsPremium = true,\n  PremiumExpireDate = ...
+else PaymentType == "RestaurantRegistration"
+    API -> DB : UPDATE Restaurants SET\n  IsApproved = true
+else PaymentType == "RestaurantRegistrationPremium"
+    API -> DB : UPDATE Restaurants SET\n  IsApproved = true,\n  IsPremium = true,\n  PremiumExpireDate = ...
+end
+
+API -> DB : SaveChanges()
+API --> UI : "Payment confirmed successfully"
+deactivate API
+
+UI --> Admin : Cập nhật trạng thái\n→ "Success"
+deactivate UI
+
+@enduml
+
+
+@startuml Sequence_19_AutoNarration
+skinparam sequence {
+    ArrowColor #1565C0
+    LifeLineBorderColor #333
+    ParticipantBackgroundColor #E3F2FD
+    ParticipantBorderColor #1565C0
+}
+
+title Sơ đồ Sequence 19: Thuyết minh tự động (Auto Narration khi chỉnh sửa nhà hàng)
+
+actor "Chủ nhà hàng" as Owner
+participant "EditRestaurantPage\n(MAUI)" as UI
+participant "HttpClient\n(MAUI)" as HTTP
+participant "RestaurantsController\n(API)" as API
+participant "MyMemory API\n(Dịch thuật)" as Translate
+participant "Google TTS\n(Text-to-Speech)" as TTS
+database "SQL Server" as DB
+database "File System\n(audios/)" as FS
+
+Owner -> UI : Cập nhật nhà hàng:\nNhập nội dung thuyết minh\nChọn nhiều ngôn ngữ
+activate UI
+
+UI -> HTTP : PUT /api/restaurants/update-my\n[multipart/form-data]\nname, address, description,\nlanguageIds[], textContents[],\nimageFile?
+activate HTTP
+
+HTTP -> API : UpdateMyRestaurant(form data)
+activate API
+
+API -> DB : SELECT Restaurant\nJOIN Narrations\nWHERE OwnerId = {userId}
+activate DB
+DB --> API : Restaurant + Narrations hiện tại
+deactivate DB
+
+API -> API : Cập nhật thông tin cơ bản:\nName, Address, Description, Phone
+
+alt Có imageFile upload
+    API -> FS : Lưu ảnh mới\n→ images/{guid}.ext
+end
+
+loop Với mỗi languageId[i]
+    API -> DB : Lấy Language.Code\ntừ languageId
+    
+    alt languageCode != "vi" && có textContent
+        API -> Translate : GET /get?q={text}\n&langpair=vi|{langCode}
+        activate Translate
+        Translate --> API : { translatedText }
+        deactivate Translate
+        API -> API : finalText = translatedText
+    else
+        API -> API : finalText = originalText
+    end
+
+    alt Có audioFile_{i} upload
+        API -> FS : Lưu audio upload\n→ audios/{guid}.ext
+        API -> API : audioUrl = {fileName}
+    else Không có file upload → Tạo TTS tự động
+        API -> TTS : GET /translate_tts?q={finalText}\n&tl={langCode}&client=tw-ob
+        activate TTS
+        TTS --> API : audioBytes (MP3)
+        deactivate TTS
+        API -> FS : WriteAllBytesAsync(\n  "res_{restaurantId}_{code}_{guid}.mp3")
+        API -> API : audioUrl = ttsFileName
+    end
+
+    alt Narration đã tồn tại cho ngôn ngữ này
+        API -> DB : UPDATE Narration SET\n  TextContent, AudioUrl
+    else Narration chưa tồn tại
+        API -> DB : INSERT Narration {\n  RestaurantId, LanguageId,\n  TextContent, AudioUrl }
+    end
+end
+
+API -> DB : SaveChanges()
+API --> HTTP : 200 OK { restaurant }
+deactivate API
+HTTP --> UI : Kết quả cập nhật
+deactivate HTTP
+UI --> Owner : "Cập nhật nhà hàng\nthành công"
+deactivate UI
+
+@enduml
+

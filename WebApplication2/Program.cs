@@ -5,6 +5,7 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using WebApplication2.Data;
 using Microsoft.Extensions.FileProviders;
+using WebApplication2.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -92,6 +93,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+// ===== SEPAY BANK POLLING =====
+builder.Services.Configure<SepaySettings>(builder.Configuration.GetSection("SePay"));
+builder.Services.AddHostedService<BankTransactionPollingService>();
+
 var app = builder.Build();
 
 // ===== AUTO-MIGRATE DATABASE =====
@@ -152,5 +157,5 @@ app.MapControllers();
 // 🔥 Blazor fallback PHẢI SAU CÙNG
 app.MapFallbackToFile("index.html");
 
-app.Run();
 
+app.Run();

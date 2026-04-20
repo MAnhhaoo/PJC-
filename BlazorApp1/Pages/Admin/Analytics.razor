@@ -75,7 +75,45 @@
     <MudTabPanel Text="🗺️ Heatmap mật độ khách" Icon="@Icons.Material.Filled.Map">
         <MudText Typo="Typo.body2" Class="mb-2" Color="Color.Secondary">
             Bản đồ nhiệt hiển thị mật độ khách du lịch tại các điểm POI trong @_selectedDays ngày qua.
+            Các pin màu thể hiện mức độ lượt ghé (xanh = thấp → đỏ = cao).
         </MudText>
+
+        <!-- Threshold Config -->
+        <MudExpansionPanels Class="mb-3">
+            <MudExpansionPanel Text="⚙️ Cài đặt ngưỡng màu heatmap" Dense="true">
+                <MudGrid>
+                    @for (int i = 0; i < _heatmapThresholds.Count; i++)
+                    {
+                        var idx = i;
+                        <MudItem xs="12" sm="6" md="4">
+                            <MudPaper Class="pa-2" Elevation="0" Style="@($"border-left: 4px solid {_heatmapThresholds[idx].Color}")">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                    <MudNumericField T="int" Label="Từ lượt ghé" @bind-Value="_heatmapThresholds[idx].Min"
+                                                     Variant="Variant.Outlined" Dense="true" Style="max-width:100px;" />
+                                    <MudTextField T="string" Label="Tên" @bind-Value="_heatmapThresholds[idx].Label"
+                                                  Variant="Variant.Outlined" Dense="true" Style="max-width:120px;" />
+                                    <MudTextField T="string" Label="Màu" @bind-Value="_heatmapThresholds[idx].Color"
+                                                  Variant="Variant.Outlined" Dense="true" Style="max-width:100px;" />
+                                    <div style="width:24px;height:24px;border-radius:50%;background:@(_heatmapThresholds[idx].Color);border:2px solid #ccc;"></div>
+                                </MudStack>
+                            </MudPaper>
+                        </MudItem>
+                    }
+                </MudGrid>
+                <MudStack Row="true" Class="mt-2" Spacing="2">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                               OnClick="SaveHeatmapConfig" StartIcon="@Icons.Material.Filled.Save">Lưu cài đặt</MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Default" Size="Size.Small"
+                               OnClick="AddThreshold" StartIcon="@Icons.Material.Filled.Add">Thêm mức</MudButton>
+                    @if (_heatmapThresholds.Count > 2)
+                    {
+                        <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small"
+                                   OnClick="RemoveLastThreshold" StartIcon="@Icons.Material.Filled.Remove">Xóa mức cuối</MudButton>
+                    }
+                </MudStack>
+            </MudExpansionPanel>
+        </MudExpansionPanels>
+
         <div id="analyticsHeatmap" style="height:500px; width:100%; border-radius:8px; border:1px solid #e0e0e0;"></div>
 
         @if (_heatmapData != null && _heatmapData.Count > 0)
@@ -84,11 +122,19 @@
                 <HeaderContent>
                     <MudTh>Nhà hàng / Điểm</MudTh>
                     <MudTh>Lượt ghé</MudTh>
+                    <MudTh>Mức độ</MudTh>
                 </HeaderContent>
                 <RowTemplate>
                     <MudTd>@context.Name</MudTd>
                     <MudTd>
                         <MudChip T="string" Color="Color.Primary" Size="Size.Small">@context.Count</MudChip>
+                    </MudTd>
+                    <MudTd>
+                        @{
+                            var thresholdColor = GetThresholdColor(context.Count);
+                            var thresholdLabel = GetThresholdLabel(context.Count);
+                        }
+                        <MudChip T="string" Size="Size.Small" Style="@($"background-color:{thresholdColor};color:white")">@thresholdLabel</MudChip>
                     </MudTd>
                 </RowTemplate>
             </MudTable>
@@ -136,7 +182,7 @@
     </MudTabPanel>
 
     <!-- TAB 3: Journeys -->
-    <MudTabPanel Text="🚶 Hành trình khách ẩn danh" Icon="@Icons.Material.Filled.Timeline">
+    <MudTabPanel Text="🚶 Hành trình khách vãng lai" Icon="@Icons.Material.Filled.Timeline">
         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3" Class="mb-3">
             <MudSelect T="int" Label="Lọc theo Tour" @bind-Value="_journeyTourFilter" Variant="Variant.Outlined" Dense="true" Style="max-width:300px;">
                 <MudSelectItem Value="0">Tất cả tour</MudSelectItem>
@@ -180,7 +226,134 @@
             <MudAlert Severity="Severity.Info">Chưa có dữ liệu hành trình trong khoảng thời gian này.</MudAlert>
         }
     </MudTabPanel>
-</MudTabs>
+
+    <!-- TAB 4: Live Visitors Heatmap -->
+    <MudTabPanel Text="📍 Khách hiện tại (Real-time)" Icon="@Icons.Material.Filled.MyLocation">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3" Class="mb-3">
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Bản đồ hiển thị vị trí khách đang hoạt động trong 1 phút gần nhất.
+            </MudText>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
+                       OnClick="RefreshLiveVisitors" StartIcon="@Icons.Material.Filled.Refresh">Làm mới</MudButton>
+        </MudStack>
+
+        <!-- Live stats cards -->
+        <MudGrid Class="mb-3">
+            <MudItem xs="12" sm="4">
+                <MudPaper Class="pa-3 d-flex flex-column align-center" Elevation="1">
+                    <MudIcon Icon="@Icons.Material.Filled.People" Color="Color.Primary" />
+                    <MudText Typo="Typo.h5">@_liveTotal</MudText>
+                    <MudText Typo="Typo.caption">Tổng đang online</MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudPaper Class="pa-3 d-flex flex-column align-center" Elevation="1">
+                    <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Success" />
+                    <MudText Typo="Typo.h5">@_liveRegistered</MudText>
+                    <MudText Typo="Typo.caption">Đã đăng ký</MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudPaper Class="pa-3 d-flex flex-column align-center" Elevation="1">
+                    <MudIcon Icon="@Icons.Material.Filled.VisibilityOff" Color="Color.Default" />
+                    <MudText Typo="Typo.h5">@_liveGuest</MudText>
+                    <MudText Typo="Typo.caption">Khách vãng lai</MudText>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <div id="liveVisitorsMap" style="height:500px; width:100%; border-radius:8px; border:1px solid #e0e0e0;"></div>
+
+        @if (_livePerRestaurant != null && _livePerRestaurant.Count > 0)
+        {
+            <MudTable Items="@_livePerRestaurant" Dense="true" Hover="true" Class="mt-3" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Nhà hàng / Điểm</MudTh>
+                    <MudTh>Số khách hiện tại</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.Name</MudTd>
+                    <MudTd>
+                        <MudChip T="string" Color="Color.Primary" Size="Size.Small">@context.VisitorCount khách</MudChip>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+
+            </MudTabPanel>
+
+            <!-- TAB 5: Hourly Peak Analysis -->
+            <MudTabPanel Text="⏰ Giờ cao điểm" Icon="@Icons.Material.Filled.Schedule">
+                <MudText Typo="Typo.body2" Class="mb-3" Color="Color.Secondary">
+                    Phân tích lượt phát thuyết minh theo từng khung giờ trong @_selectedDays ngày qua.
+                </MudText>
+
+                @if (_hourlyLabels.Length > 0)
+                {
+                    <!-- Peak Hours Summary Cards -->
+                    <MudGrid Class="mb-4">
+                        @for (int i = 0; i < _topPeakHours.Count; i++)
+                        {
+                            var peak = _topPeakHours[i];
+                            var rankIcon = i == 0 ? "🥇" : i == 1 ? "🥈" : "🥉";
+                            var cardColor = i == 0 ? "#FF6F00" : i == 1 ? "#F57C00" : "#FFB74D";
+                            var textColor = i == 0 ? "white" : i == 1 ? "white" : "#333";
+                            <MudItem xs="12" sm="4">
+                                <MudPaper Class="pa-4 d-flex flex-column align-center" Elevation="3"
+                                          Style="@($"background: linear-gradient(135deg, {cardColor}, {cardColor}dd); border-radius: 16px;")">
+                                    <MudText Typo="Typo.h3" Style="@($"color:{textColor}")">@rankIcon</MudText>
+                                    <MudText Typo="Typo.h4" Style="@($"color:{textColor}; font-weight:bold")">@peak.Hour</MudText>
+                                    <MudText Typo="Typo.h5" Style="@($"color:{textColor}")">@peak.PlayCount lượt phát</MudText>
+                                    <MudText Typo="Typo.caption" Style="@($"color:{textColor}; opacity:0.8")">
+                                        @(i == 0 ? "Cao điểm nhất" : i == 1 ? "Cao điểm thứ 2" : "Cao điểm thứ 3")
+                                    </MudText>
+                                </MudPaper>
+                            </MudItem>
+                        }
+                    </MudGrid>
+
+                    <!-- Hourly Bar Chart -->
+                    <MudPaper Class="pa-4 mb-4" Elevation="2" Style="border-radius: 12px;">
+                        <MudText Typo="Typo.h6" Class="mb-3">📊 Biểu đồ phân bố theo giờ</MudText>
+                        <MudChart ChartType="ChartType.Bar" ChartSeries="@_hourlySeries" XAxisLabels="@_hourlyLabels"
+                                  Width="100%" Height="350px" ChartOptions="@_hourlyChartOptions" />
+                    </MudPaper>
+
+                    <!-- Hourly Data Table -->
+                    <MudPaper Class="pa-4" Elevation="2" Style="border-radius: 12px;">
+                        <MudText Typo="Typo.h6" Class="mb-3">📋 Chi tiết theo khung giờ</MudText>
+                        <MudTable Items="@_hourlyTableData" Dense="true" Hover="true" Striped="true" Elevation="0">
+                            <HeaderContent>
+                                <MudTh>Khung giờ</MudTh>
+                                <MudTh>Lượt phát</MudTh>
+                                <MudTh>Mức độ</MudTh>
+                                <MudTh>Biểu đồ</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd><strong>@context.Label</strong></MudTd>
+                                <MudTd>@context.PlayCount</MudTd>
+                                <MudTd>
+                                    @{
+                                        var level = context.PlayCount >= (_peakPlayCount * 0.8) ? "🔴 Cao điểm"
+                                            : context.PlayCount >= (_peakPlayCount * 0.4) ? "🟡 Trung bình"
+                                            : context.PlayCount > 0 ? "🟢 Thấp" : "⚪ Không có";
+                                    }
+                                    @level
+                                </MudTd>
+                                <MudTd Style="min-width:200px;">
+                                    <MudProgressLinear Color="@(context.PlayCount >= (_peakPlayCount * 0.8) ? Color.Error : context.PlayCount >= (_peakPlayCount * 0.4) ? Color.Warning : Color.Success)"
+                                                       Value="@((_peakPlayCount > 0) ? (int)(context.PlayCount * 100.0 / _peakPlayCount) : 0)" Style="height:12px; border-radius:6px;" />
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    </MudPaper>
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Info">Chưa có dữ liệu trong khoảng thời gian này. Bấm "Cập nhật" để tải dữ liệu.</MudAlert>
+                }
+            </MudTabPanel>
+        </MudTabs>
 
 @code {
     private int _selectedDays = 30;
@@ -191,6 +364,7 @@
 
     // Heatmap
     private List<HeatmapItem>? _heatmapData;
+    private List<HeatmapThreshold> _heatmapThresholds = new();
 
     // Top POIs
     private List<TopPOIItem>? _topPOIs;
@@ -204,8 +378,24 @@
 
     private bool _heatmapInited;
     private bool _journeyMapInited;
+    private bool _liveMapInited;
 
     private int _activeTabIndex = 0;
+
+    // Live visitors
+    private int _liveTotal;
+    private int _liveRegistered;
+    private int _liveGuest;
+    private List<LiveRestaurantItem>? _livePerRestaurant;
+
+    // Hourly stats
+    private string[] _hourlyLabels = Array.Empty<string>();
+    private List<ChartSeries<double>> _hourlySeries = new();
+    private string _peakHour = "";
+    private int _peakPlayCount;
+    private List<PeakHourItem> _topPeakHours = new();
+    private ChartOptions _hourlyChartOptions = new();
+    private List<HourlyTableItem> _hourlyTableData = new();
 
     private async void OnTabChanged(int index)
     {
@@ -223,12 +413,23 @@
             _journeyMapInited = false;
             await InitJourneyMap();
         }
+        else if (index == 3)
+        {
+            await Task.Delay(300);
+            _liveMapInited = false;
+            await LoadLiveVisitors();
+        }
+        else if (index == 4)
+        {
+            await LoadHourlyStats();
+        }
     }
 
     private bool _firstRenderDone;
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadHeatmapConfig();
         await LoadAllData();
     }
 
@@ -390,13 +591,14 @@
             if (_heatmapData != null && _heatmapData.Count > 0)
             {
                 Console.WriteLine($"[Heatmap] Calling updateHeatmap with {_heatmapData.Count} items, first: lat={_heatmapData[0].Lat}, lng={_heatmapData[0].Lng}");
+                var thresholdsJs = _heatmapThresholds.Select(t => new { min = t.Min, color = t.Color, label = t.Label }).ToArray();
                 await JSRuntime.InvokeVoidAsync("updateHeatmap", (object)_heatmapData.Select(h => new
                 {
                     lat = h.Lat,
                     lng = h.Lng,
                     name = h.Name,
                     count = h.Count
-                }).ToArray());
+                }).ToArray(), (object)thresholdsJs);
             }
             else
             {
@@ -456,6 +658,203 @@
     public async ValueTask DisposeAsync()
     {
         try { await JSRuntime.InvokeVoidAsync("destroyAnalyticsMap"); } catch { }
+        try { await JSRuntime.InvokeVoidAsync("destroyLiveMap"); } catch { }
+    }
+
+    private async Task LoadLiveVisitors()
+    {
+        try
+        {
+            var json = await Http.GetStringAsync("api/analytics/active-visitors");
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            _liveTotal = root.GetProperty("totalActive").GetInt32();
+            _liveRegistered = root.GetProperty("registeredCount").GetInt32();
+            _liveGuest = root.GetProperty("guestCount").GetInt32();
+
+            var visitors = root.GetProperty("visitors");
+            var perRestaurant = root.GetProperty("perRestaurant");
+
+            _livePerRestaurant = new();
+            foreach (var r in perRestaurant.EnumerateArray())
+            {
+                _livePerRestaurant.Add(new LiveRestaurantItem
+                {
+                    Name = r.GetProperty("name").GetString() ?? "",
+                    VisitorCount = r.GetProperty("visitorCount").GetInt32(),
+                    Latitude = r.GetProperty("latitude").GetDouble(),
+                    Longitude = r.GetProperty("longitude").GetDouble()
+                });
+            }
+
+            StateHasChanged();
+
+            // Init map
+            if (!_liveMapInited)
+            {
+                bool created = false;
+                for (int i = 0; i < 15; i++)
+                {
+                    created = await JSRuntime.InvokeAsync<bool>("initLiveVisitorsMap", "liveVisitorsMap");
+                    if (created) break;
+                    await Task.Delay(300);
+                }
+                if (!created) return;
+                _liveMapInited = true;
+                await Task.Delay(200);
+            }
+
+            // Build visitor array for JS
+            var visitorsArr = new List<object>();
+            foreach (var v in visitors.EnumerateArray())
+            {
+                visitorsArr.Add(new
+                {
+                    type = v.GetProperty("type").GetString(),
+                    label = v.GetProperty("label").GetString(),
+                    lat = v.GetProperty("lat").GetDouble(),
+                    lng = v.GetProperty("lng").GetDouble()
+                });
+            }
+
+            var perRestArr = _livePerRestaurant.Select(r => new
+            {
+                name = r.Name,
+                latitude = r.Latitude,
+                longitude = r.Longitude,
+                visitorCount = r.VisitorCount
+            }).ToArray();
+
+            var thresholdsJs = _heatmapThresholds.Select(t => new { min = t.Min, color = t.Color }).ToArray();
+            await JSRuntime.InvokeVoidAsync("updateLiveVisitors", visitorsArr.ToArray(), perRestArr, thresholdsJs);
+        }
+        catch (Exception ex) { Console.WriteLine($"LoadLiveVisitors error: {ex.Message}"); }
+    }
+
+    private async Task RefreshLiveVisitors()
+    {
+        await LoadLiveVisitors();
+    }
+
+    private async Task LoadHourlyStats()
+    {
+        try
+        {
+            var json = await Http.GetStringAsync($"api/analytics/hourly-stats?days={_selectedDays}");
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            _peakHour = root.GetProperty("peakHour").GetString() ?? "";
+            _peakPlayCount = root.GetProperty("peakPlayCount").GetInt32();
+
+            _topPeakHours = new();
+            if (root.TryGetProperty("topPeakHours", out var topPeaks))
+            {
+                foreach (var p in topPeaks.EnumerateArray())
+                {
+                    _topPeakHours.Add(new PeakHourItem
+                    {
+                        Hour = p.GetProperty("hour").GetString() ?? "",
+                        PlayCount = p.GetProperty("playCount").GetInt32()
+                    });
+                }
+            }
+
+            var hourly = root.GetProperty("hourlyData");
+            var labels = new List<string>();
+            var values = new List<double>();
+            foreach (var item in hourly.EnumerateArray())
+            {
+                labels.Add(item.GetProperty("label").GetString() ?? "");
+                values.Add(item.GetProperty("playCount").GetInt32());
+            }
+            _hourlyLabels = labels.ToArray();
+            _hourlySeries = new List<ChartSeries<double>>
+            {
+                new ChartSeries<double> { Name = "Lượt phát", Data = values.ToArray() }
+            };
+
+            _hourlyTableData = new();
+            for (int i = 0; i < labels.Count; i++)
+            {
+                _hourlyTableData.Add(new HourlyTableItem { Label = labels[i], PlayCount = (int)values[i] });
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex) { Console.WriteLine($"LoadHourlyStats error: {ex.Message}"); }
+    }
+
+    private async Task LoadHeatmapConfig()
+    {
+        try
+        {
+            var list = await Http.GetFromJsonAsync<List<HeatmapThreshold>>("api/analytics/heatmap-config");
+            if (list != null && list.Count > 0)
+                _heatmapThresholds = list;
+            else
+                _heatmapThresholds = new List<HeatmapThreshold>
+                {
+                    new() { Min = 0, Color = "#4CAF50", Label = "Ít" },
+                    new() { Min = 5, Color = "#FF9800", Label = "Trung bình" },
+                    new() { Min = 15, Color = "#F44336", Label = "Nhiều" }
+                };
+        }
+        catch
+        {
+            _heatmapThresholds = new List<HeatmapThreshold>
+            {
+                new() { Min = 0, Color = "#4CAF50", Label = "Ít" },
+                new() { Min = 5, Color = "#FF9800", Label = "Trung bình" },
+                new() { Min = 15, Color = "#F44336", Label = "Nhiều" }
+            };
+        }
+    }
+
+    private async Task SaveHeatmapConfig()
+    {
+        try
+        {
+            var ordered = _heatmapThresholds.OrderBy(t => t.Min).ToList();
+            _heatmapThresholds = ordered;
+            await Http.PutAsJsonAsync("api/analytics/heatmap-config", _heatmapThresholds);
+            _heatmapInited = false;
+            await InitHeatmap();
+        }
+        catch (Exception ex) { Console.WriteLine($"SaveHeatmapConfig error: {ex.Message}"); }
+    }
+
+    private void AddThreshold()
+    {
+        var maxMin = _heatmapThresholds.Count > 0 ? _heatmapThresholds.Max(t => t.Min) : 0;
+        _heatmapThresholds.Add(new HeatmapThreshold { Min = maxMin + 10, Color = "#9C27B0", Label = "Mới" });
+    }
+
+    private void RemoveLastThreshold()
+    {
+        if (_heatmapThresholds.Count > 2)
+            _heatmapThresholds.RemoveAt(_heatmapThresholds.Count - 1);
+    }
+
+    private string GetThresholdColor(int count)
+    {
+        var ordered = _heatmapThresholds.OrderByDescending(t => t.Min).ToList();
+        foreach (var t in ordered)
+        {
+            if (count >= t.Min) return t.Color;
+        }
+        return _heatmapThresholds.FirstOrDefault()?.Color ?? "#4CAF50";
+    }
+
+    private string GetThresholdLabel(int count)
+    {
+        var ordered = _heatmapThresholds.OrderByDescending(t => t.Min).ToList();
+        foreach (var t in ordered)
+        {
+            if (count >= t.Min) return t.Label;
+        }
+        return _heatmapThresholds.FirstOrDefault()?.Label ?? "Ít";
     }
 
     // DTOs
@@ -509,5 +908,32 @@
         public double Lat { get; set; }
         public double Lng { get; set; }
         public DateTime Time { get; set; }
+    }
+
+    class HeatmapThreshold
+    {
+        public int Min { get; set; }
+        public string Color { get; set; } = "";
+        public string Label { get; set; } = "";
+    }
+
+    class LiveRestaurantItem
+    {
+        public string Name { get; set; } = "";
+        public int VisitorCount { get; set; }
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+    }
+
+    class PeakHourItem
+    {
+        public string Hour { get; set; } = "";
+        public int PlayCount { get; set; }
+    }
+
+    class HourlyTableItem
+    {
+        public string Label { get; set; } = "";
+        public int PlayCount { get; set; }
     }
 }

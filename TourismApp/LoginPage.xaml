@@ -23,21 +23,21 @@
 
               
 
-                <Frame Padding="0" CornerRadius="10" BorderColor="#EDF2F7">
+                <Border Padding="0" StrokeShape="RoundRectangle 10" Stroke="#EDF2F7" StrokeThickness="1">
                     <Entry x:Name="txtEmail"
                            Placeholder="Email của bạn"
                            Keyboard="Email"
                            HeightRequest="50"
                            Margin="15,0"/>
-                </Frame>
+                </Border>
 
-                <Frame Padding="0" CornerRadius="10" BorderColor="#EDF2F7">
+                <Border Padding="0" StrokeShape="RoundRectangle 10" Stroke="#EDF2F7" StrokeThickness="1">
                     <Entry x:Name="txtPassword"
                            Placeholder="Mật khẩu"
                            IsPassword="True"
                            HeightRequest="50"
                            Margin="15,0"/>
-                </Frame>
+                </Border>
 
                 <Button x:Name="btnLogin"
                         Text="Đăng nhập ngay"
@@ -47,6 +47,17 @@
                         FontAttributes="Bold"
                         CornerRadius="10"
                         HeightRequest="55"/>
+
+                <Button x:Name="btnGuest"
+                        Text="👤 Tiếp tục với tư cách khách"
+                        Clicked="OnGuestClicked"
+                        BackgroundColor="Transparent"
+                        TextColor="#7F8C8D"
+                        FontAttributes="Bold"
+                        CornerRadius="10"
+                        HeightRequest="50"
+                        BorderColor="#BDC3C7"
+                        BorderWidth="1"/>
 
                 <HorizontalStackLayout HorizontalOptions="Center" Spacing="5">
                     <Label x:Name="lblNoAccount" Text="Chưa có tài khoản?" VerticalOptions="Center"/>

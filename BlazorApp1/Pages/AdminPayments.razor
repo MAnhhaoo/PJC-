@@ -82,6 +82,7 @@
     <!-- TABLE -->
     <MudTable T="PaymentViewModel"
               ServerData="LoadServerData"
+              RowsPerPage="10"
               Hover="true"
               Dense="true"
               Elevation="2"
@@ -157,6 +158,9 @@
                 </MudStack>
             </MudTd>
         </RowTemplate>
+        <PagerContent>
+            <MudTablePager PageSizeOptions="new int[] { 10, 25, 50 }" />
+        </PagerContent>
 
     </MudTable>
 
@@ -248,7 +252,7 @@
             "Payment Detail",
             parameters);
 
-        // Reload table after dialog closes (payment may have been confirmed)
+        // Reload table
         await ReloadTable();
     }
 

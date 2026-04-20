@@ -1,6 +1,7 @@
 ﻿@page "/users"
 @using MudBlazor
 @using System.Net.Http.Headers
+@implements IDisposable
 @inject HttpClient Http
 @inject ISnackbar Snackbar
 @inject Blazored.LocalStorage.ILocalStorageService localStorage
@@ -11,12 +12,25 @@
         User Management
     </MudText>
 
-    <MudTextField T="string"
-                  Value="_search"
-                  ValueChanged="OnSearchChanged"
-                  Immediate="true"
-                  Placeholder="Search by name or email"
-                  Class="mb-4" />
+    <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4" Spacing="4">
+        <MudTextField T="string"
+                      Value="_search"
+                      ValueChanged="OnSearchChanged"
+                      Immediate="true"
+                      Placeholder="Search by name or email"
+                      Style="flex:1;" />
+
+        <MudChip T="string" Color="Color.Success" Variant="Variant.Filled"
+                 OnClick="ShowOnlineDetails" Style="cursor:pointer;">
+            🟢 Online: @(_onlineRegistered + _onlineGuest)
+        </MudChip>
+        <MudChip T="string" Color="Color.Info" Variant="Variant.Outlined">
+            👤 Registered: @_onlineRegistered &nbsp; 👻 Guest: @_onlineGuest
+        </MudChip>
+        <MudChip T="string" Color="Color.Default" Variant="Variant.Outlined">
+            Total: @_totalUsers
+        </MudChip>
+    </MudStack>
 
 
     <MudTable T="User"
@@ -34,6 +48,7 @@
             <MudTh>Email</MudTh>
             <MudTh>Role</MudTh>
             <MudTh>Level</MudTh>
+            <MudTh>Online</MudTh>
             <MudTh>Status</MudTh>
             <MudTh>Created</MudTh>
             <MudTh>Actions</MudTh>
@@ -63,6 +78,23 @@
             </MudTd>
 
             <MudTd>
+                @if (context.IsOnline)
+                {
+                    <MudChip T="string" Color="Color.Success" Size="Size.Small">
+                        🟢 Online
+                    </MudChip>
+                }
+                else
+                {
+                    <MudTooltip Text="@(context.LastActiveAt.HasValue ? $"Last active: {context.LastActiveAt.Value.ToLocalTime():dd/MM/yyyy HH:mm}" : "Never")">
+                        <MudChip T="string" Color="Color.Default" Size="Size.Small">
+                            ⚫ Offline
+                        </MudChip>
+                    </MudTooltip>
+                }
+            </MudTd>
+
+            <MudTd>
                 <MudChip T="string"
                          Color="@(context.Status == "Active" ? Color.Success : Color.Error)">
                     @context.Status
@@ -88,15 +120,95 @@
                 }
             </MudTd>
         </RowTemplate>
+        <PagerContent>
+            <MudTablePager PageSizeOptions="new int[] { 10, 25, 50 }" />
+        </PagerContent>
 
     </MudTable>
 
 </MudPaper>
 
+<MudDialog @bind-Visible="_showOnlineDialog" Options="new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true }">
+    <TitleContent>
+        <MudText Typo="Typo.h6">🟢 Online Details — Total: @(_onlineDetailUsers.Count + _onlineDetailGuestCount)</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Typo="Typo.subtitle1" Class="mb-2">
+            <b>Registered users online (@_onlineDetailUsers.Count):</b>
+        </MudText>
+        @if (_onlineDetailUsers.Any())
+        {
+            <MudSimpleTable Hover="true" Dense="true" Bordered="true" Class="mb-4">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Full Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Last Active</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var u in _onlineDetailUsers)
+                    {
+                        <tr>
+                            <td>@u.UserId</td>
+                            <td>@u.FullName</td>
+                            <td>@u.Email</td>
+                            <td>@u.Role</td>
+                            <td>@u.LastActiveAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                        </tr>
+                    }
+                </tbody>
+            </MudSimpleTable>
+        }
+        else
+        {
+            <MudText Class="mb-4" Color="Color.Warning">No registered users online.</MudText>
+        }
+
+        <MudText Typo="Typo.subtitle1">
+            <b>Guest visitors (no account): @_onlineDetailGuestCount</b>
+        </MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => _showOnlineDialog = false)" Variant="Variant.Filled" Color="Color.Primary">
+            Close
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
 @code {
 
     private MudTable<User>? table;
     private string _search = "";
+    private int _onlineRegistered;
+    private int _onlineGuest;
+    private int _totalUsers;
+    private System.Threading.Timer? _refreshTimer;
+
+    private bool _showOnlineDialog;
+    private List<OnlineUser> _onlineDetailUsers = new();
+    private int _onlineDetailGuestCount;
+
+    protected override void OnInitialized()
+    {
+        // Auto-refresh every 30 seconds to update online status
+        _refreshTimer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                if (table != null)
+                    await table.ReloadServerData();
+                StateHasChanged();
+            });
+        }, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+    }
+
+    public void Dispose()
+    {
+        _refreshTimer?.Dispose();
+    }
 
     private async Task<TableData<User>> LoadServerData(
         TableState state,
@@ -117,7 +229,7 @@
 
             var request = new HttpRequestMessage(
                 HttpMethod.Get,
-                $"api/users?search={_search}&page={page}&pageSize={pageSize}");
+                $"api/users?search={_search}&role=User&page={page}&pageSize={pageSize}");
 
             request.Headers.Authorization =
                 new AuthenticationHeaderValue("Bearer", token);
@@ -131,6 +243,11 @@
             }
 
             var result = await response.Content.ReadFromJsonAsync<ApiResult>(cancellationToken: cancellationToken);
+
+            _totalUsers = result?.Total ?? 0;
+            _onlineRegistered = result?.OnlineCount ?? 0;
+            _onlineGuest = result?.GuestOnlineCount ?? 0;
+            StateHasChanged();
 
             return new TableData<User>
             {
@@ -183,9 +300,37 @@
         }
     }
 
+    private async Task ShowOnlineDetails()
+    {
+        try
+        {
+            var token = await localStorage.GetItemAsync<string>("token");
+            if (string.IsNullOrEmpty(token)) return;
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "api/users/online-details");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.SendAsync(request);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<OnlineDetailsResult>();
+                _onlineDetailUsers = result?.OnlineUsers ?? new();
+                _onlineDetailGuestCount = result?.GuestOnlineCount ?? 0;
+                _showOnlineDialog = true;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
     private class ApiResult
     {
         public int Total { get; set; }
+        public int OnlineCount { get; set; }
+        public int GuestOnlineCount { get; set; }
         public List<User> Users { get; set; } = new();
     }
 
@@ -198,5 +343,23 @@
         public int UserLevel { get; set; }
         public string Status { get; set; } = "";
         public DateTime CreatedAt { get; set; }
+        public DateTime? LastActiveAt { get; set; }
+        public bool IsOnline { get; set; }
+    }
+
+    private class OnlineDetailsResult
+    {
+        public List<OnlineUser> OnlineUsers { get; set; } = new();
+        public int GuestOnlineCount { get; set; }
+        public int TotalOnline { get; set; }
+    }
+
+    private class OnlineUser
+    {
+        public int UserId { get; set; }
+        public string FullName { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Role { get; set; } = "";
+        public DateTime? LastActiveAt { get; set; }
     }
 }

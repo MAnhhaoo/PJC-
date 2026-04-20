@@ -1,0 +1,589 @@
+@startuml Sequence_01_Login
+skinparam sequence {
+    ArrowColor #1565C0
+    LifeLineBorderColor #333
+    ParticipantBackgroundColor #E3F2FD
+    ParticipantBorderColor #1565C0
+}
+
+title Sơ đồ Sequence 1: Đăng nhập ứng dụng (App Login)
+
+actor "Người dùng" as User
+participant "LoginPage\n(MAUI)" as LP
+participant "AuthService" as Auth
+participant "HttpClient" as HTTP
+participant "UsersController\n(API)" as API
+database "SQL Server" as DB
+
+User -> LP : Nhập Email + Mật khẩu
+activate LP
+
+LP -> Auth : LoginAsync(email, password)
+activate Auth
+
+Auth -> HTTP : POST /api/users/app-login
+activate HTTP
+
+HTTP -> API : AppLogin(request)
+activate API
+
+API -> DB : Tìm User theo Email
+activate DB
+DB --> API : Trả về User
+deactivate DB
+
+alt Mật khẩu đúng & Tài khoản Active
+    API -> API : BCrypt.Verify(password, hash)
+    API -> API : GenerateJwtToken(user)
+    API --> HTTP : 200 OK { token, role, fullName, hasRestaurant }
+else Sai mật khẩu
+    API --> HTTP : 401 "Sai email hoặc mật khẩu"
+else Tài khoản bị khóa
+    API --> HTTP : 401 "Tài khoản đã bị khóa"
+end
+deactivate API
+
+HTTP --> Auth : Response
+deactivate HTTP
+
+Auth -> Auth : SecureStorage.SetAsync("auth_token", token)
+Auth --> LP : Kết quả đăng nhập
+deactivate Auth
+
+alt Đăng nhập thành công & Role = "Restaurant"
+    LP -> LP : Shell.GoToAsync("RestaurantDashboardPage")
+else Đăng nhập thành công & Role = "User"
+    LP -> LP : Shell.GoToAsync("CustomerHomePage")
+else Thất bại
+    LP -> User : DisplayAlert("Lỗi", message)
+end
+deactivate LP
+
+@enduml
+
+
+' ================================================================
+
+
+@startuml Sequence_02_Register
+skinparam sequence {
+    ArrowColor #2E7D32
+    ParticipantBackgroundColor #E8F5E9
+    ParticipantBorderColor #2E7D32
+}
+
+title Sơ đồ Sequence 2: Đăng ký tài khoản mới
+
+actor "Người dùng" as User
+participant "RegisterPage\n(MAUI)" as RP
+participant "HttpClient" as HTTP
+participant "UsersController\n(API)" as API
+database "SQL Server" as DB
+
+User -> RP : Nhập FullName, Email,\nPassword, chọn Role
+activate RP
+
+RP -> RP : Kiểm tra dữ liệu nhập
+
+RP -> HTTP : POST /api/users/register\n{ email, password, fullName, role }
+activate HTTP
+
+HTTP -> API : Register(request)
+activate API
+
+API -> DB : Kiểm tra Email đã tồn tại?
+activate DB
+DB --> API : Kết quả
+deactivate DB
+
+alt Email chưa tồn tại
+    API -> API : BCrypt.HashPassword(password)
+    API -> DB : Thêm User mới
+    activate DB
+    DB --> API : Lưu thành công
+    deactivate DB
+    API -> API : GenerateJwtToken(user)
+    API --> HTTP : 200 OK { token, role, fullName }
+else Email đã tồn tại
+    API --> HTTP : 400 "Email đã tồn tại"
+end
+deactivate API
+
+HTTP --> RP : Response
+deactivate HTTP
+
+alt Đăng ký thành công
+    RP -> RP : SecureStorage.SetAsync("auth_token", token)
+    RP -> RP : Shell.GoToAsync("CustomerHomePage")
+else Thất bại
+    RP -> User : DisplayAlert("Lỗi", message)
+end
+deactivate RP
+
+@enduml
+
+
+' ================================================================
+
+
+@startuml Sequence_03_ViewRestaurant
+skinparam sequence {
+    ArrowColor #E65100
+    ParticipantBackgroundColor #FFF3E0
+    ParticipantBorderColor #E65100
+}
+
+title Sơ đồ Sequence 3: Xem danh sách & chi tiết nhà hàng
+
+actor "Người dùng" as User
+participant "CustomerHomePage\n(MAUI)" as Home
+participant "RestaurantService" as RS
+participant "TranslationService" as TS
+participant "LanguageService" as LS
+participant "HttpClient" as HTTP
+participant "RestaurantsController\n(API)" as API
+database "SQL Server" as DB
+
+User -> Home : Mở trang chủ
+activate Home
+
+Home -> RS : GetRestaurantsAsync()
+activate RS
+
+RS -> HTTP : GET /api/restaurants
+activate HTTP
+
+HTTP -> API : GetRestaurants()
+activate API
+
+API -> DB : Lấy danh sách nhà hàng\n(IsApproved = true)
+activate DB
+DB --> API : List<Restaurant> + Narrations
+deactivate DB
+
+API --> HTTP : 200 OK [RestaurantDto]
+deactivate API
+
+HTTP --> RS : List<RestaurantDto>
+deactivate HTTP
+
+RS --> Home : Danh sách nhà hàng
+deactivate RS
+
+Home -> LS : GetCurrentLanguage()
+LS --> Home : languageCode (vd: "en")
+
+alt Ngôn ngữ khác tiếng Việt
+    Home -> TS : TranslateRestaurantsAsync(list, langCode)
+    activate TS
+    TS -> TS : Kiểm tra cache\n(ConcurrentDictionary)
+    TS --> Home : Danh sách đã dịch
+    deactivate TS
+end
+
+Home -> Home : Hiển thị lên CollectionView
+Home --> User : Danh sách nhà hàng
+
+User -> Home : Chọn nhà hàng
+Home -> Home : Shell.GoToAsync(\n"RestaurantDetailPage?id=X")
+
+deactivate Home
+
+@enduml
+
+
+' ================================================================
+
+
+@startuml Sequence_04_TourPayment
+skinparam sequence {
+    ArrowColor #D32F2F
+    ParticipantBackgroundColor #FFEBEE
+    ParticipantBorderColor #D32F2F
+}
+
+title Sơ đồ Sequence 4: Thanh toán mua Tour qua VietQR + SePay
+
+actor "Người dùng" as User
+participant "TourPaymentPage\n(MAUI)" as TP
+participant "HttpClient" as HTTP
+participant "PaymentsController\n(API)" as API
+participant "VietQR\n(Bên ngoài)" as VQR
+participant "SePay\n(Webhook)" as SePay
+database "SQL Server" as DB
+
+User -> TP : Mở trang thanh toán\n(tourId, tourName, price)
+activate TP
+
+TP -> TP : OnAppearing()
+TP -> HTTP : POST /api/payments/purchase-tour\n{ tourId, paymentMethod: "QR" }
+activate HTTP
+
+HTTP -> API : PurchaseTour(request)
+activate API
+
+API -> DB : Kiểm tra đã mua chưa?
+activate DB
+DB --> API : Chưa mua
+deactivate DB
+
+API -> DB : Tạo Payment (Status: "Pending")
+activate DB
+DB --> API : PaymentId
+deactivate DB
+
+API -> API : TransactionId = "TPA{PaymentId}"
+API --> HTTP : { paymentId, referenceCode, amount }
+deactivate API
+
+HTTP --> TP : Response JSON
+deactivate HTTP
+
+TP -> TP : Tạo URL VietQR:\nimg.vietqr.io/image/{bank}-{account}\n?amount=X&addInfo=TPA{id}
+TP -> VQR : Tải hình QR code
+VQR --> TP : Hình ảnh QR PNG
+
+TP --> User : Hiển thị mã QR +\nthông tin chuyển khoản
+
+TP -> TP : StartPolling(token)
+
+loop Mỗi 3 giây
+    TP -> HTTP : GET /api/payments/check-tour/{tourId}
+    HTTP -> API : CheckTourAccess(tourId)
+    API -> DB : Kiểm tra Payment.Status
+    DB --> API : { isPurchased: false }
+    API --> HTTP : { isPurchased: false }
+    HTTP --> TP : Chưa thanh toán
+end
+
+User -> User : Quét QR bằng app ngân hàng\n→ Chuyển khoản
+
+SePay -> API : POST /api/payments/webhook\n{ content: "TPA123", transferAmount: X }
+activate API
+API -> API : Regex.Match("TPA(\\d+)")
+API -> DB : Tìm Payment theo PaymentId
+API -> API : Kiểm tra amount >= payment.Amount
+API -> DB : Payment.Status = "Success"
+API --> SePay : { success: true }
+deactivate API
+
+TP -> HTTP : GET /api/payments/check-tour/{tourId}
+HTTP -> API : CheckTourAccess(tourId)
+API -> DB : Payment.Status == "Success"
+DB --> API : { isPurchased: true }
+API --> HTTP : { isPurchased: true }
+HTTP --> TP : Đã thanh toán!
+
+TP --> User : ✅ Hiển thị "Thanh toán thành công!"
+TP -> TP : Shell.GoToAsync("..")
+
+deactivate TP
+
+@enduml
+
+
+' ================================================================
+
+
+@startuml Sequence_05_GPSTour
+skinparam sequence {
+    ArrowColor #6A1B9A
+    ParticipantBackgroundColor #F3E5F5
+    ParticipantBorderColor #6A1B9A
+}
+
+title Sơ đồ Sequence 5: Đi Tour với GPS và phát thuyết minh tự động
+
+actor "Người dùng" as User
+participant "POIMapPage\n(MAUI)" as Map
+participant "GpsService" as GPS
+participant "LanguageService" as LS
+participant "AnalyticsService" as AS
+participant "HttpClient" as HTTP
+participant "API Server" as API
+
+User -> Map : Bắt đầu đi Tour
+activate Map
+
+Map -> Map : StartLocationUpdates()
+Map -> GPS : GetCurrentLocation()
+GPS --> Map : (latitude, longitude)
+
+Map -> Map : Hiển thị vị trí trên bản đồ\n+ Các Pin nhà hàng (POI)
+
+loop Mỗi 3 giây (Background Task)
+    Map -> GPS : GetCurrentLocation()
+    GPS --> Map : (lat, lng)
+
+    Map -> Map : CalculateDistance(\ncurrentPos, eachPOI)
+
+    alt Khoảng cách <= bán kính phát hiện (mặc định 5m)
+        Map -> LS : GetCurrentLanguage()
+        LS --> Map : languageCode
+
+        Map -> Map : Tìm Narration theo\nlanguageCode
+
+        alt Có Audio trên server
+            Map -> HTTP : GET /audios/{fileName}
+            HTTP --> Map : Audio stream
+            Map -> Map : AudioManager.Play(stream)
+        else Không có Audio (404)
+            Map -> Map : TextToSpeech.SpeakAsync(\ntextContent, language)
+        end
+
+        Map -> AS : LogNarrationPlayAsync(\nrestaurantId, tourId, lat, lng)
+        AS -> HTTP : POST /api/analytics/narration-play
+        HTTP -> API : Lưu NarrationPlayLog
+    end
+
+    Map -> AS : LogTrackPointAsync(\ntourId, sessionId, lat, lng)
+    AS -> HTTP : POST /api/analytics/track-point
+    HTTP -> API : Lưu TourTrackPoint
+end
+
+User -> Map : Dừng Tour
+Map -> Map : StopLocationUpdates()
+Map -> Map : CancellationTokenSource.Cancel()
+
+deactivate Map
+
+@enduml
+
+
+' ================================================================
+
+
+@startuml Sequence_06_RegisterRestaurant
+skinparam sequence {
+    ArrowColor #FF6F00
+    ParticipantBackgroundColor #FFF8E1
+    ParticipantBorderColor #FF6F00
+}
+
+title Sơ đồ Sequence 6: Đăng ký nhà hàng + Thanh toán
+
+actor "Chủ nhà hàng" as Owner
+participant "RestaurantDashboardPage\n(MAUI)" as Dash
+participant "HttpClient" as HTTP
+participant "RestaurantsController\n(API)" as RestAPI
+participant "RestaurantPaymentPage\n(MAUI)" as Pay
+participant "PaymentsController\n(API)" as PayAPI
+participant "VietQR" as VQR
+participant "SePay" as SePay
+database "SQL Server" as DB
+
+Owner -> Dash : Nhấn "Đăng ký nhà hàng"
+activate Dash
+
+Dash -> Dash : Nhập thông tin:\nTên, Địa chỉ, SĐT, Mô tả\nChọn vị trí trên bản đồ
+
+Dash -> HTTP : POST /api/restaurants\n{ name, address, ... }
+activate HTTP
+
+HTTP -> RestAPI : CreateRestaurant(dto)
+RestAPI -> DB : Thêm Restaurant\n(IsApproved = false)
+DB --> RestAPI : restaurantId
+RestAPI --> HTTP : { restaurantId }
+HTTP --> Dash : Tạo nhà hàng thành công
+deactivate HTTP
+
+Dash -> Dash : Chọn gói: Thường / Premium
+Dash -> Dash : Shell.GoToAsync(\n"RestaurantPaymentPage?...")
+
+deactivate Dash
+
+activate Pay
+Pay -> HTTP : POST /api/payments/register-restaurant\n{ restaurantId, amount, planType }
+activate HTTP
+HTTP -> PayAPI : RegisterRestaurantPayment(request)
+PayAPI -> DB : Tạo Payment (Pending)
+PayAPI --> HTTP : { paymentId, referenceCode }
+HTTP --> Pay : Response
+deactivate HTTP
+
+Pay -> VQR : Tải hình QR
+VQR --> Pay : QR Image
+Pay --> Owner : Hiển thị QR chuyển khoản
+
+Owner -> Owner : Chuyển khoản qua app ngân hàng
+
+SePay -> PayAPI : POST /api/payments/webhook
+PayAPI -> DB : Payment.Status = "Success"\nRestaurant.IsApproved = true
+PayAPI --> SePay : { success: true }
+
+Pay -> HTTP : GET /api/payments/check-restaurant/{id}
+HTTP --> Pay : { isPaid: true }
+
+Pay --> Owner : ✅ "Nhà hàng đã được kích hoạt!"
+deactivate Pay
+
+@enduml
+
+
+' ================================================================
+
+
+@startuml Sequence_07_AddDish
+skinparam sequence {
+    ArrowColor #00695C
+    ParticipantBackgroundColor #E0F2F1
+    ParticipantBorderColor #00695C
+}
+
+title Sơ đồ Sequence 7: Thêm món ăn + Thuyết minh
+
+actor "Chủ nhà hàng" as Owner
+participant "AddDishPage\n(MAUI)" as Page
+participant "HttpClient" as HTTP
+participant "DishesController\n(API)" as API
+database "SQL Server" as DB
+
+Owner -> Page : Nhập tên món, chọn ảnh,\nghi âm thuyết minh,\nchọn ngôn ngữ
+activate Page
+
+Page -> Page : Kiểm tra dữ liệu nhập
+
+Page -> HTTP : POST /api/dishes\n(multipart/form-data)\n{ name, image, audioFile,\nlanguageId, textContent }
+activate HTTP
+
+HTTP -> API : Create(form)
+activate API
+
+API -> DB : Kiểm tra quyền sở hữu\nnhà hàng
+DB --> API : Restaurant (owner match)
+
+API -> DB : Kiểm tra giới hạn\nmón ăn (thường ≤ 8)
+
+alt Chưa đạt giới hạn
+    API -> API : Lưu ảnh vào wwwroot/images
+    API -> DB : Thêm Dish mới
+    DB --> API : DishId
+
+    alt Có audio + languageId
+        API -> API : Lưu audio vào wwwroot/audios
+        API -> DB : Thêm Narration\n{ dishId, languageId, audioUrl }
+    end
+
+    API --> HTTP : 200 OK { dishId }
+else Đã đạt giới hạn 8 món (Không Premium)
+    API --> HTTP : 400 "Nâng cấp Premium\nđể thêm không giới hạn"
+end
+deactivate API
+
+HTTP --> Page : Response
+deactivate HTTP
+
+alt Thành công
+    Page --> Owner : DisplayAlert("Thêm món thành công!")
+    Page -> Page : Shell.GoToAsync("..")
+else Thất bại
+    Page --> Owner : DisplayAlert("Lỗi", message)
+end
+deactivate Page
+
+@enduml
+
+
+' ================================================================
+
+
+@startuml Sequence_08_ScanQR
+skinparam sequence {
+    ArrowColor #37474F
+    ParticipantBackgroundColor #ECEFF1
+    ParticipantBorderColor #37474F
+}
+
+title Sơ đồ Sequence 8: Quét mã QR nhà hàng
+
+actor "Người dùng" as User
+participant "QRScannerPage\n(MAUI)" as Scanner
+participant "Shell\nNavigation" as Shell
+participant "RestaurantDetailPage\n(MAUI)" as Detail
+participant "HttpClient" as HTTP
+participant "RestaurantsController\n(API)" as API
+
+User -> Scanner : Mở camera quét QR
+activate Scanner
+
+Scanner -> Scanner : BarcodeReader\nphát hiện mã QR
+
+Scanner -> Scanner : Đọc nội dung:\n"tourismapp://restaurant/{id}"
+
+Scanner -> Scanner : Phân tích URL,\ntrích xuất restaurantId
+
+Scanner -> Shell : GoToAsync(\n"RestaurantDetailPage?id=X")
+deactivate Scanner
+
+activate Detail
+Detail -> HTTP : GET /api/restaurants/{id}
+HTTP -> API : GetRestaurantById(id)
+API --> HTTP : RestaurantDto
+HTTP --> Detail : Dữ liệu nhà hàng
+
+Detail --> User : Hiển thị chi tiết nhà hàng
+deactivate Detail
+
+@enduml
+
+
+' ================================================================
+
+
+@startuml Sequence_09_AdminManage
+skinparam sequence {
+    ArrowColor #B71C1C
+    ParticipantBackgroundColor #FFCDD2
+    ParticipantBorderColor #B71C1C
+}
+
+title Sơ đồ Sequence 9: Admin quản trị hệ thống (Blazor)
+
+actor "Quản trị viên" as Admin
+participant "Blazor Admin\n(WebAssembly)" as Blazor
+participant "HttpClient" as HTTP
+participant "API Server" as API
+database "SQL Server" as DB
+
+== Đăng nhập Admin ==
+
+Admin -> Blazor : Nhập Email + Mật khẩu
+Blazor -> HTTP : POST /api/users/login
+HTTP -> API : Login(request)
+API -> API : Kiểm tra Role == "Admin"
+API --> HTTP : { token, role, fullName }
+HTTP --> Blazor : Lưu token vào LocalStorage
+
+== Quản lý Người dùng ==
+
+Admin -> Blazor : Mở trang Quản lý Users
+Blazor -> HTTP : GET /api/users?search=&page=1
+HTTP -> API : GetUsers(search, page, pageSize)
+API -> DB : Truy vấn Users có phân trang
+DB --> API : { total, users[] }
+API --> Blazor : Danh sách người dùng
+
+Admin -> Blazor : Khóa tài khoản user
+Blazor -> HTTP : PUT /api/users/{id}/toggle-status
+API -> DB : User.Status = "Banned"
+API --> Blazor : { status: "Banned" }
+
+== Quản lý Thanh toán ==
+
+Admin -> Blazor : Mở trang Payments
+Blazor -> HTTP : GET /api/payments/admin\n?search=&page=1
+API -> DB : Lấy payments + User + Restaurant + Tour
+API --> Blazor : { totalRecords, data[] }
+
+Admin -> Blazor : Xem chi tiết payment
+Blazor -> HTTP : GET /api/payments/admin/{id}
+API --> Blazor : Chi tiết payment
+
+== Xem Analytics ==
+
+Admin -> Blazor : Mở trang Analytics
+Blazor -> HTTP : GET /api/analytics/overview?days=30
+API -> DB : Đếm NarrationPlayLogs\n+ TourTrackPoints
+API --> Blazor : { totalPlays, uniqueVisitors,\ntopRestaurants, ... }
+
+@enduml

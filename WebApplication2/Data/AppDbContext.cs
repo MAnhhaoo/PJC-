@@ -24,6 +24,9 @@ namespace WebApplication2.Data
         public DbSet<TourPOI> TourPOIs { get; set; }
         public DbSet<NarrationPlayLog> NarrationPlayLogs { get; set; }
         public DbSet<TourTrackPoint> TourTrackPoints { get; set; }
+        public DbSet<GuestSession> GuestSessions { get; set; }
+        public DbSet<GuestTrackPoint> GuestTrackPoints { get; set; }
+        public DbSet<AppSetting> AppSettings { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

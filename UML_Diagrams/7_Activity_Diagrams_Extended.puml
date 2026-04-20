@@ -1,0 +1,539 @@
+@startuml Activity_07_CreateTTS
+skinparam activity {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+    DiamondBackgroundColor #FFF9C4
+    DiamondBorderColor #F57F17
+}
+
+title Sơ đồ Activity 7: Tạo file TTS thuyết minh đa ngôn ngữ
+
+start
+
+:Admin/Chủ nhà hàng nhập\nnội dung thuyết minh (tiếng Việt);
+
+:Chọn danh sách ngôn ngữ đích\n(vi, en, ja, ko, zh, fr, es);
+
+:Gửi request\nPOST /api/narrations/create-translated-multi;
+
+:Tạo thư mục audios/ nếu chưa có;
+
+while (Còn ngôn ngữ chưa xử lý?) is (Có)
+    :Lấy thông tin Language\ntừ database;
+
+    if (Language tồn tại?) then (Có)
+        if (Ngôn ngữ != "vi"?) then (Khác tiếng Việt)
+            :Gọi MyMemory API dịch\nvi → {langCode};
+            
+            if (Dịch thành công?) then (Thành công)
+                :textForTts = bản dịch;
+            else (Thất bại)
+                :textForTts = text gốc tiếng Việt;
+            endif
+        else (Tiếng Việt)
+            :textForTts = text gốc;
+        endif
+
+        :Gọi Google TTS API\ntranslate_tts?q={text}&tl={code};
+
+        if (TTS tạo thành công?) then (Thành công)
+            :Lưu file MP3 vào\naudios/res_{id}_{code}_{guid}.mp3;
+            :audioUrl = tên file;
+        else (Thất bại)
+            :audioUrl = "" (trống);
+        endif
+
+        :INSERT Narration vào DB\n{ RestaurantId, LanguageId,\n  TextContent, AudioUrl };
+        :created++;
+    else (Không tìm thấy)
+        :Bỏ qua ngôn ngữ này;
+    endif
+endwhile (Không)
+
+:SaveChanges() → Lưu tất cả;
+
+:Trả về { created: N };
+
+stop
+
+@enduml
+
+
+@startuml Activity_08_QRCodeGeneration
+skinparam activity {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+    DiamondBackgroundColor #FFF9C4
+    DiamondBorderColor #F57F17
+}
+
+title Sơ đồ Activity 8: Tạo và Quét mã QR nhà hàng
+
+|Admin|
+start
+
+:Truy cập trang\nQuản lý QR Code;
+
+:Chọn nhà hàng từ danh sách;
+
+:Gọi GET /api/restaurants/{id}/qrcode;
+
+|Server|
+
+if (Nhà hàng tồn tại?) then (Có)
+    :Tạo nội dung QR:\n"tourismapp://restaurant/{id}";
+
+    :QRCodeGenerator.CreateQrCode(\n  content, ECCLevel.Q);
+
+    :PngByteQRCode.GetGraphic(10)\n→ Tạo ảnh PNG;
+
+    :Trả về File PNG\n(image/png);
+else (Không)
+    :Trả về 404 Not Found;
+    stop
+endif
+
+|Admin|
+
+:Hiển thị hình QR Code;
+
+:Tải về / In QR\ncho nhà hàng;
+
+stop
+
+== Luồng quét QR (Khách du lịch) ==
+
+|Khách du lịch|
+start
+
+:Mở QRScannerPage;
+
+:Camera quét mã QR;
+
+if (Decode thành công?) then (Có)
+    :Phân tích URL:\n"tourismapp://restaurant/{id}";
+
+    if (Bắt đầu bằng\n"tourismapp://restaurant/"?) then (Đúng)
+        :Lấy restaurantId từ URL;
+        :GoToAsync(\n  RestaurantDetailPage?id={id});
+        :Hiển thị chi tiết nhà hàng;
+    else (Sai format)
+        :Hiển thị "QR không hợp lệ";
+    endif
+else (Thất bại)
+    :Hiển thị "Không đọc được QR";
+endif
+
+stop
+
+@enduml
+
+
+@startuml Activity_09_TourCRUD
+skinparam activity {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+    DiamondBackgroundColor #FFF9C4
+    DiamondBorderColor #F57F17
+}
+
+title Sơ đồ Activity 9: Quản lý Tour (Thêm / Sửa / Xóa / Ẩn-Hiện)
+
+start
+
+:Admin mở ManageTours;
+
+:Tải danh sách tour\nGET /api/tours/all;
+
+:Hiển thị bảng tour với\ncác nút thao tác;
+
+switch (Admin chọn hành động?)
+case (Thêm mới)
+    :Nhập Name, Description,\nImage, Price;
+    :Chọn danh sách POI\n(RestaurantId + OrderIndex);
+    :POST /api/tours\n{ dto + pois[] };
+    :Server INSERT Tour;
+    :Server INSERT TourPOIs\ncho mỗi POI;
+    :Trả về { tourId };
+    :Hiển thị "Tạo thành công";
+
+case (Chỉnh sửa)
+    :Chọn tour cần sửa;
+    :Sửa Name, Description,\nImage, Price, POIs;
+    :PUT /api/tours/{id}\n{ dto + pois[] };
+    :Server UPDATE Tour;
+    :Server DELETE TourPOIs cũ;
+    :Server INSERT TourPOIs mới;
+    :Hiển thị "Cập nhật thành công";
+
+case (Ẩn / Hiện)
+    :Nhấn toggle icon;
+    :PATCH /api/tours/{id}/toggle;
+    :Server: IsActive = !IsActive;
+    :Cập nhật badge\nActive/Inactive;
+
+case (Xóa)
+    :Nhấn "Xóa" → Hiện xác nhận;
+    
+    if (Admin xác nhận?) then (Có)
+        :DELETE /api/tours/{id};
+        :Server DELETE TourPOIs;
+        :Server DELETE Tour;
+        :Xóa tour khỏi danh sách;
+    else (Hủy)
+        :Quay lại;
+    endif
+endswitch
+
+:Reload danh sách tour;
+
+stop
+
+@enduml
+
+
+@startuml Activity_10_AnonymousTracking
+skinparam activity {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+    DiamondBackgroundColor #FFF9C4
+    DiamondBorderColor #F57F17
+}
+
+title Sơ đồ Activity 10: Lưu tuyến đi ẩn danh
+
+start
+
+:Khách mở trang Tour Map;
+
+if (Đã đăng nhập?) then (Có)
+    :userId = từ SecureStorage;
+    :guestLabel = null;
+else (Chưa / Ẩn danh)
+    :userId = 0;
+    :guestLabel = "Guest_{Guid}";
+endif
+
+:Tạo sessionId = "session_{Guid}";
+
+:Bắt đầu GPS Tracking\n(GpsService.StartListening);
+
+fork
+    :GPS cập nhật vị trí\nmỗi 5 giây;
+    
+    repeat
+        :Nhận LocationChanged\n(lat, lng);
+        
+        :POST /api/analytics/track-point\n{ userId/guestLabel,\n  tourId, sessionId,\n  lat, lng };
+        
+        :Server lưu TourTrackPoint\n{ UserId (null nếu guest),\n  GuestLabel, SessionId,\n  Lat, Lng, RecordedAt };
+    repeat while (Trang còn hiển thị?) is (Có)
+fork again
+    :Khách di chuyển\ntheo tour;
+    
+    repeat
+        :Đến gần POI\n(trong bán kính);
+        
+        :Phát thuyết minh tự động;
+        
+        :POST /api/analytics/narration-play\n{ restaurantId, tourId,\n  guestLabel, lat, lng };
+        
+        :Server lưu NarrationPlayLog\n{ UserId (null nếu guest),\n  GuestLabel, RestaurantId,\n  PlayedAt };
+    repeat while (Còn POI trên tuyến?) is (Có)
+end fork
+
+:Thoát trang → Dừng GPS;
+
+:Dữ liệu ẩn danh đã lưu\ncho phân tích Heatmap + Journey;
+
+stop
+
+@enduml
+
+
+@startuml Activity_11_HeatmapAnalytics
+skinparam activity {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+    DiamondBackgroundColor #FFF9C4
+    DiamondBorderColor #F57F17
+}
+
+title Sơ đồ Activity 11: Heatmap & Thống kê POI nghe nhiều nhất
+
+start
+
+:Admin mở trang Analytics;
+
+fork
+    == Tab Overview ==
+    :GET /api/analytics/overview?days=30;
+    :Hiển thị tổng quan:\n- Tổng lượt phát\n- Người dùng duy nhất\n- Số session\n- Số POI được thăm\n- Biểu đồ lượt phát theo ngày;
+fork again
+    == Tab Top POI ==
+    :GET /api/analytics/top-pois?days=30&top=10;
+    :Server: GROUP BY RestaurantId\nCOUNT(*) → ORDER BY DESC\nTOP 10;
+    :Kết hợp tọa độ + tên nhà hàng;
+    :Hiển thị biểu đồ cột\nTop 10 địa điểm nghe nhiều nhất;
+fork again
+    == Tab Heatmap ==
+    :GET /api/analytics/heatmap?days=30;
+    :Server: Gộp dữ liệu từ\nNarrationPlayLogs +\nLocationHistories;
+    :Tính tổng count\ntheo RestaurantId;
+    :Lấy tọa độ (Lat, Lng)\ntừ Restaurants;
+    :Trả về [{ lat, lng, name, count }];
+    :Render heatmap bằng\nLeaflet.js heatLayer;
+    :Hiển thị bản đồ nhiệt\nvới mức độ nóng;
+fork again
+    == Tab Journeys ==
+    :GET /api/analytics/journeys?days=7;
+    :Server: GROUP BY SessionId;
+    :Hiển thị danh sách sessions\nvới tuyến đường trên bản đồ;
+end fork
+
+stop
+
+@enduml
+
+
+@startuml Activity_12_DeleteNarration
+skinparam activity {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+    DiamondBackgroundColor #FFF9C4
+    DiamondBorderColor #F57F17
+}
+
+title Sơ đồ Activity 12: Xóa bản ghi thuyết minh
+
+start
+
+if (Ai xóa?) then (Chủ nhà hàng)
+    :Mở MyAudiosPage;
+    :Xem danh sách thuyết minh\ncủa nhà hàng mình;
+    :Vuốt trái → Nhấn "Xóa";
+    
+    if (Xác nhận xóa?) then (Có)
+        :DELETE /api/restaurants/my/narrations/{id};
+        
+        :Server kiểm tra:\nnarration thuộc nhà hàng\ncủa owner?;
+        
+        if (Thuộc nhà hàng owner?) then (Đúng)
+            if (Có file audio vật lý?) then (Có)
+                :Xóa file MP3\ntừ audios/ folder;
+            else (Không)
+            endif
+            
+            :DELETE Narration từ DB;
+            :Trả về "Xóa thành công";
+            :Xóa khỏi danh sách UI;
+        else (Không phải)
+            :Trả về 404;
+            :Hiển thị lỗi;
+        endif
+    else (Hủy)
+        :Quay lại;
+    endif
+
+else (Admin)
+    :Mở ManageNarrations (Blazor);
+    :Xem tất cả thuyết minh;
+    :Nhấn "Xóa" trên narration bất kỳ;
+    
+    if (Xác nhận xóa?) then (Có)
+        :POST /api/restaurants/admin/delete-narration/{id};
+        
+        if (Có file audio vật lý?) then (Có)
+            :Xóa file MP3;
+        else (Không)
+        endif
+        
+        :DELETE Narration từ DB;
+        :Trả về 200 OK;
+        :Reload bảng narrations;
+    else (Hủy)
+        :Quay lại;
+    endif
+endif
+
+stop
+
+@enduml
+
+
+@startuml Activity_13_PaymentManagement
+skinparam activity {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+    DiamondBackgroundColor #FFF9C4
+    DiamondBorderColor #F57F17
+}
+
+title Sơ đồ Activity 13: Quản lý thanh toán (Admin)
+
+start
+
+:Admin mở AdminPayments;
+
+:GET /api/payments/admin\n+ GET /api/payments/admin/stats\n+ GET /api/payments/admin/monthly-revenue;
+
+fork
+    :Hiển thị bảng thanh toán\nvới phân trang, tìm kiếm,\nlọc theo ngày;
+fork again
+    :Hiển thị thống kê:\n- Tổng doanh thu\n- Doanh thu User\n- Doanh thu Restaurant\n- Biểu đồ tháng;
+end fork
+
+:Admin chọn hành động;
+
+switch (Hành động?)
+case (Tìm kiếm)
+    :Nhập keyword (tên/email);
+    :Reload bảng với filter;
+
+case (Lọc ngày)
+    :Chọn khoảng from - to;
+    :Reload bảng + thống kê;
+
+case (Xem chi tiết)
+    :GET /api/payments/admin/{id};
+    :Hiện dialog chi tiết:\n- Thông tin thanh toán\n- User, Restaurant, Tour\n- TransactionId, ExpireDate;
+
+case (Xác nhận thủ công)
+    :Chọn payment Pending;
+    :POST /api/payments/confirm/{id};
+    
+    :Server: Status → "Success";
+    
+    switch (PaymentType?)
+    case (UserUpgrade)
+        :User.UserLevel = 1;
+    case (RestaurantPremium)
+        :Restaurant.IsPremium = true\nPremiumExpireDate = ...;
+    case (RestaurantRegistration)
+        :Restaurant.IsApproved = true;
+    case (RestaurantRegistrationPremium)
+        :Restaurant.IsApproved = true\nIsPremium = true;
+    case (TourPurchase)
+        :Tour đã được mở khóa;
+    endswitch
+    
+    :Reload bảng thanh toán;
+endswitch
+
+stop
+
+@enduml
+
+
+@startuml Activity_14_UpdateUserAccount
+skinparam activity {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+    DiamondBackgroundColor #FFF9C4
+    DiamondBorderColor #F57F17
+}
+
+title Sơ đồ Activity 14: Cập nhật tài khoản người dùng
+
+start
+
+:Người dùng mở ProfilePage;
+
+:GET /api/users/me;
+
+:Hiển thị thông tin:\n- Email (readonly)\n- FullName, Phone, Address\n- Avatar, Role, UserLevel;
+
+if (Muốn đổi avatar?) then (Có)
+    :Chọn ảnh từ thư viện;
+    
+    :POST /api/users/upload-avatar\n[multipart/form-data];
+    
+    :Server:\n1. Tạo thư mục wwwroot/avatars/\n2. Lưu file: avatar_{userId}_{guid}.ext\n3. UPDATE Users SET Avatar;
+    
+    :Trả về { url: "/avatars/..." };
+    :Hiển thị avatar mới;
+else (Không)
+endif
+
+:Sửa FullName, Phone, Address;
+
+:Nhấn "Lưu thay đổi";
+
+:PUT /api/users/me\n{ fullName, phone, address, avatar };
+
+:Server:\n1. Tìm user theo JWT token\n2. Cập nhật FullName, Phone, Address, Avatar;
+
+if (Role == Admin && có UserLevel?) then (Có)
+    :Cập nhật UserLevel;
+else (Không)
+endif
+
+:SaveChanges();
+
+:Trả về { message: "Cập nhật thành công" };
+
+:Hiển thị thông báo thành công;
+
+stop
+
+@enduml
+
+
+@startuml Activity_15_LockUnlockRestaurant
+skinparam activity {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+    DiamondBackgroundColor #FFF9C4
+    DiamondBorderColor #F57F17
+}
+
+title Sơ đồ Activity 15: Khóa / Mở khóa nhà hàng & người dùng
+
+start
+
+:Admin mở ManageRestaurants\nhoặc ManageUsers;
+
+if (Đối tượng?) then (Nhà hàng)
+    :GET /api/restaurants/admin/all;
+    :Hiển thị danh sách nhà hàng;
+    
+    :Admin nhấn "Duyệt" hoặc\n"Hủy duyệt" nhà hàng;
+    
+    :PATCH /api/restaurants/admin/{id}/approve;
+    
+    :Server: IsApproved = !IsApproved;
+    
+    if (IsApproved == true?) then (Duyệt)
+        :Badge = "Đã duyệt" (xanh);
+        :Nhà hàng hiển thị\ntrên app khách;
+    else (Hủy duyệt)
+        :Badge = "Chưa duyệt" (đỏ);
+        :Nhà hàng ẩn\nkhỏi app khách;
+    endif
+
+else (Người dùng)
+    :GET /api/users;
+    :Hiển thị danh sách user;
+    
+    :Admin nhấn "Khóa" hoặc\n"Mở khóa" user;
+    
+    if (User là Admin?) then (Là Admin)
+        :Hiển thị lỗi:\n"Không thể khóa Admin";
+    else (Không phải Admin)
+        :PUT /api/users/{id}/toggle-status;
+        :Server: Status = Active ↔ Banned;
+        
+        if (Status == "Banned"?) then (Bị khóa)
+            :Badge = "Banned" (đỏ);
+            :User không thể\nđăng nhập app;
+        else (Mở khóa)
+            :Badge = "Active" (xanh);
+            :User đăng nhập\nbình thường;
+        endif
+    endif
+endif
+
+stop
+
+@enduml
+

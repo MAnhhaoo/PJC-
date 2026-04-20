@@ -42,6 +42,9 @@ public class RestaurantService
             try
             {
                 var uri = new Uri(value);
+                // External URL (different host from our server) — return as-is
+                if (_httpClient.BaseAddress == null || !string.Equals(uri.Host, _httpClient.BaseAddress.Host, StringComparison.OrdinalIgnoreCase))
+                    return value;
                 return new Uri(_httpClient.BaseAddress!, uri.PathAndQuery).ToString();
             }
             catch { return value; }

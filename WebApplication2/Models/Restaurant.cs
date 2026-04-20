@@ -26,6 +26,9 @@ public class Restaurant
     public bool IsApproved { get; set; }
     public DateTime CreatedAt { get; set; }
 
+    // Bán kính phát thuyết minh tự động (mét)
+    public double BroadcastRadius { get; set; } = 50;
+
     // ===== ⭐ THÊM PHẦN PREMIUM =====
     public bool IsPremium { get; set; } = false;
     public int PremiumLevel { get; set; } = 0; 

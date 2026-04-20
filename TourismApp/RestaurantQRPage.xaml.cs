@@ -34,7 +34,7 @@ public partial class RestaurantQRPage : ContentPage
 
         if (_restaurantId <= 0) return;
 
-        lblQRContent.Text = $"tourismapp://restaurant/{_restaurantId}";
+        lblQRContent.Text = $"{_httpClient.BaseAddress}r/{_restaurantId}";
 
         try
         {

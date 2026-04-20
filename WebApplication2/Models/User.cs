@@ -27,6 +27,11 @@ namespace WebApplication2.Models
         public DateTime CreatedAt { get; set; }
         public string Status { get; set; }
 
+        public DateTime? LastActiveAt { get; set; }
+
+        public double? LastLatitude { get; set; }
+        public double? LastLongitude { get; set; }
+
         // Navigation
         public ICollection<Restaurant> Restaurants { get; set; }
         public ICollection<LocationHistory> LocationHistories { get; set; }

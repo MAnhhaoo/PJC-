@@ -9,13 +9,15 @@ public partial class LoginPage : ContentPage
     private readonly HttpClient _httpClient;
     private readonly AuthService _authService;
     private readonly LanguageService _lang;
+    private readonly HeartbeatService _heartbeat;
 
-    public LoginPage(HttpClient httpClient, AuthService authService, LanguageService languageService)
+    public LoginPage(HttpClient httpClient, AuthService authService, LanguageService languageService, HeartbeatService heartbeatService)
     {
         InitializeComponent();
         _httpClient = httpClient;
         _authService = authService;
         _lang = languageService;
+        _heartbeat = heartbeatService;
         ApplyLocalization();
     }
 
@@ -25,6 +27,7 @@ public partial class LoginPage : ContentPage
         txtEmail.Placeholder = _lang["EmailPlaceholder"];
         txtPassword.Placeholder = _lang["PasswordPlaceholder"];
         btnLogin.Text = _lang["LoginBtn"];
+        btnGuest.Text = _lang["GuestBtn"] ?? "👤 Tiếp tục với tư cách khách";
         lblNoAccount.Text = _lang["NoAccount"];
         btnRegisterNow.Text = _lang["RegisterNow"];
         lblServerSettings.Text = _lang["ServerSettings"];
@@ -34,6 +37,20 @@ public partial class LoginPage : ContentPage
     private async void OnGoToRegister(object sender, EventArgs e)
     {
         await Shell.Current.GoToAsync(nameof(RegisterPage));
+    }
+
+    private async void OnGuestClicked(object sender, EventArgs e)
+    {
+        // Xóa token và auth header để đảm bảo chế độ khách vãng lai
+        await _authService.LogoutAsync();
+        _heartbeat.Start();
+
+        if (Shell.Current is AppShell appShell)
+        {
+            appShell.UpdateMenu("Guest");
+        }
+
+        await Shell.Current.GoToAsync("//CustomerHomePage");
     }
 
     // 1. Chỉ giữ lại DUY NHẤT một hàm này
@@ -64,6 +81,7 @@ public partial class LoginPage : ContentPage
 
             // Lưu token đăng nhập
             await _authService.SaveTokenAsync(result.Token);
+            _heartbeat.Start();
             if (Shell.Current is AppShell appShell)
             {
                 appShell.UpdateMenu(result.Role);

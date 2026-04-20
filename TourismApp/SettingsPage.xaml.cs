@@ -29,7 +29,7 @@ public partial class SettingsPage : ContentPage
         lblMovement.Text = $"{movement:F0} m";
 
         // Load server IP
-        entryServerIp.Text = Preferences.Default.Get("server_ip", "192.168.1.8");
+        entryServerIp.Text = Preferences.Default.Get("server_ip", "192.168.1.14");
 
         // Show last sync time
         var lastSync = Preferences.Default.Get("last_offline_sync", "");

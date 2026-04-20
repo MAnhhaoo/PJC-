@@ -18,9 +18,10 @@ public partial class RestaurantPaymentPage : ContentPage
     private string _referenceCode = "";
     private CancellationTokenSource? _pollCts;
     private bool _paymentConfirmed;
+    private string _lastQrUrl = "";
 
     private const string BankId = "970423";
-    private const string AccountNo = "24619072005";
+    private const string AccountNo = "00003906130";
     private const string AccountName = "MAC ANH HAO";
     private const string BankDisplayName = "TPBank";
 
@@ -97,7 +98,11 @@ public partial class RestaurantPaymentPage : ContentPage
 
         try
         {
+            qrLoading.IsVisible = true;
+            qrLoading.IsRunning = true;
+            btnRetryQR.IsVisible = false;
             lblStatus.Text = "⏳ Đang tạo yêu cầu thanh toán...";
+            lblStatus.TextColor = Color.FromArgb("#888");
 
             var request = new HttpRequestMessage(HttpMethod.Post, "api/payments/register-restaurant");
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
@@ -112,9 +117,21 @@ public partial class RestaurantPaymentPage : ContentPage
             var response = await _httpClient.SendAsync(request);
             var json = await response.Content.ReadAsStringAsync();
 
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                qrLoading.IsVisible = false;
+                SecureStorage.Remove("auth_token");
+                await DisplayAlert("Phiên hết hạn", "Phiên đăng nhập đã hết hạn.\nVui lòng đăng nhập lại.", "OK");
+                await Shell.Current.GoToAsync("//LoginPage");
+                return;
+            }
+
             if (!response.IsSuccessStatusCode)
             {
-                lblStatus.Text = $"❌ {json}";
+                lblStatus.Text = $"❌ Lỗi ({(int)response.StatusCode}): {json}";
+                lblStatus.TextColor = Color.FromArgb("#D32F2F");
+                qrLoading.IsVisible = false;
+                btnRetryQR.IsVisible = true;
                 return;
             }
 
@@ -128,12 +145,13 @@ public partial class RestaurantPaymentPage : ContentPage
             var amount = root.TryGetProperty("amount", out var amtProp)
                 ? amtProp.GetDecimal() : _amount;
 
-            var qrUrl = $"https://img.vietqr.io/image/{BankId}-{AccountNo}-compact2.png"
+            _lastQrUrl = $"https://img.vietqr.io/image/{BankId}-{AccountNo}-compact2.png"
                 + $"?amount={amount:0}"
                 + $"&addInfo={Uri.EscapeDataString(_referenceCode)}"
                 + $"&accountName={Uri.EscapeDataString(AccountName)}";
 
-            imgQRCode.Source = ImageSource.FromUri(new Uri(qrUrl));
+            // Download QR image bytes directly (more reliable on Android)
+            await LoadQRImageAsync(_lastQrUrl);
 
             lblAmount.Text = $"Số tiền: {amount:N0}đ";
             lblTransferContent.Text = $"Nội dung CK: {_referenceCode}";
@@ -142,9 +160,51 @@ public partial class RestaurantPaymentPage : ContentPage
             framePolling.IsVisible = true;
             StartPolling(token);
         }
+        catch (HttpRequestException ex)
+        {
+            lblStatus.Text = $"❌ Không kết nối được server:\n{_httpClient.BaseAddress}\n{ex.Message}";
+            lblStatus.TextColor = Color.FromArgb("#D32F2F");
+            qrLoading.IsVisible = false;
+            btnRetryQR.IsVisible = true;
+        }
         catch (Exception ex)
         {
             lblStatus.Text = $"❌ Lỗi: {ex.Message}";
+            lblStatus.TextColor = Color.FromArgb("#D32F2F");
+            qrLoading.IsVisible = false;
+            btnRetryQR.IsVisible = true;
+        }
+    }
+
+    private async Task LoadQRImageAsync(string qrUrl)
+    {
+        try
+        {
+            lblStatus.Text = "⏳ Đang tải mã QR...";
+            using var qrClient = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+            var imageBytes = await qrClient.GetByteArrayAsync(qrUrl);
+            imgQRCode.Source = ImageSource.FromStream(() => new MemoryStream(imageBytes));
+            qrLoading.IsVisible = false;
+            btnRetryQR.IsVisible = false;
+        }
+        catch (Exception ex)
+        {
+            qrLoading.IsVisible = false;
+            btnRetryQR.IsVisible = true;
+            lblStatus.Text = $"❌ Không tải được QR: {ex.Message}\nNhấn 'Tải lại' để thử lại.";
+            lblStatus.TextColor = Color.FromArgb("#D32F2F");
+        }
+    }
+
+    private async void OnRetryQRClicked(object sender, EventArgs e)
+    {
+        if (!string.IsNullOrEmpty(_lastQrUrl))
+        {
+            await LoadQRImageAsync(_lastQrUrl);
+        }
+        else
+        {
+            await CreatePaymentAndShowQR();
         }
     }
 

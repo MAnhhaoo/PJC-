@@ -22,7 +22,7 @@ namespace TourismApp
      });
 
             // 🔥 Auto-detect: máy ảo dùng 10.0.2.2, điện thoại thật dùng IP WiFi (lưu trong Preferences)
-            var savedIp = Preferences.Default.Get("server_ip", "192.168.1.8");
+            var savedIp = Preferences.Default.Get("server_ip", "192.168.31.20");
             var baseUrl = DeviceInfo.DeviceType == DeviceType.Virtual
                 ? "http://10.0.2.2:5216/"
                 : $"http://{savedIp}:5216/";
@@ -74,6 +74,7 @@ namespace TourismApp
             builder.Services.AddTransient<RestaurantPaymentPage>();
             builder.Services.AddSingleton<OfflineSyncService>();
             builder.Services.AddSingleton<AnalyticsService>();
+            builder.Services.AddSingleton<HeartbeatService>();
 
 
 

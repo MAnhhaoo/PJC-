@@ -215,14 +215,32 @@ namespace WebApplication2.Controllers
         {
             var since = DateTime.Now.AddDays(-days);
 
-            var query = _context.TourTrackPoints
+            // Guest track points (from heartbeat GPS tracking)
+            var guestPoints = await _context.GuestTrackPoints
                 .Where(t => t.RecordedAt >= since)
-                .Where(t => t.GuestLabel != null); // Chỉ lấy khách ẩn danh
+                .OrderBy(t => t.SessionId)
+                .ThenBy(t => t.RecordedAt)
+                .Select(t => new
+                {
+                    t.SessionId,
+                    TourId = 0,
+                    t.Latitude,
+                    t.Longitude,
+                    t.RecordedAt,
+                    UserId = (int?)null,
+                    GuestLabel = t.DeviceId
+                })
+                .ToListAsync();
+
+            // Also get TourTrackPoints for guest users
+            var tourQuery = _context.TourTrackPoints
+                .Where(t => t.RecordedAt >= since)
+                .Where(t => t.GuestLabel != null);
 
             if (tourId.HasValue && tourId > 0)
-                query = query.Where(t => t.TourId == tourId.Value);
+                tourQuery = tourQuery.Where(t => t.TourId == tourId.Value);
 
-            var points = await query
+            var tourPoints = await tourQuery
                 .OrderBy(t => t.SessionId)
                 .ThenBy(t => t.RecordedAt)
                 .Select(t => new
@@ -237,13 +255,32 @@ namespace WebApplication2.Controllers
                 })
                 .ToListAsync();
 
-            var tourIds = points.Select(p => p.TourId).Distinct().ToList();
+            var tourIds = tourPoints.Select(p => p.TourId).Distinct().ToList();
             var tours = await _context.Tours
                 .Where(t => tourIds.Contains(t.TourId))
                 .Select(t => new { t.TourId, t.Name })
                 .ToListAsync();
 
-            var sessions = points
+            // Combine guest heartbeat sessions
+            var guestSessions = guestPoints
+                .GroupBy(p => p.SessionId)
+                .Where(g => g.Count() >= 2) // At least 2 points to form a journey
+                .Select(g => new
+                {
+                    sessionId = g.Key,
+                    tourId = 0,
+                    tourName = "Vãng lai",
+                    userId = (int?)null,
+                    guestLabel = g.First().GuestLabel.Length > 12
+                        ? "Guest_" + g.First().GuestLabel[..8]
+                        : g.First().GuestLabel,
+                    startTime = g.Min(x => x.RecordedAt),
+                    pointCount = g.Count(),
+                    points = g.Select(x => new { lat = x.Latitude, lng = x.Longitude, time = x.RecordedAt }).ToList()
+                });
+
+            // Tour-based guest sessions
+            var tourSessions = tourPoints
                 .GroupBy(p => p.SessionId)
                 .Select(g => new
                 {
@@ -255,7 +292,10 @@ namespace WebApplication2.Controllers
                     startTime = g.Min(x => x.RecordedAt),
                     pointCount = g.Count(),
                     points = g.Select(x => new { lat = x.Latitude, lng = x.Longitude, time = x.RecordedAt }).ToList()
-                })
+                });
+
+            var sessions = guestSessions
+                .Concat(tourSessions)
                 .OrderByDescending(s => s.startTime)
                 .Take(50)
                 .ToList();
@@ -272,6 +312,138 @@ namespace WebApplication2.Controllers
                 .Select(t => new { t.TourId, t.Name })
                 .ToListAsync();
             return Ok(tours);
+        }
+
+        // ===== HEATMAP CONFIG =====
+        private const string HeatmapConfigKey = "heatmap_thresholds";
+        private const string DefaultHeatmapConfig = "[{\"min\":0,\"color\":\"#4CAF50\",\"label\":\"Rất thấp\"},{\"min\":10,\"color\":\"#8BC34A\",\"label\":\"Thấp\"},{\"min\":30,\"color\":\"#FFEB3B\",\"label\":\"Trung bình\"},{\"min\":60,\"color\":\"#FF9800\",\"label\":\"Cao\"},{\"min\":100,\"color\":\"#F44336\",\"label\":\"Rất cao\"}]";
+
+        [HttpGet("heatmap-config")]
+        public async Task<IActionResult> GetHeatmapConfig()
+        {
+            var setting = await _context.AppSettings.FindAsync(HeatmapConfigKey);
+            var json = setting?.Value ?? DefaultHeatmapConfig;
+            return Content(json, "application/json");
+        }
+
+        [HttpPut("heatmap-config")]
+        public async Task<IActionResult> SaveHeatmapConfig([FromBody] System.Text.Json.JsonElement body)
+        {
+            var json = body.GetRawText();
+            var setting = await _context.AppSettings.FindAsync(HeatmapConfigKey);
+            if (setting == null)
+            {
+                setting = new AppSetting { Key = HeatmapConfigKey, Value = json };
+                _context.AppSettings.Add(setting);
+            }
+            else
+            {
+                setting.Value = json;
+            }
+            await _context.SaveChangesAsync();
+            return Ok(new { success = true });
+        }
+
+        // ===== ACTIVE VISITORS (real-time) =====
+        [HttpGet("active-visitors")]
+        public async Task<IActionResult> GetActiveVisitors()
+        {
+            var now = DateTime.UtcNow;
+            var threshold = now.AddMinutes(-1);
+
+            // Get active registered users with location
+            var activeUsers = await _context.Users
+                .Where(u => u.LastActiveAt != null && u.LastActiveAt > threshold
+                    && u.LastLatitude != null && u.LastLongitude != null)
+                .Select(u => new
+                {
+                    type = "user",
+                    label = u.FullName ?? u.Email,
+                    lat = u.LastLatitude!.Value,
+                    lng = u.LastLongitude!.Value,
+                    lastActive = u.LastActiveAt
+                })
+                .ToListAsync();
+
+            // Get active guest sessions with location
+            var activeGuests = await _context.GuestSessions
+                .Where(g => g.LastActiveAt > threshold
+                    && g.Latitude != null && g.Longitude != null)
+                .Select(g => new
+                {
+                    type = "guest",
+                    label = "Khách #" + g.DeviceId.Substring(0, Math.Min(6, g.DeviceId.Length)),
+                    lat = g.Latitude!.Value,
+                    lng = g.Longitude!.Value,
+                    lastActive = (DateTime?)g.LastActiveAt
+                })
+                .ToListAsync();
+
+            // Group by nearest restaurant
+            var restaurants = await _context.Restaurants
+                .Where(r => r.IsApproved)
+                .Select(r => new { r.RestaurantId, r.Name, r.Latitude, r.Longitude })
+                .ToListAsync();
+
+            var allVisitors = activeUsers.Cast<object>().Concat(activeGuests.Cast<object>()).ToList();
+
+            // Count visitors per restaurant (within 200m)
+            var perRestaurant = restaurants.Select(r =>
+            {
+                int count = 0;
+                foreach (dynamic v in allVisitors)
+                {
+                    double dlat = (double)v.lat - r.Latitude;
+                    double dlng = (double)v.lng - r.Longitude;
+                    double dist = Math.Sqrt(dlat * dlat + dlng * dlng) * 111320; // rough meters
+                    if (dist < 200) count++;
+                }
+                return new { r.RestaurantId, r.Name, r.Latitude, r.Longitude, visitorCount = count };
+            })
+            .Where(x => x.visitorCount > 0)
+            .OrderByDescending(x => x.visitorCount)
+            .ToList();
+
+            return Ok(new
+            {
+                totalActive = activeUsers.Count + activeGuests.Count,
+                registeredCount = activeUsers.Count,
+                guestCount = activeGuests.Count,
+                visitors = activeUsers.Concat(activeGuests).ToList(),
+                perRestaurant
+            });
+        }
+
+        // ===== HOURLY ACTIVITY STATS =====
+        [HttpGet("hourly-stats")]
+        public async Task<IActionResult> GetHourlyStats([FromQuery] int days = 30)
+        {
+            var since = DateTime.UtcNow.AddDays(-days);
+
+            // Narration play logs by hour
+            var playsByHour = await _context.NarrationPlayLogs
+                .Where(l => l.PlayedAt >= since)
+                .ToListAsync();
+
+            var hourlyData = Enumerable.Range(0, 24).Select(h => new
+            {
+                hour = h,
+                label = $"{h:D2}:00",
+                playCount = playsByHour.Count(l => l.PlayedAt.Hour == h),
+                sessionCount = playsByHour.Where(l => l.PlayedAt.Hour == h)
+                    .Select(l => l.UserId?.ToString() ?? l.GuestLabel ?? "")
+                    .Distinct().Count()
+            }).ToList();
+
+            var peakHours = hourlyData.OrderByDescending(h => h.playCount).Take(3).ToList();
+
+            return Ok(new
+            {
+                hourlyData,
+                peakHour = peakHours.Count > 0 ? peakHours[0].label : "",
+                peakPlayCount = peakHours.Count > 0 ? peakHours[0].playCount : 0,
+                topPeakHours = peakHours.Select(p => new { hour = p.label, playCount = p.playCount }).ToList()
+            });
         }
 
         /// <summary>
